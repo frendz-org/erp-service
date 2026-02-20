@@ -1,0 +1,2 @@
+DROP TRIGGER IF EXISTS trg_participant_bank_accounts_updated_at ON participant_bank_accounts;
+DROP TABLE IF EXISTS participant_bank_accounts;

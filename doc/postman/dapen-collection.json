@@ -1,0 +1,4010 @@
+{
+  "info": {
+    "_postman_id": "dapen-collection-v2",
+    "name": "DAPEN IAM Service",
+    "description": "Complete API collection for DAPEN IAM Service — multi-tenant Identity and Access Management.\n\n## Authentication\nMost endpoints require a JWT Bearer token. Tokens are obtained via the OTP-based login flow.\nProtected endpoints that are product-scoped also require X-Tenant-ID header.\n\n## Registration Flow\n```\nINITIATE → PENDING_VERIFICATION → VERIFIED → PASSWORD_SET → COMPLETED\n```\n\n## Login Flow (OTP-based passwordless)\n```\nEMAIL → OTP_REQUIRED → OTP_VERIFIED → TOKENS_ISSUED\n```\n\n## Participant Lifecycle\n```\nDRAFT → PENDING_APPROVAL → APPROVED | REJECTED\n```\n\n## Member Lifecycle\n```\nPENDING_APPROVAL → ACTIVE | REJECTED\n```",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:3000", "type": "string" },
+    { "key": "access_token", "value": "", "type": "string" },
+    { "key": "refresh_token", "value": "", "type": "string" },
+    { "key": "tenant_id", "value": "", "type": "string" },
+    { "key": "product_id", "value": "", "type": "string" },
+    { "key": "registration_id", "value": "", "type": "string" },
+    { "key": "registration_email", "value": "", "type": "string" },
+    { "key": "registration_token", "value": "", "type": "string" },
+    { "key": "login_session_id", "value": "", "type": "string" },
+    { "key": "user_id", "value": "", "type": "string" },
+    { "key": "participant_id", "value": "", "type": "string" },
+    { "key": "member_id", "value": "", "type": "string" },
+    { "key": "masterdata_category_id", "value": "", "type": "string" },
+    { "key": "masterdata_item_id", "value": "", "type": "string" },
+    { "key": "identity_id", "value": "", "type": "string" },
+    { "key": "address_id", "value": "", "type": "string" },
+    { "key": "bank_account_id", "value": "", "type": "string" },
+    { "key": "family_member_id", "value": "", "type": "string" },
+    { "key": "beneficiary_id", "value": "", "type": "string" },
+    { "key": "test_email", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/health/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "health", ""]
+            },
+            "description": "Basic health check endpoint."
+          },
+          "response": [
+            {
+              "name": "200 - Healthy",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"status\": \"healthy\",\n    \"timestamp\": \"2026-02-18T10:30:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Readiness Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/health/ready",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "health", "ready"]
+            },
+            "description": "Readiness check. Verifies DB and Redis connectivity."
+          },
+          "response": [
+            {
+              "name": "200 - Ready",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"ready\": true\n}"
+            },
+            {
+              "name": "503 - Not Ready",
+              "status": "Service Unavailable",
+              "code": 503,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"ready\": false,\n    \"error\": \"database connection failed\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Liveness Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/health/live",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "health", "live"]
+            },
+            "description": "Liveness probe. Returns 200 if process is alive."
+          },
+          "response": [
+            {
+              "name": "200 - Alive",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"alive\": true\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Registration",
+      "description": "User registration flow: CREATED → PENDING_VERIFICATION → VERIFIED → PASSWORD_SET → COMPLETED",
+      "item": [
+        {
+          "name": "Initiate Registration",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('test_email', 'test_' + Date.now() + '@example.com');"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Response has success flag and extracts registration_id', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  if (json.data && json.data.registration_id) {",
+                  "    pm.collectionVariables.set('registration_id', json.data.registration_id);",
+                  "  } else if (json.data && json.data.id) {",
+                  "    pm.collectionVariables.set('registration_id', json.data.id);",
+                  "  }",
+                  "  if (json.data && json.data.email) {",
+                  "    pm.collectionVariables.set('registration_email', json.data.email);",
+                  "  }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"{{test_email}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/registrations",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "registrations"]
+            },
+            "description": "Initiates user registration. Sends a 6-digit OTP to the provided email."
+          },
+          "response": [
+            {
+              "name": "201 - Registration Initiated",
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"OTP sent to your email\",\n    \"data\": {\n        \"registration_id\": \"019500a1-...\",\n        \"email\": \"user@example.com\",\n        \"status\": \"PENDING_VERIFICATION\",\n        \"message\": \"OTP sent to your email\",\n        \"expires_at\": \"2026-02-18T10:45:00Z\",\n        \"otp_config\": {\n            \"expires_in_minutes\": 15,\n            \"resend_cooldown_seconds\": 60\n        }\n    }\n}"
+            },
+            {
+              "name": "400 - Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_VALIDATION\",\n    \"message\": \"Validation failed\",\n    \"errors\": [\n        { \"field\": \"Email\", \"message\": \"Email must be a valid email address\" }\n    ]\n}"
+            },
+            {
+              "name": "409 - Email Already Exists",
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_CONFLICT\",\n    \"message\": \"This email has already been registered\"\n}"
+            },
+            {
+              "name": "429 - Too Many Requests",
+              "status": "Too Many Requests",
+              "code": 429,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"too many requests, please try again later\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Verify Registration OTP",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag and extracts registration_token', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  if (json.data && json.data.registration_token) {",
+                  "    pm.collectionVariables.set('registration_token', json.data.registration_token);",
+                  "  } else if (json.data && json.data.token) {",
+                  "    pm.collectionVariables.set('registration_token', json.data.token);",
+                  "  }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"{{registration_email}}\",\n    \"otp_code\": \"123456\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/registrations/{{registration_id}}/verify-otp",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "registrations", "{{registration_id}}", "verify-otp"]
+            },
+            "description": "Verifies the OTP code and returns a registration token for subsequent steps."
+          },
+          "response": [
+            {
+              "name": "200 - OTP Verified",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Email verified successfully\",\n    \"data\": {\n        \"registration_id\": \"019500a1-...\",\n        \"status\": \"VERIFIED\",\n        \"message\": \"Email verified successfully\",\n        \"registration_token\": \"eyJ...\",\n        \"token_expires_at\": \"2026-02-18T11:00:00Z\",\n        \"next_step\": {\n            \"action\": \"set_password\",\n            \"endpoint\": \"/api/v1/iam/registrations/{id}/set-password\"\n        }\n    }\n}"
+            },
+            {
+              "name": "400 - Invalid OTP",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_OTP_INVALID\",\n    \"message\": \"Invalid OTP code\"\n}"
+            },
+            {
+              "name": "400 - OTP Expired",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_OTP_EXPIRED\",\n    \"message\": \"OTP code has expired\"\n}"
+            },
+            {
+              "name": "404 - Session Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_NOT_FOUND\",\n    \"message\": \"Registration session not found\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Resend Registration OTP",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"{{registration_email}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/registrations/{{registration_id}}/resend-otp",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "registrations", "{{registration_id}}", "resend-otp"]
+            },
+            "description": "Resends OTP to the email. Subject to cooldown and max resend limits."
+          },
+          "response": [
+            {
+              "name": "200 - OTP Resent",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"OTP resent successfully\",\n    \"data\": {\n        \"registration_id\": \"019500a1-...\",\n        \"message\": \"OTP resent successfully\",\n        \"expires_at\": \"2026-02-18T10:50:00Z\",\n        \"resends_remaining\": 2,\n        \"next_resend_available_at\": \"2026-02-18T10:32:00Z\"\n    }\n}"
+            },
+            {
+              "name": "404 - Session Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_NOT_FOUND\",\n    \"message\": \"Registration session not found\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Registration Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/registrations/{{registration_id}}/status?email={{registration_email}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "registrations", "{{registration_id}}", "status"],
+              "query": [{ "key": "email", "value": "{{registration_email}}" }]
+            },
+            "description": "Get current registration session status. Requires email query parameter."
+          },
+          "response": [
+            {
+              "name": "200 - Status Retrieved",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Registration status retrieved\",\n    \"data\": {\n        \"registration_id\": \"019500a1-...\",\n        \"email\": \"user@example.com\",\n        \"status\": \"PENDING_VERIFICATION\",\n        \"expires_at\": \"2026-02-18T10:45:00Z\",\n        \"otp_attempts_remaining\": 3,\n        \"resends_remaining\": 3\n    }\n}"
+            },
+            {
+              "name": "400 - Missing email",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_BAD_REQUEST\",\n    \"message\": \"email query parameter is required\"\n}"
+            },
+            {
+              "name": "404 - Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_NOT_FOUND\",\n    \"message\": \"Registration session not found\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Set Password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag and extracts updated registration_token', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  if (json.data && json.data.registration_token) {",
+                  "    pm.collectionVariables.set('registration_token', json.data.registration_token);",
+                  "  }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{registration_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"password\": \"MySecureP@ss1\",\n    \"confirmation_password\": \"MySecureP@ss1\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/registrations/{{registration_id}}/set-password",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "registrations", "{{registration_id}}", "set-password"]
+            },
+            "description": "Sets the user's password. Requires registration token in Authorization header (Bearer <token>)."
+          },
+          "response": [
+            {
+              "name": "200 - Password Set",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Password set successfully\",\n    \"data\": {\n        \"registration_id\": \"019500a1-...\",\n        \"status\": \"PASSWORD_SET\",\n        \"message\": \"Password set successfully\",\n        \"registration_token\": \"eyJ...\",\n        \"next_step\": {\n            \"action\": \"complete_profile\",\n            \"endpoint\": \"/api/v1/iam/registrations/{id}/complete-profile\",\n            \"required_fields\": [\"full_name\", \"phone_number\", \"date_of_birth\", \"gender\", \"marital_status\", \"address\"]\n        }\n    }\n}"
+            },
+            {
+              "name": "401 - Missing Authorization",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_UNAUTHORIZED\",\n    \"message\": \"Authorization header is required\"\n}"
+            },
+            {
+              "name": "400 - Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_VALIDATION\",\n    \"message\": \"Validation failed\",\n    \"errors\": [\n        { \"field\": \"Password\", \"message\": \"Password must be at least 8 characters\" }\n    ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Complete Profile Registration",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Response has success flag and extracts tokens + user_id', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  if (json.data) {",
+                  "    if (json.data.user_id) { pm.collectionVariables.set('user_id', json.data.user_id); }",
+                  "    if (json.data.id) { pm.collectionVariables.set('user_id', json.data.id); }",
+                  "    if (json.data.access_token) { pm.collectionVariables.set('access_token', json.data.access_token); }",
+                  "    if (json.data.refresh_token) { pm.collectionVariables.set('refresh_token', json.data.refresh_token); }",
+                  "  }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{registration_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"full_name\": \"Budi Santoso\",\n    \"gender\": \"GENDER_001\",\n    \"date_of_birth\": \"1990-05-15\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/registrations/{{registration_id}}/complete-profile",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "registrations", "{{registration_id}}", "complete-profile"]
+            },
+            "description": "Completes profile and finalizes registration. Returns access + refresh tokens.\n\nNote: `gender` must be a valid GENDER_NNN masterdata code (e.g. GENDER_001 for Male, GENDER_002 for Female). Retrieve valid codes from the masterdata endpoint before submitting."
+          },
+          "response": [
+            {
+              "name": "201 - Profile Completed",
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Registration completed successfully\",\n    \"data\": {\n        \"user_id\": \"019500a2-...\",\n        \"email\": \"user@example.com\",\n        \"status\": \"COMPLETED\",\n        \"message\": \"Registration completed successfully\",\n        \"profile\": {\n            \"first_name\": \"Budi\",\n            \"last_name\": \"Santoso\"\n        },\n        \"access_token\": \"eyJ...\",\n        \"refresh_token\": \"eyJ...\",\n        \"token_type\": \"Bearer\",\n        \"expires_in\": 3600\n    }\n}"
+            },
+            {
+              "name": "401 - Missing Authorization",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_UNAUTHORIZED\",\n    \"message\": \"Authorization header is required\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Complete Registration",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Response has success flag and extracts tokens + user_id', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  if (json.data) {",
+                  "    if (json.data.user_id) { pm.collectionVariables.set('user_id', json.data.user_id); }",
+                  "    if (json.data.id) { pm.collectionVariables.set('user_id', json.data.id); }",
+                  "    if (json.data.access_token) { pm.collectionVariables.set('access_token', json.data.access_token); }",
+                  "    if (json.data.refresh_token) { pm.collectionVariables.set('refresh_token', json.data.refresh_token); }",
+                  "  }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{registration_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"password\": \"MySecureP@ss1\",\n    \"password_confirmation\": \"MySecureP@ss1\",\n    \"first_name\": \"Budi\",\n    \"last_name\": \"Santoso\",\n    \"phone_number\": \"+6281234567890\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/registrations/{{registration_id}}/complete",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "registrations", "{{registration_id}}", "complete"]
+            },
+            "description": "Completes registration in one step (password + profile). Returns tokens on success."
+          },
+          "response": [
+            {
+              "name": "201 - Registration Completed",
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Registration completed successfully\",\n    \"data\": {\n        \"user_id\": \"019500a2-...\",\n        \"email\": \"user@example.com\",\n        \"status\": \"COMPLETED\",\n        \"message\": \"Registration completed successfully\",\n        \"profile\": {\n            \"first_name\": \"Budi\",\n            \"last_name\": \"Santoso\"\n        },\n        \"access_token\": \"eyJ...\",\n        \"refresh_token\": \"eyJ...\",\n        \"token_type\": \"Bearer\",\n        \"expires_in\": 3600\n    }\n}"
+            },
+            {
+              "name": "401 - Missing Authorization",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_UNAUTHORIZED\",\n    \"message\": \"Authorization header is required\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Login",
+      "description": "OTP-based passwordless login flow",
+      "item": [
+        {
+          "name": "Initiate Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag and extracts login_session_id', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  if (json.data && json.data.login_session_id) {",
+                  "    pm.collectionVariables.set('login_session_id', json.data.login_session_id);",
+                  "  }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"user@example.com\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "login"]
+            },
+            "description": "Initiates login. Sends OTP to email. Always returns 200 to prevent user enumeration. Enforces 500ms minimum response time."
+          },
+          "response": [
+            {
+              "name": "200 - OTP Sent (OTP_REQUIRED)",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"OTP sent to your email\",\n    \"data\": {\n        \"status\": \"OTP_REQUIRED\",\n        \"login_session_id\": \"019500b1-...\",\n        \"email\": \"user@example.com\",\n        \"otp_expires_at\": \"2026-02-18T10:40:00Z\",\n        \"session_expires_at\": \"2026-02-18T10:45:00Z\",\n        \"attempts_allowed\": 3,\n        \"resends_allowed\": 3\n    }\n}"
+            },
+            {
+              "name": "400 - Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_VALIDATION\",\n    \"message\": \"Validation failed\",\n    \"errors\": [\n        { \"field\": \"Email\", \"message\": \"Email must be a valid email address\" }\n    ]\n}"
+            },
+            {
+              "name": "429 - Too Many Requests",
+              "status": "Too Many Requests",
+              "code": 429,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"too many requests, please try again later\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Verify Login OTP",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag and extracts access/refresh tokens + user_id', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  if (json.data) {",
+                  "    if (json.data.access_token) { pm.collectionVariables.set('access_token', json.data.access_token); }",
+                  "    if (json.data.refresh_token) { pm.collectionVariables.set('refresh_token', json.data.refresh_token); }",
+                  "    if (json.data.user && json.data.user.id) { pm.collectionVariables.set('user_id', json.data.user.id); }",
+                  "  }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"user@example.com\",\n    \"otp_code\": \"123456\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/login/{{login_session_id}}/verify-otp",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "login", "{{login_session_id}}", "verify-otp"]
+            },
+            "description": "Verifies OTP and issues access + refresh tokens with multi-tenant claims."
+          },
+          "response": [
+            {
+              "name": "200 - Login Successful",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Login successful\",\n    \"data\": {\n        \"status\": \"SUCCESS\",\n        \"access_token\": \"eyJ...\",\n        \"refresh_token\": \"eyJ...\",\n        \"expires_in\": 3600,\n        \"token_type\": \"Bearer\",\n        \"user\": {\n            \"id\": \"019500a2-...\",\n            \"email\": \"user@example.com\",\n            \"full_name\": \"Budi Santoso\"\n        }\n    }\n}"
+            },
+            {
+              "name": "400 - Invalid OTP",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_OTP_INVALID\",\n    \"message\": \"Invalid OTP code\"\n}"
+            },
+            {
+              "name": "404 - Session Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_NOT_FOUND\",\n    \"message\": \"Login session not found\"\n}"
+            },
+            {
+              "name": "429 - Too Many Requests",
+              "status": "Too Many Requests",
+              "code": 429,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"too many requests, please try again later\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Resend Login OTP",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"user@example.com\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/login/{{login_session_id}}/resend-otp",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "login", "{{login_session_id}}", "resend-otp"]
+            },
+            "description": "Resends login OTP. Subject to cooldown and max resend limits."
+          },
+          "response": [
+            {
+              "name": "200 - OTP Resent",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"OTP resent successfully\",\n    \"data\": {\n        \"status\": \"PENDING_VERIFICATION\",\n        \"login_session_id\": \"019500b1-...\",\n        \"email\": \"user@example.com\",\n        \"otp_expires_at\": \"2026-02-18T10:45:00Z\",\n        \"resends_remaining\": 2,\n        \"cooldown_seconds\": 60\n    }\n}"
+            },
+            {
+              "name": "404 - Session Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_NOT_FOUND\",\n    \"message\": \"Login session not found\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Login Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/login/{{login_session_id}}/status?email=user@example.com",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "login", "{{login_session_id}}", "status"],
+              "query": [{ "key": "email", "value": "user@example.com" }]
+            },
+            "description": "Get current login session status. Requires email query parameter."
+          },
+          "response": [
+            {
+              "name": "200 - Status Retrieved",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Login status retrieved\",\n    \"data\": {\n        \"status\": \"PENDING_VERIFICATION\",\n        \"login_session_id\": \"019500b1-...\",\n        \"email\": \"user@example.com\",\n        \"attempts_remaining\": 3,\n        \"resends_remaining\": 3,\n        \"expires_at\": \"2026-02-18T10:45:00Z\"\n    }\n}"
+            },
+            {
+              "name": "400 - Missing email",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_BAD_REQUEST\",\n    \"message\": \"email query parameter is required\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "description": "Token management (JWT required)",
+      "item": [
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag and extracts new tokens', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  if (json.data) {",
+                  "    if (json.data.access_token) { pm.collectionVariables.set('access_token', json.data.access_token); }",
+                  "    if (json.data.refresh_token) { pm.collectionVariables.set('refresh_token', json.data.refresh_token); }",
+                  "  }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"refresh_token\": \"{{refresh_token}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/auth/refresh-token",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "auth", "refresh-token"]
+            },
+            "description": "Issues new access + refresh tokens. Rate limited to 20 req/min."
+          },
+          "response": [
+            {
+              "name": "200 - Token Refreshed",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Token refreshed successfully\",\n    \"data\": {\n        \"access_token\": \"eyJ...\",\n        \"refresh_token\": \"eyJ...\",\n        \"expires_in\": 3600,\n        \"token_type\": \"Bearer\"\n    }\n}"
+            },
+            {
+              "name": "400 - Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_VALIDATION\",\n    \"message\": \"Validation failed\"\n}"
+            },
+            {
+              "name": "401 - Invalid Token",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_TOKEN_INVALID\",\n    \"message\": \"Invalid token\"\n}"
+            },
+            {
+              "name": "429 - Too Many Requests",
+              "status": "Too Many Requests",
+              "code": 429,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"too many requests, please try again later\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"refresh_token\": \"{{refresh_token}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "auth", "logout"]
+            },
+            "description": "Logs out current session. Blacklists access token JTI and revokes refresh token."
+          },
+          "response": [
+            {
+              "name": "200 - Logged Out",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Logout successful\"\n}"
+            },
+            {
+              "name": "401 - Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_UNAUTHORIZED\",\n    \"message\": \"missing authorization header\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Logout All",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/auth/logout-all",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "auth", "logout-all"]
+            },
+            "description": "Logs out all sessions for the current user. Sets a user-level blacklist timestamp."
+          },
+          "response": [
+            {
+              "name": "200 - All Sessions Logged Out",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"All sessions logged out successfully\"\n}"
+            },
+            {
+              "name": "401 - Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_UNAUTHORIZED\",\n    \"message\": \"missing authorization header\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "description": "User management. JWT required. Admin endpoints require PLATFORM_ADMIN role.",
+      "item": [
+        {
+          "name": "Get My Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/users/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "users", "me"]
+            },
+            "description": "Get the current authenticated user's profile."
+          },
+          "response": [
+            {
+              "name": "200 - Profile Retrieved",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"User profile retrieved successfully\",\n    \"data\": {\n        \"id\": \"019500a2-...\",\n        \"email\": \"user@example.com\",\n        \"first_name\": \"Budi\",\n        \"last_name\": \"Santoso\",\n        \"full_name\": \"Budi Santoso\",\n        \"phone_number\": \"+6281234567890\",\n        \"status\": \"ACTIVE\",\n        \"is_active\": true,\n        \"roles\": [\n            { \"code\": \"PLATFORM_ADMIN\", \"name\": \"Platform Administrator\" }\n        ]\n    }\n}"
+            },
+            {
+              "name": "401 - Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_UNAUTHORIZED\",\n    \"message\": \"missing authorization header\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update My Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"first_name\": \"Budi\",\n    \"last_name\": \"Santoso\",\n    \"phone_number\": \"+6281234567890\",\n    \"address\": \"Jl. Sudirman No. 1, Jakarta\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/users/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "users", "me"]
+            },
+            "description": "Update current user's profile. All fields are optional."
+          },
+          "response": [
+            {
+              "name": "200 - Profile Updated",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Profile updated successfully\",\n    \"data\": {\n        \"id\": \"019500a2-...\",\n        \"email\": \"user@example.com\",\n        \"first_name\": \"Budi\",\n        \"last_name\": \"Santoso\",\n        \"full_name\": \"Budi Santoso\",\n        \"status\": \"ACTIVE\",\n        \"is_active\": true\n    }\n}"
+            },
+            {
+              "name": "401 - Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_UNAUTHORIZED\",\n    \"message\": \"missing authorization header\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create User (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Response has success flag and extracts user_id', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  if (json.data && json.data.user_id) { pm.collectionVariables.set('user_id', json.data.user_id); }",
+                  "  if (json.data && json.data.id) { pm.collectionVariables.set('user_id', json.data.id); }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"tenant_id\": \"{{tenant_id}}\",\n    \"role_code\": \"MEMBER\",\n    \"email\": \"newuser@example.com\",\n    \"password\": \"SecurePass123!\",\n    \"first_name\": \"Jane\",\n    \"last_name\": \"Doe\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/users/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "users", ""]
+            },
+            "description": "Creates a new user. Requires PLATFORM_ADMIN role."
+          },
+          "response": [
+            {
+              "name": "201 - User Created",
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"User created successfully\",\n    \"data\": {\n        \"user_id\": \"019500a3-...\",\n        \"email\": \"newuser@example.com\",\n        \"full_name\": \"Jane Doe\",\n        \"role_code\": \"MEMBER\"\n    }\n}"
+            },
+            {
+              "name": "401 - Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_UNAUTHORIZED\",\n    \"message\": \"missing authorization header\"\n}"
+            },
+            {
+              "name": "403 - Platform Admin Required",
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_PLATFORM_ADMIN_REQUIRED\",\n    \"message\": \"This operation requires platform administrator privileges\"\n}"
+            },
+            {
+              "name": "409 - User Already Exists",
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_USER_ALREADY_EXISTS\",\n    \"message\": \"User with this email already exists\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "List Users (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/users/?page=1&per_page=20&status=ACTIVE&sort_by=created_at&sort_order=desc",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "users", ""],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "per_page", "value": "20" },
+                { "key": "status", "value": "ACTIVE" },
+                { "key": "sort_by", "value": "created_at" },
+                { "key": "sort_order", "value": "desc" },
+                { "key": "search", "value": "", "disabled": true }
+              ]
+            },
+            "description": "List all users with pagination. Requires PLATFORM_ADMIN role."
+          },
+          "response": [
+            {
+              "name": "200 - Users Retrieved",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Users retrieved successfully\",\n    \"data\": [\n        {\n            \"id\": \"019500a2-...\",\n            \"email\": \"user@example.com\",\n            \"full_name\": \"Budi Santoso\",\n            \"status\": \"ACTIVE\",\n            \"is_active\": true,\n            \"created_at\": \"2026-02-18T10:00:00Z\"\n        }\n    ],\n    \"pagination\": {\n        \"total\": 100,\n        \"page\": 1,\n        \"limit\": 20,\n        \"total_pages\": 5\n    }\n}"
+            },
+            {
+              "name": "401 - Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_UNAUTHORIZED\",\n    \"message\": \"missing authorization header\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get User By ID (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/users/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "users", "{{user_id}}"]
+            },
+            "description": "Get a specific user by ID. Requires PLATFORM_ADMIN role."
+          },
+          "response": [
+            {
+              "name": "200 - User Found",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"User retrieved successfully\",\n    \"data\": {\n        \"id\": \"019500a2-...\",\n        \"email\": \"user@example.com\",\n        \"first_name\": \"Budi\",\n        \"last_name\": \"Santoso\",\n        \"full_name\": \"Budi Santoso\",\n        \"status\": \"ACTIVE\",\n        \"is_active\": true\n    }\n}"
+            },
+            {
+              "name": "404 - User Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_USER_NOT_FOUND\",\n    \"message\": \"User not found\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update User (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"first_name\": \"Jane\",\n    \"last_name\": \"Doe\",\n    \"status\": \"ACTIVE\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/users/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "users", "{{user_id}}"]
+            },
+            "description": "Update user by ID. Requires PLATFORM_ADMIN role."
+          },
+          "response": [
+            {
+              "name": "200 - User Updated",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"User updated successfully\",\n    \"data\": {\n        \"id\": \"019500a2-...\",\n        \"email\": \"user@example.com\",\n        \"full_name\": \"Jane Doe\",\n        \"status\": \"ACTIVE\",\n        \"is_active\": true\n    }\n}"
+            },
+            {
+              "name": "404 - User Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_USER_NOT_FOUND\",\n    \"message\": \"User not found\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete User (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/users/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "users", "{{user_id}}"]
+            },
+            "description": "Soft-delete a user. Requires PLATFORM_ADMIN role."
+          },
+          "response": [
+            {
+              "name": "200 - User Deleted",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"User deleted successfully\"\n}"
+            },
+            {
+              "name": "404 - User Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_USER_NOT_FOUND\",\n    \"message\": \"User not found\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Approve User (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/users/{{user_id}}/approve",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "users", "{{user_id}}", "approve"]
+            },
+            "description": "Approve a pending user registration. Requires PLATFORM_ADMIN role."
+          },
+          "response": [
+            {
+              "name": "200 - User Approved",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"User approved successfully\",\n    \"data\": {\n        \"user_id\": \"019500a2-...\",\n        \"message\": \"User approved successfully\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Reject User (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"reason\": \"Incomplete documentation provided\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/users/{{user_id}}/reject",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "users", "{{user_id}}", "reject"]
+            },
+            "description": "Reject a pending user registration with reason. Requires PLATFORM_ADMIN role."
+          },
+          "response": [
+            {
+              "name": "200 - User Rejected",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"User rejected\",\n    \"data\": {\n        \"user_id\": \"019500a2-...\",\n        \"message\": \"User rejected\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Unlock User (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/users/{{user_id}}/unlock",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "users", "{{user_id}}", "unlock"]
+            },
+            "description": "Unlock a locked user account. Requires PLATFORM_ADMIN role."
+          },
+          "response": [
+            {
+              "name": "200 - User Unlocked",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"User unlocked successfully\",\n    \"data\": {\n        \"user_id\": \"019500a2-...\",\n        \"message\": \"User unlocked successfully\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Reset User PIN (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/users/{{user_id}}/reset-pin",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "users", "{{user_id}}", "reset-pin"]
+            },
+            "description": "Reset a user's PIN. Requires PLATFORM_ADMIN role."
+          },
+          "response": [
+            {
+              "name": "200 - PIN Reset",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"PIN reset successfully\",\n    \"data\": {\n        \"user_id\": \"019500a2-...\",\n        \"message\": \"PIN reset successfully\"\n    }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Roles",
+      "description": "Role management. Requires PLATFORM_ADMIN role.",
+      "item": [
+        {
+          "name": "Create Role (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Response has success flag and extracts role_id', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  if (json.data && json.data.id) { pm.collectionVariables.set('role_id', json.data.id); }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"tenant_id\": \"{{tenant_id}}\",\n    \"code\": \"TENANT_PRODUCT_ADMIN\",\n    \"name\": \"Tenant Product Administrator\",\n    \"description\": \"Administrator for a specific product within a tenant\",\n    \"scope_level\": \"tenant\",\n    \"permissions\": []\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/roles/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "roles", ""]
+            },
+            "description": "Creates a new role. Requires PLATFORM_ADMIN role. Role code must be UPPERCASE."
+          },
+          "response": [
+            {
+              "name": "201 - Role Created",
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Role created successfully\",\n    \"data\": {\n        \"id\": \"019500c1-...\",\n        \"code\": \"TENANT_PRODUCT_ADMIN\",\n        \"name\": \"Tenant Product Administrator\",\n        \"scope_level\": \"tenant\"\n    }\n}"
+            },
+            {
+              "name": "401 - Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_UNAUTHORIZED\",\n    \"message\": \"missing authorization header\"\n}"
+            },
+            {
+              "name": "403 - Platform Admin Required",
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_PLATFORM_ADMIN_REQUIRED\",\n    \"message\": \"This operation requires platform administrator privileges\"\n}"
+            },
+            {
+              "name": "409 - Role Already Exists",
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_CONFLICT\",\n    \"message\": \"Role with this code already exists\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Masterdata",
+      "description": "Master data categories and items. Read endpoints are public. Write endpoints require PLATFORM_ADMIN.",
+      "item": [
+        {
+          "name": "Categories",
+          "item": [
+            {
+              "name": "List Categories",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status code is 200', function () {",
+                      "  pm.response.to.have.status(200);",
+                      "});",
+                      "pm.test('Response has success flag', function () {",
+                      "  var json = pm.response.json();",
+                      "  pm.expect(json.success).to.be.true;",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/masterdata/categories?page=1&per_page=20&status=ACTIVE",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "masterdata", "categories"],
+                  "query": [
+                    { "key": "page", "value": "1" },
+                    { "key": "per_page", "value": "20" },
+                    { "key": "status", "value": "ACTIVE" },
+                    { "key": "is_system", "value": "true", "disabled": true },
+                    { "key": "sort_by", "value": "name", "disabled": true },
+                    { "key": "sort_order", "value": "asc", "disabled": true }
+                  ]
+                },
+                "description": "List all masterdata categories. Public endpoint."
+              },
+              "response": [
+                {
+                  "name": "200 - Categories Listed",
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n    \"success\": true,\n    \"message\": \"Categories retrieved successfully\",\n    \"data\": [\n        {\n            \"id\": \"019500d1-...\",\n            \"code\": \"GENDER\",\n            \"name\": \"Gender\",\n            \"is_system\": true,\n            \"status\": \"ACTIVE\"\n        }\n    ],\n    \"pagination\": {\n        \"total\": 50,\n        \"page\": 1,\n        \"limit\": 20,\n        \"total_pages\": 3\n    }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Get Category By ID",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status code is 200', function () {",
+                      "  pm.response.to.have.status(200);",
+                      "});",
+                      "pm.test('Response has success flag', function () {",
+                      "  var json = pm.response.json();",
+                      "  pm.expect(json.success).to.be.true;",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/masterdata/categories/{{masterdata_category_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "masterdata", "categories", "{{masterdata_category_id}}"]
+                },
+                "description": "Get a specific category by UUID. Public endpoint."
+              },
+              "response": [
+                {
+                  "name": "200 - Category Found",
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n    \"success\": true,\n    \"message\": \"Category retrieved successfully\",\n    \"data\": {\n        \"id\": \"019500d1-...\",\n        \"code\": \"GENDER\",\n        \"name\": \"Gender\",\n        \"is_system\": true,\n        \"status\": \"ACTIVE\"\n    }\n}"
+                },
+                {
+                  "name": "404 - Not Found",
+                  "status": "Not Found",
+                  "code": 404,
+                  "_postman_previewlanguage": "json",
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n    \"success\": false,\n    \"error\": \"ERR_NOT_FOUND\",\n    \"message\": \"Category not found\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Get Category By Code",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status code is 200', function () {",
+                      "  pm.response.to.have.status(200);",
+                      "});",
+                      "pm.test('Response has success flag', function () {",
+                      "  var json = pm.response.json();",
+                      "  pm.expect(json.success).to.be.true;",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/masterdata/categories/code/:code",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "masterdata", "categories", "code", ":code"],
+                  "variable": [{ "key": "code", "value": "GENDER" }]
+                },
+                "description": "Get a category by its code. Public endpoint."
+              },
+              "response": [
+                {
+                  "name": "200 - Category Found",
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n    \"success\": true,\n    \"message\": \"Category retrieved successfully\",\n    \"data\": {\n        \"id\": \"019500d1-...\",\n        \"code\": \"GENDER\",\n        \"name\": \"Gender\",\n        \"is_system\": true,\n        \"status\": \"ACTIVE\"\n    }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Get Category Children",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status code is 200', function () {",
+                      "  pm.response.to.have.status(200);",
+                      "});",
+                      "pm.test('Response has success flag', function () {",
+                      "  var json = pm.response.json();",
+                      "  pm.expect(json.success).to.be.true;",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/masterdata/categories/{{masterdata_category_id}}/children",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "masterdata", "categories", "{{masterdata_category_id}}", "children"]
+                },
+                "description": "Get child categories of a parent category. Public endpoint."
+              },
+              "response": [
+                {
+                  "name": "200 - Children Retrieved",
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n    \"success\": true,\n    \"message\": \"Child categories retrieved successfully\",\n    \"data\": []\n}"
+                }
+              ]
+            },
+            {
+              "name": "Create Category (Admin)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status code is 201', function () {",
+                      "  pm.response.to.have.status(201);",
+                      "});",
+                      "pm.test('Response has success flag and extracts masterdata_category_id', function () {",
+                      "  var json = pm.response.json();",
+                      "  pm.expect(json.success).to.be.true;",
+                      "  if (json.data && json.data.id) { pm.collectionVariables.set('masterdata_category_id', json.data.id); }",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{access_token}}" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"code\": \"MARITAL_STATUS\",\n    \"name\": \"Marital Status\",\n    \"description\": \"Employee marital status options\",\n    \"is_system\": true,\n    \"is_tenant_extensible\": false,\n    \"sort_order\": 10\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/masterdata/categories",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "masterdata", "categories"]
+                },
+                "description": "Create a new masterdata category. Requires PLATFORM_ADMIN."
+              },
+              "response": [
+                {
+                  "name": "201 - Category Created",
+                  "status": "Created",
+                  "code": 201,
+                  "_postman_previewlanguage": "json",
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n    \"success\": true,\n    \"message\": \"Category created successfully\",\n    \"data\": {\n        \"id\": \"019500d2-...\",\n        \"code\": \"MARITAL_STATUS\",\n        \"name\": \"Marital Status\",\n        \"status\": \"ACTIVE\"\n    }\n}"
+                },
+                {
+                  "name": "401 - Unauthorized",
+                  "status": "Unauthorized",
+                  "code": 401,
+                  "_postman_previewlanguage": "json",
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n    \"success\": false,\n    \"error\": \"ERR_UNAUTHORIZED\",\n    \"message\": \"missing authorization header\"\n}"
+                },
+                {
+                  "name": "403 - Platform Admin Required",
+                  "status": "Forbidden",
+                  "code": 403,
+                  "_postman_previewlanguage": "json",
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n    \"success\": false,\n    \"error\": \"ERR_PLATFORM_ADMIN_REQUIRED\",\n    \"message\": \"This operation requires platform administrator privileges\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Update Category (Admin)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status code is 200', function () {",
+                      "  pm.response.to.have.status(200);",
+                      "});",
+                      "pm.test('Response has success flag', function () {",
+                      "  var json = pm.response.json();",
+                      "  pm.expect(json.success).to.be.true;",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{access_token}}" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"Marital Status Updated\",\n    \"status\": \"ACTIVE\",\n    \"version\": 1\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/masterdata/categories/{{masterdata_category_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "masterdata", "categories", "{{masterdata_category_id}}"]
+                },
+                "description": "Update a masterdata category. Requires PLATFORM_ADMIN. version field required for optimistic locking."
+              },
+              "response": [
+                {
+                  "name": "200 - Category Updated",
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n    \"success\": true,\n    \"message\": \"Category updated successfully\",\n    \"data\": {\n        \"id\": \"019500d2-...\",\n        \"code\": \"MARITAL_STATUS\",\n        \"name\": \"Marital Status Updated\",\n        \"status\": \"ACTIVE\"\n    }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Delete Category (Admin)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status code is 200', function () {",
+                      "  pm.response.to.have.status(200);",
+                      "});",
+                      "pm.test('Response has success flag', function () {",
+                      "  var json = pm.response.json();",
+                      "  pm.expect(json.success).to.be.true;",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/masterdata/categories/{{masterdata_category_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "masterdata", "categories", "{{masterdata_category_id}}"]
+                },
+                "description": "Delete a masterdata category. Requires PLATFORM_ADMIN."
+              },
+              "response": [
+                {
+                  "name": "200 - Category Deleted",
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n    \"success\": true,\n    \"message\": \"Category deleted successfully\"\n}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Items",
+          "item": [
+            {
+              "name": "List Items",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status code is 200', function () {",
+                      "  pm.response.to.have.status(200);",
+                      "});",
+                      "pm.test('Response has success flag', function () {",
+                      "  var json = pm.response.json();",
+                      "  pm.expect(json.success).to.be.true;",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/masterdata/items?category_code=GENDER&status=ACTIVE&page=1&per_page=20",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "masterdata", "items"],
+                  "query": [
+                    { "key": "category_code", "value": "GENDER" },
+                    { "key": "status", "value": "ACTIVE" },
+                    { "key": "page", "value": "1" },
+                    { "key": "per_page", "value": "20" },
+                    { "key": "search", "value": "", "disabled": true }
+                  ]
+                },
+                "description": "List masterdata items. Public endpoint."
+              },
+              "response": [
+                {
+                  "name": "200 - Items Listed",
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n    \"success\": true,\n    \"message\": \"Items retrieved successfully\",\n    \"data\": [\n        {\n            \"id\": \"019500e1-...\",\n            \"code\": \"MALE\",\n            \"name\": \"Male\",\n            \"status\": \"ACTIVE\"\n        }\n    ],\n    \"pagination\": {\n        \"total\": 2,\n        \"page\": 1,\n        \"limit\": 20,\n        \"total_pages\": 1\n    }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Get Item By ID",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status code is 200', function () {",
+                      "  pm.response.to.have.status(200);",
+                      "});",
+                      "pm.test('Response has success flag', function () {",
+                      "  var json = pm.response.json();",
+                      "  pm.expect(json.success).to.be.true;",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/masterdata/items/{{masterdata_item_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "masterdata", "items", "{{masterdata_item_id}}"]
+                },
+                "description": "Get a specific item by UUID. Public endpoint."
+              },
+              "response": [
+                {
+                  "name": "200 - Item Found",
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n    \"success\": true,\n    \"message\": \"Item retrieved successfully\",\n    \"data\": {\n        \"id\": \"019500e1-...\",\n        \"code\": \"MALE\",\n        \"name\": \"Male\",\n        \"status\": \"ACTIVE\"\n    }\n}"
+                },
+                {
+                  "name": "404 - Not Found",
+                  "status": "Not Found",
+                  "code": 404,
+                  "_postman_previewlanguage": "json",
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n    \"success\": false,\n    \"error\": \"ERR_NOT_FOUND\",\n    \"message\": \"Item not found\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Get Item By Code",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status code is 200', function () {",
+                      "  pm.response.to.have.status(200);",
+                      "});",
+                      "pm.test('Response has success flag', function () {",
+                      "  var json = pm.response.json();",
+                      "  pm.expect(json.success).to.be.true;",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/masterdata/items/code/:categoryCode/:itemCode",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "masterdata", "items", "code", ":categoryCode", ":itemCode"],
+                  "variable": [
+                    { "key": "categoryCode", "value": "GENDER" },
+                    { "key": "itemCode", "value": "MALE" }
+                  ]
+                },
+                "description": "Get an item by category code + item code. Public endpoint."
+              },
+              "response": [
+                {
+                  "name": "200 - Item Found",
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n    \"success\": true,\n    \"message\": \"Item retrieved successfully\",\n    \"data\": {\n        \"id\": \"019500e1-...\",\n        \"code\": \"MALE\",\n        \"name\": \"Male\",\n        \"status\": \"ACTIVE\"\n    }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Get Item Tree",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status code is 200', function () {",
+                      "  pm.response.to.have.status(200);",
+                      "});",
+                      "pm.test('Response has success flag', function () {",
+                      "  var json = pm.response.json();",
+                      "  pm.expect(json.success).to.be.true;",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/masterdata/items/tree/:categoryCode",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "masterdata", "items", "tree", ":categoryCode"],
+                  "variable": [{ "key": "categoryCode", "value": "LOCATION" }]
+                },
+                "description": "Get hierarchical tree of items for a category. Public endpoint."
+              },
+              "response": [
+                {
+                  "name": "200 - Tree Retrieved",
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n    \"success\": true,\n    \"message\": \"Item tree retrieved successfully\",\n    \"data\": []\n}"
+                }
+              ]
+            },
+            {
+              "name": "Get Default Item",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status code is 200', function () {",
+                      "  pm.response.to.have.status(200);",
+                      "});",
+                      "pm.test('Response has success flag', function () {",
+                      "  var json = pm.response.json();",
+                      "  pm.expect(json.success).to.be.true;",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/masterdata/items/default/:categoryCode",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "masterdata", "items", "default", ":categoryCode"],
+                  "variable": [{ "key": "categoryCode", "value": "CURRENCY" }]
+                },
+                "description": "Get the default item for a category. Public endpoint."
+              },
+              "response": [
+                {
+                  "name": "200 - Default Item Retrieved",
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n    \"success\": true,\n    \"message\": \"Default item retrieved successfully\",\n    \"data\": {\n        \"id\": \"019500e2-...\",\n        \"code\": \"IDR\",\n        \"name\": \"Indonesian Rupiah\",\n        \"is_default\": true,\n        \"status\": \"ACTIVE\"\n    }\n}"
+                }
+              ]
+            },
+            {
+              "name": "List Items By Parent",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status code is 200', function () {",
+                      "  pm.response.to.have.status(200);",
+                      "});",
+                      "pm.test('Response has success flag', function () {",
+                      "  var json = pm.response.json();",
+                      "  pm.expect(json.success).to.be.true;",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/masterdata/items/by-parent/:categoryCode/:parentCode",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "masterdata", "items", "by-parent", ":categoryCode", ":parentCode"],
+                  "variable": [
+                    { "key": "categoryCode", "value": "LOCATION" },
+                    { "key": "parentCode", "value": "ID_JKT" }
+                  ]
+                },
+                "description": "List items by parent item code within a category. Public endpoint."
+              },
+              "response": [
+                {
+                  "name": "200 - Items Retrieved",
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n    \"success\": true,\n    \"message\": \"Items retrieved successfully\",\n    \"data\": []\n}"
+                }
+              ]
+            },
+            {
+              "name": "Get Item Children",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status code is 200', function () {",
+                      "  pm.response.to.have.status(200);",
+                      "});",
+                      "pm.test('Response has success flag', function () {",
+                      "  var json = pm.response.json();",
+                      "  pm.expect(json.success).to.be.true;",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/masterdata/items/{{masterdata_item_id}}/children",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "masterdata", "items", "{{masterdata_item_id}}", "children"]
+                },
+                "description": "Get child items of a parent item. Public endpoint."
+              },
+              "response": [
+                {
+                  "name": "200 - Children Retrieved",
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n    \"success\": true,\n    \"message\": \"Child items retrieved successfully\",\n    \"data\": []\n}"
+                }
+              ]
+            },
+            {
+              "name": "Create Item (Admin)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status code is 201', function () {",
+                      "  pm.response.to.have.status(201);",
+                      "});",
+                      "pm.test('Response has success flag and extracts masterdata_item_id', function () {",
+                      "  var json = pm.response.json();",
+                      "  pm.expect(json.success).to.be.true;",
+                      "  if (json.data && json.data.id) { pm.collectionVariables.set('masterdata_item_id', json.data.id); }",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{access_token}}" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"category_id\": \"{{masterdata_category_id}}\",\n    \"code\": \"OTHER\",\n    \"name\": \"Other\",\n    \"sort_order\": 3,\n    \"is_system\": true,\n    \"is_default\": false\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/masterdata/items",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "masterdata", "items"]
+                },
+                "description": "Create a new masterdata item. Requires PLATFORM_ADMIN."
+              },
+              "response": [
+                {
+                  "name": "201 - Item Created",
+                  "status": "Created",
+                  "code": 201,
+                  "_postman_previewlanguage": "json",
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n    \"success\": true,\n    \"message\": \"Item created successfully\",\n    \"data\": {\n        \"id\": \"019500e4-...\",\n        \"code\": \"OTHER\",\n        \"name\": \"Other\",\n        \"status\": \"ACTIVE\"\n    }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Update Item (Admin)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status code is 200', function () {",
+                      "  pm.response.to.have.status(200);",
+                      "});",
+                      "pm.test('Response has success flag', function () {",
+                      "  var json = pm.response.json();",
+                      "  pm.expect(json.success).to.be.true;",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{access_token}}" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"Other (Updated)\",\n    \"status\": \"ACTIVE\",\n    \"version\": 1\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/masterdata/items/{{masterdata_item_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "masterdata", "items", "{{masterdata_item_id}}"]
+                },
+                "description": "Update a masterdata item. Requires PLATFORM_ADMIN. version field required for optimistic locking."
+              },
+              "response": [
+                {
+                  "name": "200 - Item Updated",
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n    \"success\": true,\n    \"message\": \"Item updated successfully\",\n    \"data\": {\n        \"id\": \"019500e4-...\",\n        \"code\": \"OTHER\",\n        \"name\": \"Other (Updated)\",\n        \"status\": \"ACTIVE\"\n    }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Delete Item (Admin)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status code is 200', function () {",
+                      "  pm.response.to.have.status(200);",
+                      "});",
+                      "pm.test('Response has success flag', function () {",
+                      "  var json = pm.response.json();",
+                      "  pm.expect(json.success).to.be.true;",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/masterdata/items/{{masterdata_item_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "masterdata", "items", "{{masterdata_item_id}}"]
+                },
+                "description": "Delete a masterdata item. Requires PLATFORM_ADMIN."
+              },
+              "response": [
+                {
+                  "name": "200 - Item Deleted",
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n    \"success\": true,\n    \"message\": \"Item deleted successfully\"\n}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Validation",
+          "item": [
+            {
+              "name": "Validate Code",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status code is 200', function () {",
+                      "  pm.response.to.have.status(200);",
+                      "});",
+                      "pm.test('Response has success flag', function () {",
+                      "  var json = pm.response.json();",
+                      "  pm.expect(json.success).to.be.true;",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"category_code\": \"GENDER\",\n    \"item_code\": \"MALE\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/masterdata/validate",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "masterdata", "validate"]
+                },
+                "description": "Validate a single masterdata code. Public endpoint."
+              },
+              "response": [
+                {
+                  "name": "200 - Validation Result",
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n    \"success\": true,\n    \"message\": \"Validation completed\",\n    \"data\": {\n        \"valid\": true,\n        \"category_code\": \"GENDER\",\n        \"item_code\": \"MALE\"\n    }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Validate Codes (Batch)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Status code is 200', function () {",
+                      "  pm.response.to.have.status(200);",
+                      "});",
+                      "pm.test('Response has success flag', function () {",
+                      "  var json = pm.response.json();",
+                      "  pm.expect(json.success).to.be.true;",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"validations\": [\n        { \"category_code\": \"GENDER\", \"item_code\": \"MALE\" },\n        { \"category_code\": \"MARITAL_STATUS\", \"item_code\": \"SINGLE\" }\n    ]\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/masterdata/validate/batch",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "masterdata", "validate", "batch"]
+                },
+                "description": "Validate multiple masterdata codes in one request. Public endpoint."
+              },
+              "response": [
+                {
+                  "name": "200 - Batch Validation Result",
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [{ "key": "Content-Type", "value": "application/json" }],
+                  "body": "{\n    \"success\": true,\n    \"message\": \"Batch validation completed\",\n    \"data\": {\n        \"results\": [\n            { \"category_code\": \"GENDER\", \"item_code\": \"MALE\", \"valid\": true },\n            { \"category_code\": \"MARITAL_STATUS\", \"item_code\": \"SINGLE\", \"valid\": true }\n        ]\n    }\n}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Participants",
+      "description": "Participant management. JWT + X-Tenant-ID + product-scoped. Base: /api/v1/saving/products/{productId}/participants",
+      "item": [
+        {
+          "name": "Self Register Participant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Response has success flag and extracts participant_id', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  if (json.data && json.data.id) { pm.collectionVariables.set('participant_id', json.data.id); }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"product_id\": \"{{product_id}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/participants/self-register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "participants", "self-register"]
+            },
+            "description": "Self-register the authenticated user as a participant for the given product. Rate limited to 5 req/min. No X-Tenant-ID required — tenant derived from product_id."
+          },
+          "response": [
+            {
+              "name": "201 - Self Registered",
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500f1-...\",\n        \"product_id\": \"019500a1-...\",\n        \"user_id\": \"019500a2-...\",\n        \"status\": \"DRAFT\",\n        \"created_at\": \"2026-02-18T10:00:00Z\"\n    }\n}"
+            },
+            {
+              "name": "401 - Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"missing authorization header\",\n    \"code\": \"ERR_UNAUTHORIZED\"\n}"
+            },
+            {
+              "name": "429 - Too Many Requests",
+              "status": "Too Many Requests",
+              "code": 429,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"too many requests\",\n    \"code\": \"ERR_TOO_MANY_REQUESTS\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Participant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Response has success flag and extracts participant_id', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  if (json.data && json.data.id) { pm.collectionVariables.set('participant_id', json.data.id); }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"full_name\": \"Budi Santoso\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", ""]
+            },
+            "description": "Create a new participant. Permission: participant:create"
+          },
+          "response": [
+            {
+              "name": "201 - Participant Created",
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500f1-...\",\n        \"tenant_id\": \"019500a0-...\",\n        \"product_id\": \"019500a1-...\",\n        \"user_id\": \"019500a2-...\",\n        \"full_name\": \"Budi Santoso\",\n        \"status\": \"DRAFT\",\n        \"created_by\": \"019500a2-...\",\n        \"version\": 1,\n        \"created_at\": \"2026-02-18T10:00:00Z\",\n        \"updated_at\": \"2026-02-18T10:00:00Z\"\n    }\n}"
+            },
+            {
+              "name": "401 - Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"missing authorization header\",\n    \"code\": \"ERR_UNAUTHORIZED\"\n}"
+            },
+            {
+              "name": "403 - Insufficient Permissions",
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"insufficient permissions for this product\",\n    \"code\": \"ERR_ACCESS_FORBIDDEN\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "List Participants",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/?page=1&per_page=10&sort_by=created_at&sort_order=desc",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", ""],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "per_page", "value": "10" },
+                { "key": "status", "value": "DRAFT", "disabled": true },
+                { "key": "search", "value": "", "disabled": true },
+                { "key": "sort_by", "value": "created_at" },
+                { "key": "sort_order", "value": "desc" }
+              ]
+            },
+            "description": "List participants with pagination and filtering. Permission: participant:read"
+          },
+          "response": [
+            {
+              "name": "200 - Participants Listed",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"participants\": [],\n        \"total\": 0,\n        \"page\": 1,\n        \"per_page\": 10\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Participant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}"]
+            },
+            "description": "Get participant by ID. Permission: participant:read"
+          },
+          "response": [
+            {
+              "name": "200 - Participant Retrieved",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500f1-...\",\n        \"full_name\": \"Budi Santoso\",\n        \"status\": \"DRAFT\",\n        \"identities\": [],\n        \"addresses\": [],\n        \"bank_accounts\": [],\n        \"family_members\": [],\n        \"employment\": null,\n        \"beneficiaries\": []\n    }\n}"
+            },
+            {
+              "name": "404 - Participant Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"Participant not found\",\n    \"code\": \"ERR_NOT_FOUND\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Personal Data",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"full_name\": \"Budi Santoso\",\n    \"gender\": \"MALE\",\n    \"place_of_birth\": \"Jakarta\",\n    \"date_of_birth\": \"1990-01-15T00:00:00Z\",\n    \"marital_status\": \"SINGLE\",\n    \"citizenship\": \"ID\",\n    \"religion\": \"ISLAM\",\n    \"ktp_number\": \"3174012345678901\",\n    \"employee_number\": \"EMP-001\",\n    \"phone_number\": \"+6281234567890\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/personal-data",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "personal-data"]
+            },
+            "description": "Update participant personal data. Permission: participant:update"
+          },
+          "response": [
+            {
+              "name": "200 - Personal Data Updated",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500f1-...\",\n        \"full_name\": \"Budi Santoso\",\n        \"gender\": \"MALE\",\n        \"status\": \"DRAFT\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Save Identity",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag and extracts identity_id', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  if (json.data && json.data.id) { pm.collectionVariables.set('identity_id', json.data.id); }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"identity_type\": \"KTP\",\n    \"identity_number\": \"3174012345678901\",\n    \"identity_authority\": \"Dinas Kependudukan Jakarta\",\n    \"issue_date\": \"2010-01-01T00:00:00Z\",\n    \"expiry_date\": \"2030-01-01T00:00:00Z\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/identities",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "identities"]
+            },
+            "description": "Add or update identity document. Include id field to update existing. Permission: participant:update"
+          },
+          "response": [
+            {
+              "name": "200 - Identity Saved",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500f2-...\",\n        \"identity_type\": \"KTP\",\n        \"identity_number\": \"3174012345678901\",\n        \"version\": 1\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Identity",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 2xx', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/identities/{{identity_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "identities", "{{identity_id}}"]
+            },
+            "description": "Delete an identity document. Permission: participant:update"
+          },
+          "response": [
+            {
+              "name": "204 - Identity Deleted",
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "body": ""
+            }
+          ]
+        },
+        {
+          "name": "Save Address",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag and extracts address_id', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  if (json.data && json.data.id) { pm.collectionVariables.set('address_id', json.data.id); }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"address_type\": \"HOME\",\n    \"country_code\": \"ID\",\n    \"province_code\": \"JKT\",\n    \"city_code\": \"JKT_PUSAT\",\n    \"postal_code\": \"10110\",\n    \"address_line\": \"Jl. Sudirman No. 1\",\n    \"is_primary\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/addresses",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "addresses"]
+            },
+            "description": "Add or update address. Permission: participant:update"
+          },
+          "response": [
+            {
+              "name": "200 - Address Saved",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500f3-...\",\n        \"address_type\": \"HOME\",\n        \"is_primary\": true,\n        \"version\": 1\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Address",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 2xx', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/addresses/{{address_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "addresses", "{{address_id}}"]
+            },
+            "description": "Delete an address. Permission: participant:update"
+          },
+          "response": [
+            {
+              "name": "204 - Address Deleted",
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "body": ""
+            }
+          ]
+        },
+        {
+          "name": "Save Bank Account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag and extracts bank_account_id', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  if (json.data && json.data.id) { pm.collectionVariables.set('bank_account_id', json.data.id); }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"bank_code\": \"BCA\",\n    \"account_number\": \"1234567890\",\n    \"account_holder_name\": \"Budi Santoso\",\n    \"currency_code\": \"IDR\",\n    \"is_primary\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/bank-accounts",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "bank-accounts"]
+            },
+            "description": "Add or update bank account. Permission: participant:update"
+          },
+          "response": [
+            {
+              "name": "200 - Bank Account Saved",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500f4-...\",\n        \"bank_code\": \"BCA\",\n        \"account_number\": \"1234567890\",\n        \"account_holder_name\": \"Budi Santoso\",\n        \"currency_code\": \"IDR\",\n        \"is_primary\": true,\n        \"version\": 1\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Bank Account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 2xx', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/bank-accounts/{{bank_account_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "bank-accounts", "{{bank_account_id}}"]
+            },
+            "description": "Delete a bank account. Permission: participant:update"
+          },
+          "response": [
+            {
+              "name": "204 - Bank Account Deleted",
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "body": ""
+            }
+          ]
+        },
+        {
+          "name": "Save Family Member",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag and extracts family_member_id', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  if (json.data && json.data.id) { pm.collectionVariables.set('family_member_id', json.data.id); }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"full_name\": \"Siti Rahayu\",\n    \"relationship_type\": \"SPOUSE\",\n    \"is_dependent\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/family-members",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "family-members"]
+            },
+            "description": "Add or update a family member. Permission: participant:update"
+          },
+          "response": [
+            {
+              "name": "200 - Family Member Saved",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500f5-...\",\n        \"full_name\": \"Siti Rahayu\",\n        \"relationship_type\": \"SPOUSE\",\n        \"is_dependent\": true,\n        \"version\": 1\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Family Member",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 2xx', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/family-members/{{family_member_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "family-members", "{{family_member_id}}"]
+            },
+            "description": "Delete a family member. Permission: participant:update"
+          },
+          "response": [
+            {
+              "name": "204 - Family Member Deleted",
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "body": ""
+            }
+          ]
+        },
+        {
+          "name": "Save Employment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"personnel_number\": \"EMP-001\",\n    \"date_of_hire\": \"2015-01-15T00:00:00Z\",\n    \"legal_entity_name\": \"PT Dapen Indonesia\",\n    \"position_name\": \"Senior Engineer\",\n    \"employment_status\": \"ACTIVE\",\n    \"retirement_date\": \"2050-01-15T00:00:00Z\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/employment",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "employment"]
+            },
+            "description": "Save or update employment information. Permission: participant:update"
+          },
+          "response": [
+            {
+              "name": "200 - Employment Saved",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500f6-...\",\n        \"personnel_number\": \"EMP-001\",\n        \"position_name\": \"Senior Engineer\",\n        \"employment_status\": \"ACTIVE\",\n        \"version\": 1\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Save Pension",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"pension_number\": \"PEN-001\",\n    \"pension_type\": \"DPLK\",\n    \"contribution_amount\": 500000,\n    \"start_date\": \"2015-01-15T00:00:00Z\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/pension",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "pension"]
+            },
+            "description": "Save or update pension information. Permission: participant:update"
+          },
+          "response": [
+            {
+              "name": "200 - Pension Saved",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500f8-...\",\n        \"pension_number\": \"PEN-001\",\n        \"pension_type\": \"DPLK\",\n        \"contribution_amount\": 500000,\n        \"version\": 1\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Save Beneficiary",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag and extracts beneficiary_id', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  if (json.data && json.data.id) { pm.collectionVariables.set('beneficiary_id', json.data.id); }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"family_member_id\": \"{{family_member_id}}\",\n    \"account_number\": \"1234567890\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/beneficiaries",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "beneficiaries"]
+            },
+            "description": "Add or update a beneficiary. Permission: participant:update"
+          },
+          "response": [
+            {
+              "name": "200 - Beneficiary Saved",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500f7-...\",\n        \"family_member_id\": \"019500f5-...\",\n        \"account_number\": \"1234567890\",\n        \"version\": 1\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Beneficiary",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 2xx', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/beneficiaries/{{beneficiary_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "beneficiaries", "{{beneficiary_id}}"]
+            },
+            "description": "Delete a beneficiary. Permission: participant:update"
+          },
+          "response": [
+            {
+              "name": "204 - Beneficiary Deleted",
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "body": ""
+            }
+          ]
+        },
+        {
+          "name": "Upload File",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "field_name", "value": "identity_photo", "type": "text" },
+                { "key": "file", "type": "file", "src": "" }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/files",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "files"]
+            },
+            "description": "Upload a file for a participant. Allowed types: jpeg, png, gif, pdf. Max size: 5MB. Permission: participant:update"
+          },
+          "response": [
+            {
+              "name": "200 - File Uploaded",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"field_name\": \"identity_photo\",\n        \"file_path\": \"/participants/019500f1-.../identity_photo.jpg\"\n    }\n}"
+            },
+            {
+              "name": "400 - Invalid File",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"file size exceeds 5MB limit\",\n    \"code\": \"ERR_BAD_REQUEST\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Status History",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/status-history",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "status-history"]
+            },
+            "description": "Get participant status change history. Permission: participant:read"
+          },
+          "response": [
+            {
+              "name": "200 - History Retrieved",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": [\n        {\n            \"status\": \"DRAFT\",\n            \"changed_at\": \"2026-02-18T10:00:00Z\"\n        }\n    ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Submit Participant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/submit",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "submit"]
+            },
+            "description": "Submit participant for approval. Moves DRAFT → PENDING_APPROVAL. Permission: participant:submit"
+          },
+          "response": [
+            {
+              "name": "200 - Participant Submitted",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500f1-...\",\n        \"status\": \"PENDING_APPROVAL\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Approve Participant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/approve",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "approve"]
+            },
+            "description": "Approve a participant. Moves PENDING_APPROVAL → APPROVED. Permission: participant:approve"
+          },
+          "response": [
+            {
+              "name": "200 - Participant Approved",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500f1-...\",\n        \"status\": \"APPROVED\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Reject Participant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"reason\": \"Incomplete documentation - missing KTP photo\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/reject",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "reject"]
+            },
+            "description": "Reject a participant with reason. Moves PENDING_APPROVAL → REJECTED. Permission: participant:reject. Reason: min 10, max 500 chars."
+          },
+          "response": [
+            {
+              "name": "200 - Participant Rejected",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500f1-...\",\n        \"status\": \"REJECTED\",\n        \"rejection_reason\": \"Incomplete documentation - missing KTP photo\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Participant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 2xx', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}"]
+            },
+            "description": "Soft-delete a participant. Permission: participant:delete"
+          },
+          "response": [
+            {
+              "name": "204 - Participant Deleted",
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "body": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Members",
+      "description": "Member management. JWT + X-Tenant-ID + product-scoped. Admin routes require TENANT_PRODUCT_ADMIN role. Base: /api/v1/saving/products/{productId}/members",
+      "item": [
+        {
+          "name": "Register as Member",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Response has success flag and extracts member_id', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  if (json.data && json.data.id) { pm.collectionVariables.set('member_id', json.data.id); }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/members/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "products", "{{product_id}}", "members", "register"]
+            },
+            "description": "Self-register as a member for a product. No request body required — identity derived from JWT. Creates a PENDING_APPROVAL registration."
+          },
+          "response": [
+            {
+              "name": "201 - Member Registration Created",
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"status\": \"PENDING_APPROVAL\",\n        \"registration_type\": \"MEMBER\",\n        \"created_at\": \"2026-02-18T10:00:00Z\"\n    }\n}"
+            },
+            {
+              "name": "401 - Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"missing authorization header\"\n}"
+            },
+            {
+              "name": "409 - Already Registered",
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"Member already registered for this product\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "List Members (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/members/?page=1&per_page=10&sort_by=created_at&sort_order=desc",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "products", "{{product_id}}", "members", ""],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "per_page", "value": "10" },
+                { "key": "search", "value": "", "disabled": true },
+                { "key": "status", "value": "", "disabled": true },
+                { "key": "sort_by", "value": "created_at" },
+                { "key": "sort_order", "value": "desc" }
+              ]
+            },
+            "description": "List members for a product. Requires TENANT_PRODUCT_ADMIN role."
+          },
+          "response": [
+            {
+              "name": "200 - Members Listed",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"members\": [\n            {\n                \"id\": \"019500g1-...\",\n                \"user_id\": \"019500a2-...\",\n                \"first_name\": \"Budi\",\n                \"last_name\": \"Santoso\",\n                \"email\": \"user@example.com\",\n                \"status\": \"PENDING_APPROVAL\",\n                \"registration_type\": \"MEMBER\",\n                \"created_at\": \"2026-02-18T10:00:00Z\"\n            }\n        ],\n        \"pagination\": {\n            \"total\": 1,\n            \"page\": 1,\n            \"limit\": 10,\n            \"total_pages\": 1\n        }\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Member (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/members/{{member_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "products", "{{product_id}}", "members", "{{member_id}}"]
+            },
+            "description": "Get member details. Requires TENANT_PRODUCT_ADMIN role."
+          },
+          "response": [
+            {
+              "name": "200 - Member Retrieved",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"user_id\": \"019500a2-...\",\n        \"first_name\": \"Budi\",\n        \"last_name\": \"Santoso\",\n        \"email\": \"user@example.com\",\n        \"status\": \"PENDING_APPROVAL\",\n        \"registration_type\": \"MEMBER\",\n        \"version\": 1,\n        \"created_at\": \"2026-02-18T10:00:00Z\",\n        \"updated_at\": \"2026-02-18T10:00:00Z\"\n    }\n}"
+            },
+            {
+              "name": "404 - Member Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"Member not found\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Approve Member (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"role_code\": \"MEMBER\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/members/{{member_id}}/approve",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "products", "{{product_id}}", "members", "{{member_id}}", "approve"]
+            },
+            "description": "Approve a member registration and assign a role. Requires TENANT_PRODUCT_ADMIN role."
+          },
+          "response": [
+            {
+              "name": "200 - Member Approved",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"status\": \"ACTIVE\",\n        \"role_code\": \"MEMBER\",\n        \"approved_by\": \"019500a2-...\",\n        \"approved_at\": \"2026-02-18T10:10:00Z\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Reject Member (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"reason\": \"Applicant does not meet membership requirements\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/members/{{member_id}}/reject",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "products", "{{product_id}}", "members", "{{member_id}}", "reject"]
+            },
+            "description": "Reject a member registration with reason. Requires TENANT_PRODUCT_ADMIN. Reason: min 10, max 500 chars."
+          },
+          "response": [
+            {
+              "name": "200 - Member Rejected",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"status\": \"REJECTED\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Change Member Role (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"role_code\": \"TENANT_PRODUCT_ADMIN\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/members/{{member_id}}/role",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "products", "{{product_id}}", "members", "{{member_id}}", "role"]
+            },
+            "description": "Change a member's role. Requires TENANT_PRODUCT_ADMIN role."
+          },
+          "response": [
+            {
+              "name": "200 - Role Changed",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"role_code\": \"TENANT_PRODUCT_ADMIN\",\n        \"status\": \"ACTIVE\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Deactivate Member (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/members/{{member_id}}/deactivate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "products", "{{product_id}}", "members", "{{member_id}}", "deactivate"]
+            },
+            "description": "Deactivate a member. Requires TENANT_PRODUCT_ADMIN role."
+          },
+          "response": [
+            {
+              "name": "200 - Member Deactivated",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"status\": \"INACTIVE\"\n    }\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+DELETE FROM tenants
+WHERE code IN (
+    'ISM-BOGASARI',
+    'INTI-ABADI-KEMASINDO',
+    'DPIP-BOGASARI',
+    'DPMP-BOGASARI'
+);

@@ -1,0 +1,440 @@
+package controller
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"net/http/httptest"
+	"testing"
+
+	"iam-service/config"
+	"iam-service/iam/auth/authdto"
+	"iam-service/pkg/errors"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+)
+
+type MockAuthUsecase struct {
+	mock.Mock
+}
+
+func (m *MockAuthUsecase) Logout(ctx context.Context, req *authdto.LogoutRequest) error {
+	args := m.Called(ctx, req)
+	return args.Error(0)
+}
+
+func (m *MockAuthUsecase) LogoutAll(ctx context.Context, req *authdto.LogoutAllRequest) error {
+	args := m.Called(ctx, req)
+	return args.Error(0)
+}
+
+func (m *MockAuthUsecase) RefreshToken(ctx context.Context, req *authdto.RefreshTokenRequest) (*authdto.RefreshTokenResponse, error) {
+	args := m.Called(ctx, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*authdto.RefreshTokenResponse), args.Error(1)
+}
+
+func (m *MockAuthUsecase) InitiateRegistration(ctx context.Context, req *authdto.InitiateRegistrationRequest) (*authdto.InitiateRegistrationResponse, error) {
+	args := m.Called(ctx, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*authdto.InitiateRegistrationResponse), args.Error(1)
+}
+
+func (m *MockAuthUsecase) VerifyRegistrationOTP(ctx context.Context, req *authdto.VerifyRegistrationOTPRequest) (*authdto.VerifyRegistrationOTPResponse, error) {
+	args := m.Called(ctx, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*authdto.VerifyRegistrationOTPResponse), args.Error(1)
+}
+
+func (m *MockAuthUsecase) ResendRegistrationOTP(ctx context.Context, req *authdto.ResendRegistrationOTPRequest) (*authdto.ResendRegistrationOTPResponse, error) {
+	args := m.Called(ctx, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*authdto.ResendRegistrationOTPResponse), args.Error(1)
+}
+
+func (m *MockAuthUsecase) CompleteRegistration(ctx context.Context, req *authdto.CompleteRegistrationRequest) (*authdto.CompleteRegistrationResponse, error) {
+	args := m.Called(ctx, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*authdto.CompleteRegistrationResponse), args.Error(1)
+}
+
+func (m *MockAuthUsecase) SetPassword(ctx context.Context, req *authdto.SetPasswordRequest) (*authdto.SetPasswordResponse, error) {
+	args := m.Called(ctx, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*authdto.SetPasswordResponse), args.Error(1)
+}
+
+func (m *MockAuthUsecase) CompleteProfileRegistration(ctx context.Context, req *authdto.CompleteProfileRegistrationRequest) (*authdto.CompleteProfileRegistrationResponse, error) {
+	args := m.Called(ctx, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*authdto.CompleteProfileRegistrationResponse), args.Error(1)
+}
+
+func (m *MockAuthUsecase) GetRegistrationStatus(ctx context.Context, registrationID uuid.UUID, email string) (*authdto.RegistrationStatusResponse, error) {
+	args := m.Called(ctx, registrationID, email)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*authdto.RegistrationStatusResponse), args.Error(1)
+}
+
+func (m *MockAuthUsecase) InitiateLogin(ctx context.Context, req *authdto.InitiateLoginRequest) (*authdto.UnifiedLoginResponse, error) {
+	args := m.Called(ctx, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*authdto.UnifiedLoginResponse), args.Error(1)
+}
+
+func (m *MockAuthUsecase) VerifyLoginOTP(ctx context.Context, req *authdto.VerifyLoginOTPRequest) (*authdto.VerifyLoginOTPResponse, error) {
+	args := m.Called(ctx, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*authdto.VerifyLoginOTPResponse), args.Error(1)
+}
+
+func (m *MockAuthUsecase) ResendLoginOTP(ctx context.Context, req *authdto.ResendLoginOTPRequest) (*authdto.ResendLoginOTPResponse, error) {
+	args := m.Called(ctx, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*authdto.ResendLoginOTPResponse), args.Error(1)
+}
+
+func (m *MockAuthUsecase) GetLoginStatus(ctx context.Context, req *authdto.GetLoginStatusRequest) (*authdto.LoginStatusResponse, error) {
+	args := m.Called(ctx, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*authdto.LoginStatusResponse), args.Error(1)
+}
+
+func setupTestApp() *fiber.App {
+	return fiber.New(fiber.Config{
+		ErrorHandler: func(c *fiber.Ctx, err error) error {
+			var appErr *errors.AppError
+			if errors.As(err, &appErr) {
+				return c.Status(appErr.HTTPStatus).JSON(fiber.Map{
+					"success": false,
+					"error":   appErr.Code,
+					"message": appErr.Message,
+				})
+			}
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"success": false,
+				"error":   "INTERNAL",
+				"message": err.Error(),
+			})
+		},
+	})
+}
+
+func TestSetPasswordController(t *testing.T) {
+	registrationID := uuid.New()
+	registrationToken := "valid-registration-token"
+
+	tests := []struct {
+		name           string
+		body           map[string]any
+		registrationID string
+		authHeader     string
+		setupMock      func(*MockAuthUsecase)
+		expectedStatus int
+		checkResponse  func(*testing.T, map[string]any)
+	}{
+		{
+			name:           "success - password set",
+			registrationID: registrationID.String(),
+			authHeader:     "Bearer " + registrationToken,
+			body: map[string]any{
+				"password":              "SecureP@ssw0rd!",
+				"confirmation_password": "SecureP@ssw0rd!",
+			},
+			setupMock: func(m *MockAuthUsecase) {
+				m.On("SetPassword", mock.Anything, mock.AnythingOfType("*authdto.SetPasswordRequest")).
+					Return(&authdto.SetPasswordResponse{
+						RegistrationID:    registrationID.String(),
+						Status:            "PASSWORD_SET",
+						Message:           "Password set successfully. Please proceed to complete your profile.",
+						RegistrationToken: "new-token",
+						NextStep: authdto.NextStep{
+							Action:         "set-profile",
+							Endpoint:       "/api/v1/auth/registration/complete-profile",
+							RequiredFields: []string{"full_name", "gender", "date_of_birth"},
+						},
+					}, nil)
+			},
+			expectedStatus: fiber.StatusOK,
+			checkResponse: func(t *testing.T, resp map[string]any) {
+				assert.True(t, resp["success"].(bool))
+				data := resp["data"].(map[string]any)
+				assert.Equal(t, "PASSWORD_SET", data["status"])
+				assert.Equal(t, registrationID.String(), data["registration_id"])
+				nextStep := data["next_step"].(map[string]any)
+				assert.Equal(t, "set-profile", nextStep["action"])
+
+				requiredFields := nextStep["required_fields"].([]any)
+				assert.Equal(t, []any{"full_name", "gender", "date_of_birth"}, requiredFields)
+			},
+		},
+		{
+			name:           "error - missing Authorization header",
+			registrationID: registrationID.String(),
+			authHeader:     "",
+			body: map[string]any{
+				"password":              "SecureP@ssw0rd!",
+				"confirmation_password": "SecureP@ssw0rd!",
+			},
+			setupMock:      func(m *MockAuthUsecase) {},
+			expectedStatus: fiber.StatusUnauthorized,
+			checkResponse: func(t *testing.T, resp map[string]any) {
+				assert.False(t, resp["success"].(bool))
+			},
+		},
+		{
+			name:           "error - invalid registration ID",
+			registrationID: "not-a-uuid",
+			authHeader:     "Bearer " + registrationToken,
+			body: map[string]any{
+				"password":              "SecureP@ssw0rd!",
+				"confirmation_password": "SecureP@ssw0rd!",
+			},
+			setupMock:      func(m *MockAuthUsecase) {},
+			expectedStatus: fiber.StatusBadRequest,
+			checkResponse: func(t *testing.T, resp map[string]any) {
+				assert.False(t, resp["success"].(bool))
+			},
+		},
+		{
+			name:           "error - usecase returns forbidden",
+			registrationID: registrationID.String(),
+			authHeader:     "Bearer " + registrationToken,
+			body: map[string]any{
+				"password":              "SecureP@ssw0rd!",
+				"confirmation_password": "SecureP@ssw0rd!",
+			},
+			setupMock: func(m *MockAuthUsecase) {
+				m.On("SetPassword", mock.Anything, mock.AnythingOfType("*authdto.SetPasswordRequest")).
+					Return(nil, errors.ErrForbidden("Email has not been verified"))
+			},
+			expectedStatus: fiber.StatusForbidden,
+			checkResponse: func(t *testing.T, resp map[string]any) {
+				assert.False(t, resp["success"].(bool))
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockUC := new(MockAuthUsecase)
+			tt.setupMock(mockUC)
+
+			app := setupTestApp()
+			ctrl := NewRegistrationController(&config.Config{}, mockUC)
+			app.Post("/registrations/:id/set-password", ctrl.SetPassword)
+
+			bodyBytes, _ := json.Marshal(tt.body)
+			req := httptest.NewRequest("POST", "/registrations/"+tt.registrationID+"/set-password", bytes.NewReader(bodyBytes))
+			req.Header.Set("Content-Type", "application/json")
+			if tt.authHeader != "" {
+				req.Header.Set("Authorization", tt.authHeader)
+			}
+
+			resp, err := app.Test(req, -1)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
+
+			var respBody map[string]any
+			require.NoError(t, json.NewDecoder(resp.Body).Decode(&respBody))
+			tt.checkResponse(t, respBody)
+
+			mockUC.AssertExpectations(t)
+		})
+	}
+}
+
+func TestCompleteProfileRegistrationController(t *testing.T) {
+	registrationID := uuid.New()
+	userID := uuid.New()
+	registrationToken := "valid-registration-token"
+
+	tests := []struct {
+		name           string
+		body           map[string]any
+		registrationID string
+		authHeader     string
+		setupMock      func(*MockAuthUsecase)
+		expectedStatus int
+		checkResponse  func(*testing.T, map[string]any)
+	}{
+		{
+			name:           "success - profile completed and user created",
+			registrationID: registrationID.String(),
+			authHeader:     "Bearer " + registrationToken,
+			body: map[string]any{
+				"full_name":     "John Michael Smith",
+				"date_of_birth": "1990-01-15",
+				"gender":        "GENDER_001",
+			},
+			setupMock: func(m *MockAuthUsecase) {
+				m.On("CompleteProfileRegistration", mock.Anything, mock.AnythingOfType("*authdto.CompleteProfileRegistrationRequest")).
+					Return(&authdto.CompleteProfileRegistrationResponse{
+						UserID:  userID,
+						Email:   "john@example.com",
+						Status:  "active",
+						Message: "Registration completed successfully. You are now logged in.",
+						Profile: authdto.RegistrationUserProfile{
+							FirstName: "John Michael",
+							LastName:  "Smith",
+						},
+						AccessToken:  "access-token-value",
+						RefreshToken: "refresh-token-value",
+						TokenType:    "Bearer",
+						ExpiresIn:    3600,
+					}, nil)
+			},
+			expectedStatus: fiber.StatusCreated,
+			checkResponse: func(t *testing.T, resp map[string]any) {
+				assert.True(t, resp["success"].(bool))
+				data := resp["data"].(map[string]any)
+				assert.Equal(t, "active", data["status"])
+				assert.Equal(t, "john@example.com", data["email"])
+				assert.Equal(t, "access-token-value", data["access_token"])
+				assert.Equal(t, "refresh-token-value", data["refresh_token"])
+				assert.Equal(t, "Bearer", data["token_type"])
+				profile := data["profile"].(map[string]any)
+				assert.Equal(t, "John Michael", profile["first_name"])
+				assert.Equal(t, "Smith", profile["last_name"])
+			},
+		},
+		{
+			name:           "error - missing Authorization header",
+			registrationID: registrationID.String(),
+			authHeader:     "",
+			body: map[string]any{
+				"full_name": "John Smith",
+			},
+			setupMock:      func(m *MockAuthUsecase) {},
+			expectedStatus: fiber.StatusUnauthorized,
+			checkResponse: func(t *testing.T, resp map[string]any) {
+				assert.False(t, resp["success"].(bool))
+			},
+		},
+		{
+			name:           "error - usecase returns validation error",
+			registrationID: registrationID.String(),
+			authHeader:     "Bearer " + registrationToken,
+			body: map[string]any{
+				"full_name":     "John Smith",
+				"date_of_birth": "2020-01-01",
+				"gender":        "GENDER_001",
+			},
+			setupMock: func(m *MockAuthUsecase) {
+				m.On("CompleteProfileRegistration", mock.Anything, mock.AnythingOfType("*authdto.CompleteProfileRegistrationRequest")).
+					Return(nil, errors.ErrValidation("You must be at least 18 years old to register"))
+			},
+			expectedStatus: fiber.StatusBadRequest,
+			checkResponse: func(t *testing.T, resp map[string]any) {
+				assert.False(t, resp["success"].(bool))
+				assert.Contains(t, resp["message"], "18 years old")
+			},
+		},
+		{
+			name:           "error - usecase returns conflict (email already registered)",
+			registrationID: registrationID.String(),
+			authHeader:     "Bearer " + registrationToken,
+			body: map[string]any{
+				"full_name":     "John Smith",
+				"date_of_birth": "1990-01-15",
+				"gender":        "GENDER_001",
+			},
+			setupMock: func(m *MockAuthUsecase) {
+				m.On("CompleteProfileRegistration", mock.Anything, mock.AnythingOfType("*authdto.CompleteProfileRegistrationRequest")).
+					Return(nil, errors.ErrConflict("This email has already been registered"))
+			},
+			expectedStatus: fiber.StatusConflict,
+			checkResponse: func(t *testing.T, resp map[string]any) {
+				assert.False(t, resp["success"].(bool))
+				assert.Contains(t, resp["message"], "already been registered")
+			},
+		},
+		{
+			name:           "error - invalid date_of_birth format rejected at DTO validation layer",
+			registrationID: registrationID.String(),
+			authHeader:     "Bearer " + registrationToken,
+			body: map[string]any{
+				"full_name":     "John Smith",
+				"date_of_birth": "not-a-date",
+				"gender":        "GENDER_001",
+			},
+
+			setupMock:      func(m *MockAuthUsecase) {},
+			expectedStatus: fiber.StatusBadRequest,
+			checkResponse: func(t *testing.T, resp map[string]any) {
+				assert.False(t, resp["success"].(bool))
+			},
+		},
+		{
+			name:           "error - date_of_birth with wrong separator rejected at DTO validation layer",
+			registrationID: registrationID.String(),
+			authHeader:     "Bearer " + registrationToken,
+			body: map[string]any{
+				"full_name":     "John Smith",
+				"date_of_birth": "1990/01/15",
+				"gender":        "GENDER_001",
+			},
+			setupMock:      func(m *MockAuthUsecase) {},
+			expectedStatus: fiber.StatusBadRequest,
+			checkResponse: func(t *testing.T, resp map[string]any) {
+				assert.False(t, resp["success"].(bool))
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockUC := new(MockAuthUsecase)
+			tt.setupMock(mockUC)
+
+			app := setupTestApp()
+			ctrl := NewRegistrationController(&config.Config{}, mockUC)
+			app.Post("/registrations/:id/complete-profile", ctrl.CompleteProfileRegistration)
+
+			bodyBytes, _ := json.Marshal(tt.body)
+			req := httptest.NewRequest("POST", "/registrations/"+tt.registrationID+"/complete-profile", bytes.NewReader(bodyBytes))
+			req.Header.Set("Content-Type", "application/json")
+			if tt.authHeader != "" {
+				req.Header.Set("Authorization", tt.authHeader)
+			}
+
+			resp, err := app.Test(req, -1)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
+
+			var respBody map[string]any
+			require.NoError(t, json.NewDecoder(resp.Body).Decode(&respBody))
+			tt.checkResponse(t, respBody)
+
+			mockUC.AssertExpectations(t)
+		})
+	}
+}

@@ -1,0 +1,2 @@
+DROP TRIGGER IF EXISTS trg_participant_status_history_updated_at ON participant_status_history;
+DROP TABLE IF EXISTS participant_status_history;

@@ -1,0 +1,2 @@
+DROP TRIGGER IF EXISTS trg_participant_family_members_updated_at ON participant_family_members;
+DROP TABLE IF EXISTS participant_family_members;

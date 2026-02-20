@@ -1,0 +1,2 @@
+DROP TRIGGER IF EXISTS trg_product_registration_configs_updated_at ON product_registration_configs;
+DROP TABLE IF EXISTS product_registration_configs;

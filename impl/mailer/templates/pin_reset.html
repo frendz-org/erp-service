@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset PIN</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td align="center" style="padding: 40px 0;">
+                <table role="presentation" style="width: 600px; max-width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); padding: 30px 40px; border-radius: 8px 8px 0 0;">
+                            <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 600;">Frendz</h1>
+                        </td>
+                    </tr>
+
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 40px;">
+                            <h2 style="margin: 0 0 20px; color: #1e3a5f; font-size: 22px; font-weight: 600;">Kode Verifikasi Reset PIN</h2>
+
+                            <p style="margin: 0 0 30px; color: #555555; font-size: 16px; line-height: 1.6;">
+                                Gunakan kode berikut untuk memverifikasi permintaan reset PIN Anda:
+                            </p>
+
+                            <!-- OTP Code Box -->
+                            <div style="background-color: #f8f9fa; border: 2px dashed #1e3a5f; border-radius: 8px; padding: 25px; text-align: center; margin-bottom: 30px;">
+                                <span style="font-family: 'Courier New', monospace; font-size: 36px; font-weight: bold; color: #1e3a5f; letter-spacing: 8px;">{{.OTP}}</span>
+                            </div>
+
+                            <!-- Expiry Warning -->
+                            <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin-bottom: 30px; border-radius: 0 4px 4px 0;">
+                                <p style="margin: 0; color: #856404; font-size: 14px;">
+                                    ⏱️ Kode ini akan kedaluwarsa dalam <strong>{{.ExpiryMinutes}} menit</strong>.
+                                </p>
+                            </div>
+
+                            <!-- Security Notice -->
+                            <div style="background-color: #f8d7da; border-left: 4px solid #dc3545; padding: 15px; margin-bottom: 30px; border-radius: 0 4px 4px 0;">
+                                <p style="margin: 0; color: #721c24; font-size: 14px;">
+                                    ⚠️ Jika Anda tidak meminta reset PIN, segera amankan akun Anda dan hubungi dukungan.
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #f8f9fa; padding: 25px 40px; border-radius: 0 0 8px 8px; border-top: 1px solid #e9ecef;">
+                            <p style="margin: 0 0 10px; color: #6c757d; font-size: 12px; text-align: center;">
+                                🔒 Jangan pernah membagikan kode ini kepada siapapun.
+                            </p>
+                            <p style="margin: 0; color: #6c757d; font-size: 12px; text-align: center;">
+                                © {{.Year}} Frendz. Seluruh hak dilindungi.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

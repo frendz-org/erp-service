@@ -1,0 +1,2 @@
+DROP TRIGGER IF EXISTS trg_user_tenant_registrations_updated_at ON user_tenant_registrations;
+DROP TABLE IF EXISTS user_tenant_registrations;

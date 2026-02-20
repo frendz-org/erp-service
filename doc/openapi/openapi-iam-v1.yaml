@@ -1,0 +1,4699 @@
+openapi: 3.0.3
+info:
+  title: IAM Service API
+  description: |
+    Multi-Tenant Identity and Access Management (IAM) Service API.
+
+    ## Overview
+    This API provides authentication, authorization, user management, participant
+    management, member management, and masterdata capabilities for multi-tenant applications.
+
+    ## Authentication
+    Most endpoints require a JWT Bearer token in the `Authorization: Bearer <token>` header.
+    Access tokens are obtained via the OTP-based login flow:
+    1. `POST /api/v1/iam/login` — Initiate login, receive session ID
+    2. `POST /api/v1/iam/login/{id}/verify-otp` — Verify OTP, receive access + refresh tokens
+
+    Registration tokens (short-lived, HS256) are returned after OTP verification during
+    the registration flow and must be used in subsequent registration steps.
+
+    ## Multi-Tenancy
+    Product-scoped endpoints (Participants, Members) require:
+    - `Authorization: Bearer <access_token>` — JWT with tenant/product membership
+    - `X-Tenant-ID: <uuid>` — Identifies the tenant context
+
+    ## Rate Limiting
+    Registration and login initiation endpoints are rate-limited to 10 req/min.
+    Refresh token endpoint is rate-limited to 20 req/min.
+
+    ## Error Codes
+    | Code | HTTP | Meaning |
+    |------|------|---------|
+    | ERR_INTERNAL | 500 | Unexpected server error |
+    | ERR_VALIDATION | 422 | Request validation failed |
+    | ERR_NOT_FOUND | 404 | Resource not found |
+    | ERR_CONFLICT | 409 | Resource already exists |
+    | ERR_BAD_REQUEST | 400 | Malformed request |
+    | ERR_UNAUTHORIZED | 401 | Missing or invalid token |
+    | ERR_FORBIDDEN | 403 | Access denied |
+    | ERR_TOO_MANY_REQUESTS | 429 | Rate limit exceeded |
+    | ERR_OTP_INVALID | 422 | OTP code is incorrect |
+    | ERR_OTP_EXPIRED | 422 | OTP code has expired |
+    | ERR_TOKEN_EXPIRED | 401 | Token has expired |
+    | ERR_TOKEN_INVALID | 401 | Token is malformed |
+    | ERR_USER_NOT_FOUND | 404 | User not found |
+    | ERR_USER_ALREADY_EXISTS | 409 | Email already registered |
+    | ERR_PLATFORM_ADMIN_REQUIRED | 403 | Platform admin role required |
+    | ERR_ACCESS_FORBIDDEN | 403 | Insufficient permissions |
+
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: api-support@example.com
+  license:
+    name: Proprietary
+
+servers:
+  - url: http://localhost:8080
+    description: Development
+  - url: https://api-staging.example.com
+    description: Staging
+  - url: https://api.example.com
+    description: Production
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Health
+    description: Health check endpoints for liveness and readiness probes
+  - name: Registration
+    description: |
+      Multi-step user registration flow.
+      Steps: Initiate → Verify OTP → Set Password → Complete Profile → Complete
+  - name: Login
+    description: |
+      OTP-based passwordless login flow.
+      Steps: Initiate → Verify OTP (returns tokens on success)
+  - name: Auth
+    description: Token management — refresh, logout, logout-all
+  - name: Users
+    description: User management (CRUD). Admin operations require PLATFORM_ADMIN role.
+  - name: Roles
+    description: Role management. Requires PLATFORM_ADMIN role.
+  - name: Masterdata
+    description: |
+      Master data categories and items (reference data).
+      Read operations are public. Write operations require PLATFORM_ADMIN role.
+  - name: Participants
+    description: |
+      Participant management scoped to a product.
+      All endpoints require JWT + X-Tenant-ID + product membership.
+      CRUD operations require respective `participant:*` permissions.
+  - name: Members
+    description: |
+      Member management scoped to a product.
+      All endpoints require JWT + X-Tenant-ID + product membership.
+      Admin operations require TENANT_PRODUCT_ADMIN role.
+
+paths:
+  # ==========================================
+  # HEALTH
+  # ==========================================
+  /api/v1/health/:
+    get:
+      tags: [Health]
+      summary: Basic health check
+      description: Returns basic health status. Used for liveness probes.
+      operationId: healthCheck
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: ok
+                version: "1.0.0"
+
+  /api/v1/health/ready:
+    get:
+      tags: [Health]
+      summary: Readiness check
+      description: Verifies all dependencies (DB, Redis, Vault) are reachable.
+      operationId: readinessCheck
+      security: []
+      responses:
+        '200':
+          description: Service is ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessResponse'
+        '503':
+          description: Service is not ready — one or more dependencies unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessResponse'
+
+  /api/v1/health/live:
+    get:
+      tags: [Health]
+      summary: Liveness check
+      description: Returns 200 if the process is alive.
+      operationId: livenessCheck
+      security: []
+      responses:
+        '200':
+          description: Service is alive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  # ==========================================
+  # REGISTRATION
+  # ==========================================
+  /api/v1/iam/registrations:
+    post:
+      tags: [Registration]
+      summary: Initiate registration
+      description: |
+        Starts the registration flow. Sends an OTP to the provided email address.
+        Rate limited to 10 req/min.
+      operationId: initiateRegistration
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InitiateRegistrationRequest'
+            example:
+              email: user@example.com
+      responses:
+        '201':
+          description: Registration initiated — OTP sent to email
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InitiateRegistrationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/iam/registrations/{id}/verify-otp:
+    post:
+      tags: [Registration]
+      summary: Verify registration OTP
+      description: |
+        Verifies the OTP sent during registration initiation.
+        Returns a short-lived registration token for subsequent steps.
+      operationId: verifyRegistrationOTP
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/RegistrationSessionID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyRegistrationOTPRequest'
+            example:
+              email: user@example.com
+              otp_code: "123456"
+      responses:
+        '200':
+          description: OTP verified — registration token returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyRegistrationOTPResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/iam/registrations/{id}/resend-otp:
+    post:
+      tags: [Registration]
+      summary: Resend registration OTP
+      description: Resends the OTP for an existing registration session.
+      operationId: resendRegistrationOTP
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/RegistrationSessionID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResendRegistrationOTPRequest'
+            example:
+              email: user@example.com
+      responses:
+        '200':
+          description: OTP resent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/iam/registrations/{id}/status:
+    get:
+      tags: [Registration]
+      summary: Get registration status
+      description: Returns the current state of a registration session.
+      operationId: getRegistrationStatus
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/RegistrationSessionID'
+      responses:
+        '200':
+          description: Registration status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationStatusResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/iam/registrations/{id}/set-password:
+    post:
+      tags: [Registration]
+      summary: Set registration password
+      description: |
+        Sets the password for the registration. Requires the registration token
+        (from verify-otp) in the `Authorization: Bearer <registration_token>` header.
+      operationId: setRegistrationPassword
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RegistrationSessionID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetPasswordRequest'
+            example:
+              password: "SecurePass123!"
+              confirmation_password: "SecurePass123!"
+      responses:
+        '200':
+          description: Password set successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetPasswordResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/iam/registrations/{id}/complete-profile:
+    post:
+      tags: [Registration]
+      summary: Complete registration profile
+      description: |
+        Submits profile data for the registration. Requires the registration token
+        in the `Authorization: Bearer <registration_token>` header.
+        Returns access + refresh tokens on success.
+
+        The `gender` field must be a valid masterdata code in the format `GENDER_NNN`:
+        - `GENDER_001` — Male
+        - `GENDER_002` — Female
+        - `GENDER_003` — Other
+
+        A 422 is returned if:
+        - Any required field is missing or fails format validation
+        - The `gender` code does not match the `^GENDER_\d{3}$` pattern
+        - The `gender` code is not found in active masterdata items
+        - The registrant is under 18 years old
+      operationId: completeRegistrationProfile
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RegistrationSessionID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteProfileRegistrationRequest'
+            example:
+              full_name: "John Doe"
+              gender: "GENDER_001"
+              date_of_birth: "1990-01-15"
+      responses:
+        '201':
+          description: Profile completed — access and refresh tokens returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompleteProfileRegistrationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/iam/registrations/{id}/complete:
+    post:
+      tags: [Registration]
+      summary: Complete registration (alternate flow)
+      description: |
+        Alternative completion endpoint that accepts password + basic profile in one step.
+        Requires the registration token in the Authorization header.
+      operationId: completeRegistration
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RegistrationSessionID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteRegistrationRequest'
+      responses:
+        '201':
+          description: Registration completed — tokens returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompleteProfileRegistrationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # ==========================================
+  # LOGIN
+  # ==========================================
+  /api/v1/iam/login:
+    post:
+      tags: [Login]
+      summary: Initiate login
+      description: |
+        Starts the OTP-based passwordless login flow. Sends an OTP to the user's email.
+        Rate limited to 10 req/min.
+      operationId: initiateLogin
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InitiateLoginRequest'
+            example:
+              email: user@example.com
+      responses:
+        '200':
+          description: Login initiated — OTP sent to email
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InitiateLoginResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/iam/login/{id}/verify-otp:
+    post:
+      tags: [Login]
+      summary: Verify login OTP
+      description: |
+        Verifies the OTP for the login session.
+        On success, returns access + refresh tokens with full multi-tenant claims.
+      operationId: verifyLoginOTP
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/LoginSessionID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyLoginOTPRequest'
+            example:
+              email: user@example.com
+              otp_code: "654321"
+      responses:
+        '200':
+          description: OTP verified — access and refresh tokens returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnifiedLoginResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/iam/login/{id}/resend-otp:
+    post:
+      tags: [Login]
+      summary: Resend login OTP
+      description: Resends the OTP for an existing login session.
+      operationId: resendLoginOTP
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/LoginSessionID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResendLoginOTPRequest'
+            example:
+              email: user@example.com
+      responses:
+        '200':
+          description: OTP resent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/iam/login/{id}/status:
+    get:
+      tags: [Login]
+      summary: Get login session status
+      description: Returns the current state of a login session.
+      operationId: getLoginStatus
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/LoginSessionID'
+      responses:
+        '200':
+          description: Login session status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginStatusResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # ==========================================
+  # AUTH (Token management)
+  # ==========================================
+  /api/v1/iam/auth/refresh-token:
+    post:
+      tags: [Auth]
+      summary: Refresh access token
+      description: |
+        Exchanges a valid refresh token for a new access token.
+        Rate limited to 20 req/min.
+        The old refresh token is invalidated and a new one is issued (token rotation).
+      operationId: refreshToken
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+            example:
+              refresh_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: New access and refresh tokens
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshTokenResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/iam/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout (invalidate current token)
+      description: |
+        Blacklists the current access token (JTI-based) and invalidates the provided
+        refresh token. BOLA-hardened — only the token owner can logout.
+        Idempotent (safe to call multiple times).
+      operationId: logout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+            example:
+              refresh_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/iam/auth/logout-all:
+    post:
+      tags: [Auth]
+      summary: Logout all sessions
+      description: |
+        Invalidates all tokens issued before this timestamp for the current user.
+        Uses a user-level blacklist timestamp. All existing access and refresh tokens
+        become invalid immediately.
+      operationId: logoutAll
+      responses:
+        '200':
+          description: All sessions terminated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # ==========================================
+  # USERS
+  # ==========================================
+  /api/v1/iam/users/me:
+    get:
+      tags: [Users]
+      summary: Get current user profile
+      description: Returns the profile of the currently authenticated user.
+      operationId: getCurrentUser
+      responses:
+        '200':
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      tags: [Users]
+      summary: Update current user profile
+      description: Updates the profile of the currently authenticated user.
+      operationId: updateCurrentUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMeRequest'
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/iam/users:
+    post:
+      tags: [Users]
+      summary: Create user
+      description: Creates a new platform user. Requires PLATFORM_ADMIN role.
+      operationId: createUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+            example:
+              email: newuser@example.com
+              password: "SecurePass123!"
+              first_name: "John"
+              last_name: "Doe"
+              role_code: "GENERAL_USER"
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateUserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    get:
+      tags: [Users]
+      summary: List users
+      description: Returns a paginated list of platform users. Requires PLATFORM_ADMIN role.
+      operationId: listUsers
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [PENDING_VERIFICATION, ACTIVE, INACTIVE, SUSPENDED, LOCKED]
+      responses:
+        '200':
+          description: Paginated list of users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/iam/users/{id}:
+    get:
+      tags: [Users]
+      summary: Get user by ID
+      description: Returns a specific user. Requires PLATFORM_ADMIN role.
+      operationId: getUserByID
+      parameters:
+        - $ref: '#/components/parameters/UserID'
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      tags: [Users]
+      summary: Update user
+      description: Updates a specific user. Requires PLATFORM_ADMIN role.
+      operationId: updateUser
+      parameters:
+        - $ref: '#/components/parameters/UserID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags: [Users]
+      summary: Delete user
+      description: Soft-deletes a user. Requires PLATFORM_ADMIN role.
+      operationId: deleteUser
+      parameters:
+        - $ref: '#/components/parameters/UserID'
+      responses:
+        '200':
+          description: User deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/iam/users/{id}/approve:
+    post:
+      tags: [Users]
+      summary: Approve user
+      description: Approves a pending user registration. Requires PLATFORM_ADMIN role.
+      operationId: approveUser
+      parameters:
+        - $ref: '#/components/parameters/UserID'
+      responses:
+        '200':
+          description: User approved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserActionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/iam/users/{id}/reject:
+    post:
+      tags: [Users]
+      summary: Reject user
+      description: Rejects a pending user registration. Requires PLATFORM_ADMIN role.
+      operationId: rejectUser
+      parameters:
+        - $ref: '#/components/parameters/UserID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RejectUserRequest'
+            example:
+              reason: "Unable to verify identity documents."
+      responses:
+        '200':
+          description: User rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserActionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/iam/users/{id}/unlock:
+    post:
+      tags: [Users]
+      summary: Unlock user
+      description: Unlocks a locked/suspended user account. Requires PLATFORM_ADMIN role.
+      operationId: unlockUser
+      parameters:
+        - $ref: '#/components/parameters/UserID'
+      responses:
+        '200':
+          description: User unlocked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserActionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/iam/users/{id}/reset-pin:
+    post:
+      tags: [Users]
+      summary: Reset user PIN
+      description: Resets the PIN for a user. Requires PLATFORM_ADMIN role.
+      operationId: resetUserPIN
+      parameters:
+        - $ref: '#/components/parameters/UserID'
+      responses:
+        '200':
+          description: PIN reset successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserActionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # ==========================================
+  # ROLES
+  # ==========================================
+  /api/v1/iam/roles:
+    post:
+      tags: [Roles]
+      summary: Create role
+      description: Creates a new role with optional permissions. Requires PLATFORM_ADMIN.
+      operationId: createRole
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoleRequest'
+            example:
+              code: "TENANT_PRODUCT_ADMIN"
+              name: "Tenant Product Administrator"
+              description: "Manages members and participants within a product"
+              scope_level: tenant
+              permissions:
+                - "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '201':
+          description: Role created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # ==========================================
+  # MASTERDATA
+  # ==========================================
+  /api/v1/masterdata/categories:
+    get:
+      tags: [Masterdata]
+      summary: List masterdata categories
+      description: Returns all masterdata categories (optionally paginated).
+      operationId: listMasterdataCategories
+      security: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MasterdataCategoryListResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags: [Masterdata]
+      summary: Create masterdata category
+      description: Creates a new masterdata category. Requires PLATFORM_ADMIN.
+      operationId: createMasterdataCategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMasterdataCategoryRequest'
+            example:
+              code: "MARITAL_STATUS"
+              name: "Marital Status"
+              description: "Marital status options"
+              parent_id: null
+      responses:
+        '201':
+          description: Category created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MasterdataCategoryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/masterdata/categories/code/{code}:
+    get:
+      tags: [Masterdata]
+      summary: Get category by code
+      description: Returns a masterdata category by its unique code.
+      operationId: getMasterdataCategoryByCode
+      security: []
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: MARITAL_STATUS
+      responses:
+        '200':
+          description: Category details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MasterdataCategoryResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/masterdata/categories/{id}:
+    get:
+      tags: [Masterdata]
+      summary: Get category by ID
+      description: Returns a masterdata category by its UUID.
+      operationId: getMasterdataCategoryByID
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/MasterdataCategoryID'
+      responses:
+        '200':
+          description: Category details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MasterdataCategoryResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      tags: [Masterdata]
+      summary: Update category
+      description: Updates an existing masterdata category. Requires PLATFORM_ADMIN.
+      operationId: updateMasterdataCategory
+      parameters:
+        - $ref: '#/components/parameters/MasterdataCategoryID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMasterdataCategoryRequest'
+      responses:
+        '200':
+          description: Category updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MasterdataCategoryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags: [Masterdata]
+      summary: Delete category
+      description: Soft-deletes a masterdata category. Requires PLATFORM_ADMIN.
+      operationId: deleteMasterdataCategory
+      parameters:
+        - $ref: '#/components/parameters/MasterdataCategoryID'
+      responses:
+        '200':
+          description: Category deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/masterdata/categories/{id}/children:
+    get:
+      tags: [Masterdata]
+      summary: Get category children
+      description: Returns all child categories of a given category.
+      operationId: getMasterdataCategoryChildren
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/MasterdataCategoryID'
+      responses:
+        '200':
+          description: Child categories
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MasterdataCategoryListResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/masterdata/items:
+    get:
+      tags: [Masterdata]
+      summary: List masterdata items
+      description: Returns masterdata items, optionally filtered by category.
+      operationId: listMasterdataItems
+      security: []
+      parameters:
+        - name: category_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: category_code
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of items
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MasterdataItemListResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags: [Masterdata]
+      summary: Create masterdata item
+      description: Creates a new masterdata item within a category. Requires PLATFORM_ADMIN.
+      operationId: createMasterdataItem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMasterdataItemRequest'
+            example:
+              category_id: "550e8400-e29b-41d4-a716-446655440000"
+              code: "SINGLE"
+              name: "Single"
+              description: "Single / Not married"
+              sort_order: 1
+              is_default: false
+              is_active: true
+      responses:
+        '201':
+          description: Item created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MasterdataItemResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/masterdata/items/tree/{categoryCode}:
+    get:
+      tags: [Masterdata]
+      summary: Get items tree by category code
+      description: Returns a hierarchical tree of items for a given category code.
+      operationId: getMasterdataItemsTree
+      security: []
+      parameters:
+        - name: categoryCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: PROVINCE
+      responses:
+        '200':
+          description: Item tree
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MasterdataItemListResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/masterdata/items/by-parent/{categoryCode}/{parentCode}:
+    get:
+      tags: [Masterdata]
+      summary: Get items by parent code
+      description: Returns items under a specific parent item within a category.
+      operationId: getMasterdataItemsByParent
+      security: []
+      parameters:
+        - name: categoryCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: CITY
+        - name: parentCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: JAWA_BARAT
+      responses:
+        '200':
+          description: Items under parent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MasterdataItemListResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/masterdata/items/default/{categoryCode}:
+    get:
+      tags: [Masterdata]
+      summary: Get default item for category
+      description: Returns the default item for a given category code.
+      operationId: getMasterdataDefaultItem
+      security: []
+      parameters:
+        - name: categoryCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: CURRENCY
+      responses:
+        '200':
+          description: Default item for the category
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MasterdataItemResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/masterdata/items/code/{categoryCode}/{itemCode}:
+    get:
+      tags: [Masterdata]
+      summary: Get item by category and item code
+      description: Returns a specific item identified by its category code and item code.
+      operationId: getMasterdataItemByCode
+      security: []
+      parameters:
+        - name: categoryCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: MARITAL_STATUS
+        - name: itemCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: SINGLE
+      responses:
+        '200':
+          description: Masterdata item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MasterdataItemResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/masterdata/items/{id}:
+    get:
+      tags: [Masterdata]
+      summary: Get item by ID
+      description: Returns a masterdata item by UUID.
+      operationId: getMasterdataItemByID
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/MasterdataItemID'
+      responses:
+        '200':
+          description: Masterdata item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MasterdataItemResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      tags: [Masterdata]
+      summary: Update masterdata item
+      description: Updates an existing masterdata item. Requires PLATFORM_ADMIN.
+      operationId: updateMasterdataItem
+      parameters:
+        - $ref: '#/components/parameters/MasterdataItemID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMasterdataItemRequest'
+      responses:
+        '200':
+          description: Item updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MasterdataItemResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags: [Masterdata]
+      summary: Delete masterdata item
+      description: Soft-deletes a masterdata item. Requires PLATFORM_ADMIN.
+      operationId: deleteMasterdataItem
+      parameters:
+        - $ref: '#/components/parameters/MasterdataItemID'
+      responses:
+        '200':
+          description: Item deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/masterdata/items/{id}/children:
+    get:
+      tags: [Masterdata]
+      summary: Get item children
+      description: Returns all child items of a given item.
+      operationId: getMasterdataItemChildren
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/MasterdataItemID'
+      responses:
+        '200':
+          description: Child items
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MasterdataItemListResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/masterdata/validate:
+    post:
+      tags: [Masterdata]
+      summary: Validate masterdata code
+      description: Validates a single category_code + item_code pair.
+      operationId: validateMasterdataCode
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidateMasterdataCodeRequest'
+            example:
+              category_code: MARITAL_STATUS
+              item_code: SINGLE
+      responses:
+        '200':
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidateMasterdataCodeResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/masterdata/validate/batch:
+    post:
+      tags: [Masterdata]
+      summary: Batch validate masterdata codes
+      description: Validates up to 100 category_code + item_code pairs in one request.
+      operationId: batchValidateMasterdataCodes
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchValidateMasterdataRequest'
+            example:
+              validations:
+                - category_code: MARITAL_STATUS
+                  item_code: SINGLE
+                - category_code: GENDER
+                  item_code: MALE
+      responses:
+        '200':
+          description: Batch validation results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchValidateMasterdataResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # ==========================================
+  # PARTICIPANTS
+  # ==========================================
+  /api/v1/saving/participants/self-register:
+    post:
+      tags: [Participants]
+      summary: Self-register as participant
+      description: |
+        Allows an authenticated user to self-register as a participant by linking
+        an existing participant record via organization code, identity number,
+        participant number, and phone number.
+        Rate limited to 5 req/min per user. Returns 201 Created on new registration
+        or 200 OK if the participant record was already linked to this user.
+      operationId: selfRegisterParticipant
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SelfRegisterParticipantRequest'
+            example:
+              organization: "DAPEN001"
+              identity_number: "3201012345678901"
+              participant_number: "PART001"
+              phone_number: "+6281234567890"
+      responses:
+        '201':
+          description: Self-registration successful — participant linked for the first time
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SelfRegisterParticipantResponse'
+        '200':
+          description: Participant already linked — returning existing registration status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SelfRegisterParticipantResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/saving/products/{productId}/participants:
+    post:
+      tags: [Participants]
+      summary: Create participant
+      description: |
+        Creates a new participant record for the current user in the given product.
+        Requires `participant:create` permission.
+      operationId: createParticipant
+      parameters:
+        - $ref: '#/components/parameters/ProductID'
+        - $ref: '#/components/parameters/TenantIDHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateParticipantRequest'
+            example:
+              full_name: "John Doe"
+      responses:
+        '201':
+          description: Participant created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipantResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    get:
+      tags: [Participants]
+      summary: List participants
+      description: |
+        Returns a paginated list of participants for the given product.
+        Requires `participant:read` permission.
+      operationId: listParticipants
+      parameters:
+        - $ref: '#/components/parameters/ProductID'
+        - $ref: '#/components/parameters/TenantIDHeader'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [DRAFT, PENDING_APPROVAL, APPROVED, REJECTED]
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            enum: [created_at, updated_at, full_name, status]
+        - name: sort_order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+      responses:
+        '200':
+          description: Paginated list of participants
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipantListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/saving/products/{productId}/participants/{id}:
+    get:
+      tags: [Participants]
+      summary: Get participant
+      description: Returns a specific participant. Requires `participant:read` permission.
+      operationId: getParticipant
+      parameters:
+        - $ref: '#/components/parameters/ProductID'
+        - $ref: '#/components/parameters/TenantIDHeader'
+        - $ref: '#/components/parameters/ParticipantID'
+      responses:
+        '200':
+          description: Participant details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipantResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags: [Participants]
+      summary: Delete participant
+      description: Soft-deletes a participant. Requires `participant:delete` permission.
+      operationId: deleteParticipant
+      parameters:
+        - $ref: '#/components/parameters/ProductID'
+        - $ref: '#/components/parameters/TenantIDHeader'
+        - $ref: '#/components/parameters/ParticipantID'
+      responses:
+        '204':
+          description: Participant deleted (no content)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/saving/products/{productId}/participants/{id}/personal-data:
+    put:
+      tags: [Participants]
+      summary: Update participant personal data
+      description: Updates the personal data section. Requires `participant:update` permission.
+      operationId: updateParticipantPersonalData
+      parameters:
+        - $ref: '#/components/parameters/ProductID'
+        - $ref: '#/components/parameters/TenantIDHeader'
+        - $ref: '#/components/parameters/ParticipantID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePersonalDataRequest'
+      responses:
+        '200':
+          description: Personal data updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipantResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/saving/products/{productId}/participants/{id}/identities:
+    put:
+      tags: [Participants]
+      summary: Save participant identity
+      description: Creates or updates an identity document. Requires `participant:update` permission.
+      operationId: saveParticipantIdentity
+      parameters:
+        - $ref: '#/components/parameters/ProductID'
+        - $ref: '#/components/parameters/TenantIDHeader'
+        - $ref: '#/components/parameters/ParticipantID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveIdentityRequest'
+            example:
+              identity_type: KTP
+              identity_number: "3201012345678901"
+              identity_authority: "Dinas Kependudukan"
+      responses:
+        '200':
+          description: Identity saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipantResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/saving/products/{productId}/participants/{id}/identities/{identityId}:
+    delete:
+      tags: [Participants]
+      summary: Delete participant identity
+      description: Removes an identity document. Requires `participant:update` permission.
+      operationId: deleteParticipantIdentity
+      parameters:
+        - $ref: '#/components/parameters/ProductID'
+        - $ref: '#/components/parameters/TenantIDHeader'
+        - $ref: '#/components/parameters/ParticipantID'
+        - name: identityId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Identity deleted (no content)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/saving/products/{productId}/participants/{id}/addresses:
+    put:
+      tags: [Participants]
+      summary: Save participant address
+      description: Creates or updates an address. Requires `participant:update` permission.
+      operationId: saveParticipantAddress
+      parameters:
+        - $ref: '#/components/parameters/ProductID'
+        - $ref: '#/components/parameters/TenantIDHeader'
+        - $ref: '#/components/parameters/ParticipantID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveAddressRequest'
+            example:
+              address_type: HOME
+              country_code: ID
+              province_code: "32"
+              city_code: "3201"
+              address_line: "Jl. Merdeka No. 1"
+              postal_code: "16912"
+              is_primary: true
+      responses:
+        '200':
+          description: Address saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipantResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/saving/products/{productId}/participants/{id}/addresses/{addressId}:
+    delete:
+      tags: [Participants]
+      summary: Delete participant address
+      description: Removes an address. Requires `participant:update` permission.
+      operationId: deleteParticipantAddress
+      parameters:
+        - $ref: '#/components/parameters/ProductID'
+        - $ref: '#/components/parameters/TenantIDHeader'
+        - $ref: '#/components/parameters/ParticipantID'
+        - name: addressId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Address deleted (no content)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/saving/products/{productId}/participants/{id}/bank-accounts:
+    put:
+      tags: [Participants]
+      summary: Save participant bank account
+      description: Creates or updates a bank account. Requires `participant:update` permission.
+      operationId: saveParticipantBankAccount
+      parameters:
+        - $ref: '#/components/parameters/ProductID'
+        - $ref: '#/components/parameters/TenantIDHeader'
+        - $ref: '#/components/parameters/ParticipantID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveBankAccountRequest'
+            example:
+              bank_code: BCA
+              account_number: "1234567890"
+              account_holder_name: "John Doe"
+              currency_code: IDR
+              is_primary: true
+      responses:
+        '200':
+          description: Bank account saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipantResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/saving/products/{productId}/participants/{id}/bank-accounts/{accountId}:
+    delete:
+      tags: [Participants]
+      summary: Delete participant bank account
+      description: Removes a bank account. Requires `participant:update` permission.
+      operationId: deleteParticipantBankAccount
+      parameters:
+        - $ref: '#/components/parameters/ProductID'
+        - $ref: '#/components/parameters/TenantIDHeader'
+        - $ref: '#/components/parameters/ParticipantID'
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Bank account deleted (no content)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/saving/products/{productId}/participants/{id}/family-members:
+    put:
+      tags: [Participants]
+      summary: Save participant family member
+      description: Creates or updates a family member. Requires `participant:update` permission.
+      operationId: saveParticipantFamilyMember
+      parameters:
+        - $ref: '#/components/parameters/ProductID'
+        - $ref: '#/components/parameters/TenantIDHeader'
+        - $ref: '#/components/parameters/ParticipantID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveFamilyMemberRequest'
+            example:
+              full_name: "Jane Doe"
+              relationship_type: SPOUSE
+              is_dependent: true
+      responses:
+        '200':
+          description: Family member saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipantResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/saving/products/{productId}/participants/{id}/family-members/{memberId}:
+    delete:
+      tags: [Participants]
+      summary: Delete participant family member
+      description: Removes a family member. Requires `participant:update` permission.
+      operationId: deleteParticipantFamilyMember
+      parameters:
+        - $ref: '#/components/parameters/ProductID'
+        - $ref: '#/components/parameters/TenantIDHeader'
+        - $ref: '#/components/parameters/ParticipantID'
+        - name: memberId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Family member deleted (no content)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/saving/products/{productId}/participants/{id}/employment:
+    put:
+      tags: [Participants]
+      summary: Save participant employment
+      description: Creates or updates employment information. Requires `participant:update` permission.
+      operationId: saveParticipantEmployment
+      parameters:
+        - $ref: '#/components/parameters/ProductID'
+        - $ref: '#/components/parameters/TenantIDHeader'
+        - $ref: '#/components/parameters/ParticipantID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveEmploymentRequest'
+            example:
+              personnel_number: "EMP-001"
+              employment_status: PERMANENT
+              position_name: "Software Engineer"
+              legal_entity_name: "PT Example Indonesia"
+      responses:
+        '200':
+          description: Employment saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipantResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/saving/products/{productId}/participants/{id}/pension:
+    put:
+      tags: [Participants]
+      summary: Save participant pension
+      description: Creates or updates pension information for a participant. Requires `participant:update` permission.
+      operationId: saveParticipantPension
+      parameters:
+        - $ref: '#/components/parameters/ProductID'
+        - $ref: '#/components/parameters/TenantIDHeader'
+        - $ref: '#/components/parameters/ParticipantID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SavePensionRequest'
+            example:
+              participant_number: "PART-001"
+              pension_category: "REGULAR"
+              pension_status: "ACTIVE"
+      responses:
+        '200':
+          description: Pension saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipantResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/saving/products/{productId}/participants/{id}/beneficiaries:
+    put:
+      tags: [Participants]
+      summary: Save participant beneficiary
+      description: Creates or updates a beneficiary. Requires `participant:update` permission.
+      operationId: saveParticipantBeneficiary
+      parameters:
+        - $ref: '#/components/parameters/ProductID'
+        - $ref: '#/components/parameters/TenantIDHeader'
+        - $ref: '#/components/parameters/ParticipantID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveBeneficiaryRequest'
+            example:
+              family_member_id: "550e8400-e29b-41d4-a716-446655440001"
+              account_number: "0987654321"
+      responses:
+        '200':
+          description: Beneficiary saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipantResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/saving/products/{productId}/participants/{id}/beneficiaries/{beneficiaryId}:
+    delete:
+      tags: [Participants]
+      summary: Delete participant beneficiary
+      description: Removes a beneficiary. Requires `participant:update` permission.
+      operationId: deleteParticipantBeneficiary
+      parameters:
+        - $ref: '#/components/parameters/ProductID'
+        - $ref: '#/components/parameters/TenantIDHeader'
+        - $ref: '#/components/parameters/ParticipantID'
+        - name: beneficiaryId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Beneficiary deleted (no content)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/saving/products/{productId}/participants/{id}/files:
+    post:
+      tags: [Participants]
+      summary: Upload participant file
+      description: |
+        Uploads a file (JPEG, PNG, GIF, PDF) for a participant field.
+        Requires `participant:update` permission.
+        Supported MIME types: image/jpeg, image/png, image/gif, application/pdf.
+      operationId: uploadParticipantFile
+      parameters:
+        - $ref: '#/components/parameters/ProductID'
+        - $ref: '#/components/parameters/TenantIDHeader'
+        - $ref: '#/components/parameters/ParticipantID'
+        - name: field_name
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The participant field this file is for (e.g., identity_photo)
+          example: identity_photo
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: File to upload (max 10MB)
+      responses:
+        '200':
+          description: File uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileUploadResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/saving/products/{productId}/participants/{id}/status-history:
+    get:
+      tags: [Participants]
+      summary: Get participant status history
+      description: Returns the status transition history for a participant. Requires `participant:read` permission.
+      operationId: getParticipantStatusHistory
+      parameters:
+        - $ref: '#/components/parameters/ProductID'
+        - $ref: '#/components/parameters/TenantIDHeader'
+        - $ref: '#/components/parameters/ParticipantID'
+      responses:
+        '200':
+          description: Status history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipantStatusHistoryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/saving/products/{productId}/participants/{id}/submit:
+    post:
+      tags: [Participants]
+      summary: Submit participant for approval
+      description: |
+        Transitions a DRAFT participant to PENDING_APPROVAL status.
+        Requires `participant:submit` permission.
+      operationId: submitParticipant
+      parameters:
+        - $ref: '#/components/parameters/ProductID'
+        - $ref: '#/components/parameters/TenantIDHeader'
+        - $ref: '#/components/parameters/ParticipantID'
+      responses:
+        '200':
+          description: Participant submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipantResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/saving/products/{productId}/participants/{id}/approve:
+    post:
+      tags: [Participants]
+      summary: Approve participant
+      description: |
+        Approves a PENDING_APPROVAL participant, moving them to APPROVED status.
+        Requires `participant:approve` permission.
+      operationId: approveParticipant
+      parameters:
+        - $ref: '#/components/parameters/ProductID'
+        - $ref: '#/components/parameters/TenantIDHeader'
+        - $ref: '#/components/parameters/ParticipantID'
+      responses:
+        '200':
+          description: Participant approved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipantResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/saving/products/{productId}/participants/{id}/reject:
+    post:
+      tags: [Participants]
+      summary: Reject participant
+      description: |
+        Rejects a PENDING_APPROVAL participant, moving them to REJECTED status.
+        Requires `participant:reject` permission.
+      operationId: rejectParticipant
+      parameters:
+        - $ref: '#/components/parameters/ProductID'
+        - $ref: '#/components/parameters/TenantIDHeader'
+        - $ref: '#/components/parameters/ParticipantID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RejectParticipantRequest'
+            example:
+              reason: "Incomplete identity documentation. Please resubmit with valid KTP."
+      responses:
+        '200':
+          description: Participant rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipantResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # ==========================================
+  # MEMBERS
+  # ==========================================
+  /api/v1/saving/products/{productId}/members/register:
+    post:
+      tags: [Members]
+      summary: Register as member
+      description: |
+        Submits a membership registration request for the current user in the given product.
+        Creates a `user_tenant_registrations` record with type MEMBER and status PENDING_APPROVAL.
+        Any authenticated user with product access can register.
+      operationId: registerMember
+      parameters:
+        - $ref: '#/components/parameters/ProductID'
+        - $ref: '#/components/parameters/TenantIDHeader'
+      responses:
+        '201':
+          description: Membership registration submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberRegisterResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/saving/products/{productId}/members:
+    get:
+      tags: [Members]
+      summary: List members
+      description: |
+        Returns a paginated list of members for the product.
+        Requires TENANT_PRODUCT_ADMIN role.
+      operationId: listMembers
+      parameters:
+        - $ref: '#/components/parameters/ProductID'
+        - $ref: '#/components/parameters/TenantIDHeader'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [PENDING_APPROVAL, ACTIVE, REJECTED, INACTIVE]
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Paginated list of members
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/saving/products/{productId}/members/{memberId}:
+    get:
+      tags: [Members]
+      summary: Get member details
+      description: Returns details for a specific member. Requires TENANT_PRODUCT_ADMIN role.
+      operationId: getMember
+      parameters:
+        - $ref: '#/components/parameters/ProductID'
+        - $ref: '#/components/parameters/TenantIDHeader'
+        - $ref: '#/components/parameters/MemberID'
+      responses:
+        '200':
+          description: Member details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/saving/products/{productId}/members/{memberId}/approve:
+    post:
+      tags: [Members]
+      summary: Approve member
+      description: |
+        Approves a PENDING_APPROVAL member registration, moving them to ACTIVE status
+        and assigning them the specified role.
+        Requires TENANT_PRODUCT_ADMIN role.
+      operationId: approveMember
+      parameters:
+        - $ref: '#/components/parameters/ProductID'
+        - $ref: '#/components/parameters/TenantIDHeader'
+        - $ref: '#/components/parameters/MemberID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApproveMemberRequest'
+            example:
+              role_code: "MEMBER_PARTICIPANT"
+      responses:
+        '200':
+          description: Member approved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberDetailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/saving/products/{productId}/members/{memberId}/reject:
+    post:
+      tags: [Members]
+      summary: Reject member
+      description: Rejects a PENDING_APPROVAL member registration. Requires TENANT_PRODUCT_ADMIN role.
+      operationId: rejectMember
+      parameters:
+        - $ref: '#/components/parameters/ProductID'
+        - $ref: '#/components/parameters/TenantIDHeader'
+        - $ref: '#/components/parameters/MemberID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RejectMemberRequest'
+            example:
+              reason: "Registration does not meet the required criteria."
+      responses:
+        '200':
+          description: Member rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberDetailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/saving/products/{productId}/members/{memberId}/role:
+    put:
+      tags: [Members]
+      summary: Change member role
+      description: Updates the role assigned to an active member. Requires TENANT_PRODUCT_ADMIN role.
+      operationId: changeMemberRole
+      parameters:
+        - $ref: '#/components/parameters/ProductID'
+        - $ref: '#/components/parameters/TenantIDHeader'
+        - $ref: '#/components/parameters/MemberID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeMemberRoleRequest'
+            example:
+              role_code: "MEMBER_VIEWER"
+      responses:
+        '200':
+          description: Member role updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberDetailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/saving/products/{productId}/members/{memberId}/deactivate:
+    post:
+      tags: [Members]
+      summary: Deactivate member
+      description: Deactivates an active member, revoking their product access. Requires TENANT_PRODUCT_ADMIN role.
+      operationId: deactivateMember
+      parameters:
+        - $ref: '#/components/parameters/ProductID'
+        - $ref: '#/components/parameters/TenantIDHeader'
+        - $ref: '#/components/parameters/MemberID'
+      responses:
+        '200':
+          description: Member deactivated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberDetailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+# ==========================================
+# COMPONENTS
+# ==========================================
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT Bearer token. Obtain via:
+        - Login flow: POST /api/v1/iam/login → POST /api/v1/iam/login/{id}/verify-otp
+        - Registration flow: POST /api/v1/iam/registrations → verify-otp → complete-profile
+
+  parameters:
+    RegistrationSessionID:
+      name: id
+      in: path
+      required: true
+      description: Registration session UUID
+      schema:
+        type: string
+        format: uuid
+      example: 018f3a2b-1c2d-7e4f-8a5b-6c7d8e9f0a1b
+
+    LoginSessionID:
+      name: id
+      in: path
+      required: true
+      description: Login session UUID
+      schema:
+        type: string
+        format: uuid
+      example: 018f3a2b-1c2d-7e4f-8a5b-6c7d8e9f0a1b
+
+    UserID:
+      name: id
+      in: path
+      required: true
+      description: User UUID
+      schema:
+        type: string
+        format: uuid
+      example: 018f3a2b-1c2d-7e4f-8a5b-6c7d8e9f0a1b
+
+    ProductID:
+      name: productId
+      in: path
+      required: true
+      description: Product UUID
+      schema:
+        type: string
+        format: uuid
+      example: 018f3a2b-1c2d-7e4f-8a5b-6c7d8e9f0a1b
+
+    ParticipantID:
+      name: id
+      in: path
+      required: true
+      description: Participant UUID
+      schema:
+        type: string
+        format: uuid
+      example: 018f3a2b-1c2d-7e4f-8a5b-6c7d8e9f0a1b
+
+    MemberID:
+      name: memberId
+      in: path
+      required: true
+      description: Member (user_tenant_registration) UUID
+      schema:
+        type: string
+        format: uuid
+      example: 018f3a2b-1c2d-7e4f-8a5b-6c7d8e9f0a1b
+
+    MasterdataCategoryID:
+      name: id
+      in: path
+      required: true
+      description: Masterdata category UUID
+      schema:
+        type: string
+        format: uuid
+      example: 018f3a2b-1c2d-7e4f-8a5b-6c7d8e9f0a1b
+
+    MasterdataItemID:
+      name: id
+      in: path
+      required: true
+      description: Masterdata item UUID
+      schema:
+        type: string
+        format: uuid
+      example: 018f3a2b-1c2d-7e4f-8a5b-6c7d8e9f0a1b
+
+    TenantIDHeader:
+      name: X-Tenant-ID
+      in: header
+      required: true
+      description: Tenant UUID — required for all product-scoped endpoints
+      schema:
+        type: string
+        format: uuid
+      example: 018f3a2b-1c2d-7e4f-8a5b-6c7d8e9f0a1b
+
+  responses:
+    BadRequest:
+      description: Bad request — malformed or missing parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "invalid request body"
+            code: ERR_BAD_REQUEST
+
+    Unauthorized:
+      description: Unauthorized — missing or invalid JWT token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "authentication required"
+            code: ERR_UNAUTHORIZED
+
+    Forbidden:
+      description: Forbidden — insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "insufficient permissions"
+            code: ERR_ACCESS_FORBIDDEN
+
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "resource not found"
+            code: ERR_NOT_FOUND
+
+    Conflict:
+      description: Conflict — resource already exists
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "resource already exists"
+            code: ERR_CONFLICT
+
+    UnprocessableEntity:
+      description: Validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationErrorResponse'
+          example:
+            success: false
+            error: "validation failed"
+            code: ERR_VALIDATION
+            errors:
+              - field: email
+                message: "must be a valid email address"
+              - field: password
+                message: "must be at least 8 characters"
+
+    TooManyRequests:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "rate limit exceeded"
+            code: ERR_TOO_MANY_REQUESTS
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "internal server error"
+            code: ERR_INTERNAL
+
+  schemas:
+    # ---- Shared ----
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          description: Human-readable error message
+          example: "resource not found"
+        code:
+          type: string
+          description: Machine-readable error code
+          example: ERR_NOT_FOUND
+
+    ValidationErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: "validation failed"
+        code:
+          type: string
+          example: ERR_VALIDATION
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldError'
+
+    FieldError:
+      type: object
+      properties:
+        field:
+          type: string
+          example: email
+        message:
+          type: string
+          example: "must be a valid email address"
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        per_page:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          example: 100
+        total_pages:
+          type: integer
+          example: 5
+
+    SuccessMessageResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "operation completed successfully"
+
+    # ---- Health ----
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+        version:
+          type: string
+          example: "1.0.0"
+        timestamp:
+          type: string
+          format: date-time
+
+    ReadinessResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ready, not_ready]
+          example: ready
+        checks:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            postgres: ok
+            redis: ok
+            vault: ok
+
+    # ---- Registration ----
+    InitiateRegistrationRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 255
+          example: user@example.com
+
+    InitiateRegistrationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            registration_id:
+              type: string
+              format: uuid
+              description: Session ID to use in subsequent registration steps
+              example: 018f3a2b-1c2d-7e4f-8a5b-6c7d8e9f0a1b
+            email:
+              type: string
+              format: email
+              example: user@example.com
+            expires_at:
+              type: string
+              format: date-time
+            message:
+              type: string
+              example: "OTP sent to your email"
+
+    VerifyRegistrationOTPRequest:
+      type: object
+      required: [email, otp_code]
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        otp_code:
+          type: string
+          minLength: 6
+          maxLength: 6
+          pattern: '^\d{6}$'
+          example: "123456"
+
+    VerifyRegistrationOTPResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            registration_token:
+              type: string
+              description: Short-lived token (HS256) for subsequent registration steps
+              example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            token_expires_at:
+              type: string
+              format: date-time
+            next_step:
+              type: string
+              enum: [SET_PASSWORD, COMPLETE_PROFILE]
+              example: SET_PASSWORD
+
+    ResendRegistrationOTPRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+
+    RegistrationStatusResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [PENDING_VERIFICATION, VERIFIED, PASSWORD_SET, COMPLETED]
+              example: VERIFIED
+            next_step:
+              type: string
+              example: SET_PASSWORD
+
+    SetPasswordRequest:
+      type: object
+      required: [password, confirmation_password]
+      properties:
+        password:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 128
+          example: "SecurePass123!"
+        confirmation_password:
+          type: string
+          format: password
+          example: "SecurePass123!"
+
+    SetPasswordResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Password set successfully"
+            next_step:
+              type: string
+              example: COMPLETE_PROFILE
+
+    CompleteProfileRegistrationRequest:
+      type: object
+      required:
+        - full_name
+        - gender
+        - date_of_birth
+      properties:
+        full_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          example: "John Doe"
+        gender:
+          type: string
+          description: |
+            Masterdata gender code in the format GENDER_NNN.
+            Valid values: GENDER_001 (Male), GENDER_002 (Female), GENDER_003 (Other).
+          pattern: '^GENDER_\d{3}$'
+          example: "GENDER_001"
+        date_of_birth:
+          type: string
+          format: date
+          description: Date of birth in YYYY-MM-DD format. Registrant must be at least 18 years old.
+          example: "1990-01-15"
+
+    CompleteProfileRegistrationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            access_token:
+              type: string
+              example: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+            refresh_token:
+              type: string
+              example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            token_type:
+              type: string
+              example: Bearer
+            expires_in:
+              type: integer
+              description: Access token lifetime in seconds
+              example: 3600
+
+    CompleteRegistrationRequest:
+      type: object
+      properties:
+        password:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 128
+        password_confirmation:
+          type: string
+          format: password
+        first_name:
+          type: string
+          example: "John"
+        last_name:
+          type: string
+          example: "Doe"
+        phone_number:
+          type: string
+          example: "+6281234567890"
+
+    # ---- Login ----
+    InitiateLoginRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+
+    InitiateLoginResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            login_session_id:
+              type: string
+              format: uuid
+              example: 018f3a2b-1c2d-7e4f-8a5b-6c7d8e9f0a1b
+            status:
+              type: string
+              enum: [OTP_REQUIRED]
+              example: OTP_REQUIRED
+            message:
+              type: string
+              example: "OTP sent to your email"
+
+    VerifyLoginOTPRequest:
+      type: object
+      required: [email, otp_code]
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        otp_code:
+          type: string
+          minLength: 6
+          maxLength: 6
+          pattern: '^\d{6}$'
+          example: "654321"
+
+    UnifiedLoginResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [SUCCESS, OTP_REQUIRED]
+              example: SUCCESS
+            access_token:
+              type: string
+              example: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+            refresh_token:
+              type: string
+              example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            token_type:
+              type: string
+              example: Bearer
+            expires_in:
+              type: integer
+              description: Access token lifetime in seconds
+              example: 3600
+
+    ResendLoginOTPRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+
+    LoginStatusResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [PENDING_VERIFICATION, VERIFIED]
+              example: PENDING_VERIFICATION
+
+    # ---- Auth ----
+    RefreshTokenRequest:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    RefreshTokenResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            access_token:
+              type: string
+              example: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+            refresh_token:
+              type: string
+              example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            token_type:
+              type: string
+              example: Bearer
+            expires_in:
+              type: integer
+              example: 3600
+
+    LogoutRequest:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    # ---- Users ----
+    UserProfileResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/UserData'
+
+    UserData:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+        last_name:
+          type: string
+        full_name:
+          type: string
+        phone_number:
+          type: string
+        date_of_birth:
+          type: string
+          format: date
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [PENDING_VERIFICATION, ACTIVE, INACTIVE, SUSPENDED, LOCKED]
+        is_active:
+          type: boolean
+        roles:
+          type: array
+          items:
+            type: string
+          example: ["PLATFORM_ADMIN"]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    UserListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserData'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    CreateUserRequest:
+      type: object
+      required: [email, password, first_name, last_name]
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Associate user with a specific tenant (optional)
+        role_code:
+          type: string
+          example: GENERAL_USER
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        password:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 128
+        first_name:
+          type: string
+          minLength: 2
+          maxLength: 100
+        last_name:
+          type: string
+          minLength: 2
+          maxLength: 100
+
+    CreateUserResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            user_id:
+              type: string
+              format: uuid
+            email:
+              type: string
+              format: email
+            full_name:
+              type: string
+            role_code:
+              type: string
+
+    UpdateMeRequest:
+      type: object
+      properties:
+        first_name:
+          type: string
+          minLength: 2
+          maxLength: 100
+        last_name:
+          type: string
+          minLength: 2
+          maxLength: 100
+        phone_number:
+          type: string
+          maxLength: 20
+        address:
+          type: string
+          maxLength: 500
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        first_name:
+          type: string
+          minLength: 2
+          maxLength: 100
+        last_name:
+          type: string
+          minLength: 2
+          maxLength: 100
+        phone_number:
+          type: string
+          maxLength: 20
+        address:
+          type: string
+          maxLength: 500
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE, SUSPENDED]
+
+    RejectUserRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          maxLength: 500
+          example: "Unable to verify identity documents."
+
+    UserActionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            user_id:
+              type: string
+              format: uuid
+            message:
+              type: string
+              example: "User approved successfully"
+
+    # ---- Roles ----
+    CreateRoleRequest:
+      type: object
+      required: [code, name, scope_level]
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+          nullable: true
+        code:
+          type: string
+          maxLength: 100
+          description: Uppercase role code
+          example: TENANT_PRODUCT_ADMIN
+        name:
+          type: string
+          maxLength: 255
+          example: "Tenant Product Administrator"
+        description:
+          type: string
+          nullable: true
+          example: "Manages members and participants"
+        scope_level:
+          type: string
+          enum: [tenant, branch, self]
+          example: tenant
+        permissions:
+          type: array
+          items:
+            type: string
+            format: uuid
+          nullable: true
+          description: Permission UUIDs to assign to this role
+
+    RoleResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            code:
+              type: string
+              example: TENANT_PRODUCT_ADMIN
+            name:
+              type: string
+            description:
+              type: string
+              nullable: true
+            scope_level:
+              type: string
+            created_at:
+              type: string
+              format: date-time
+
+    # ---- Masterdata ----
+    MasterdataCategoryResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/MasterdataCategoryData'
+
+    MasterdataCategoryData:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+          example: MARITAL_STATUS
+        name:
+          type: string
+          example: "Marital Status"
+        description:
+          type: string
+          nullable: true
+        parent_id:
+          type: string
+          format: uuid
+          nullable: true
+        is_active:
+          type: boolean
+        version:
+          type: integer
+          example: 1
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    MasterdataCategoryListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/MasterdataCategoryData'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    CreateMasterdataCategoryRequest:
+      type: object
+      required: [code, name]
+      properties:
+        code:
+          type: string
+          maxLength: 50
+          example: MARITAL_STATUS
+        name:
+          type: string
+          example: "Marital Status"
+        description:
+          type: string
+          nullable: true
+        parent_id:
+          type: string
+          format: uuid
+          nullable: true
+        is_active:
+          type: boolean
+          default: true
+
+    UpdateMasterdataCategoryRequest:
+      type: object
+      required: [version]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        is_active:
+          type: boolean
+        version:
+          type: integer
+          minimum: 1
+          description: Optimistic locking version — must match current DB version
+
+    MasterdataItemResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/MasterdataItemData'
+
+    MasterdataItemData:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        category_id:
+          type: string
+          format: uuid
+        category_code:
+          type: string
+          example: MARITAL_STATUS
+        code:
+          type: string
+          example: SINGLE
+        name:
+          type: string
+          example: "Single"
+        description:
+          type: string
+          nullable: true
+        parent_id:
+          type: string
+          format: uuid
+          nullable: true
+        sort_order:
+          type: integer
+          example: 1
+        is_default:
+          type: boolean
+          example: false
+        is_active:
+          type: boolean
+          example: true
+        legacy_sap_code:
+          type: string
+          nullable: true
+          description: Legacy SAP code for integration
+        version:
+          type: integer
+          example: 1
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    MasterdataItemListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/MasterdataItemData'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    CreateMasterdataItemRequest:
+      type: object
+      required: [category_id, code, name]
+      properties:
+        category_id:
+          type: string
+          format: uuid
+        code:
+          type: string
+          maxLength: 50
+          example: SINGLE
+        name:
+          type: string
+          maxLength: 255
+          example: "Single"
+        description:
+          type: string
+          nullable: true
+        parent_id:
+          type: string
+          format: uuid
+          nullable: true
+        sort_order:
+          type: integer
+          default: 0
+        is_default:
+          type: boolean
+          default: false
+        is_active:
+          type: boolean
+          default: true
+        legacy_sap_code:
+          type: string
+          nullable: true
+          maxLength: 50
+
+    UpdateMasterdataItemRequest:
+      type: object
+      required: [version]
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+        sort_order:
+          type: integer
+        is_default:
+          type: boolean
+        is_active:
+          type: boolean
+        legacy_sap_code:
+          type: string
+          nullable: true
+          maxLength: 50
+        version:
+          type: integer
+          minimum: 1
+          description: Optimistic locking version — must match current DB version
+
+    ValidateMasterdataCodeRequest:
+      type: object
+      required: [category_code, item_code]
+      properties:
+        category_code:
+          type: string
+          example: MARITAL_STATUS
+        item_code:
+          type: string
+          example: SINGLE
+
+    ValidateMasterdataCodeResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            valid:
+              type: boolean
+              example: true
+            category_code:
+              type: string
+              example: MARITAL_STATUS
+            item_code:
+              type: string
+              example: SINGLE
+
+    BatchValidateMasterdataRequest:
+      type: object
+      required: [validations]
+      properties:
+        validations:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/ValidateMasterdataCodeRequest'
+
+    BatchValidateMasterdataResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              category_code:
+                type: string
+              item_code:
+                type: string
+              valid:
+                type: boolean
+              error:
+                type: string
+                nullable: true
+
+    # ---- Participants ----
+    CreateParticipantRequest:
+      type: object
+      required: [full_name]
+      properties:
+        full_name:
+          type: string
+          minLength: 2
+          maxLength: 255
+          example: "John Doe"
+
+    UpdatePersonalDataRequest:
+      type: object
+      required: [full_name]
+      properties:
+        full_name:
+          type: string
+          minLength: 2
+          maxLength: 255
+        gender:
+          type: string
+          enum: [MALE, FEMALE]
+          nullable: true
+        place_of_birth:
+          type: string
+          maxLength: 255
+          nullable: true
+        date_of_birth:
+          type: string
+          format: date-time
+          nullable: true
+        marital_status:
+          type: string
+          maxLength: 50
+          nullable: true
+        citizenship:
+          type: string
+          maxLength: 10
+          nullable: true
+        religion:
+          type: string
+          maxLength: 50
+          nullable: true
+        ktp_number:
+          type: string
+          minLength: 16
+          maxLength: 16
+          pattern: '^\d{16}$'
+          nullable: true
+        employee_number:
+          type: string
+          maxLength: 50
+          nullable: true
+        phone_number:
+          type: string
+          maxLength: 20
+          nullable: true
+
+    SaveIdentityRequest:
+      type: object
+      required: [identity_type, identity_number]
+      properties:
+        id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Provide to update existing identity; omit to create new
+        identity_type:
+          type: string
+          maxLength: 50
+          example: KTP
+        identity_number:
+          type: string
+          maxLength: 100
+          example: "3201012345678901"
+        identity_authority:
+          type: string
+          maxLength: 255
+          nullable: true
+        issue_date:
+          type: string
+          format: date-time
+          nullable: true
+        expiry_date:
+          type: string
+          format: date-time
+          nullable: true
+        photo_file_path:
+          type: string
+          maxLength: 500
+          nullable: true
+
+    SaveAddressRequest:
+      type: object
+      required: [address_type]
+      properties:
+        id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Provide to update existing address; omit to create new
+        address_type:
+          type: string
+          maxLength: 50
+          example: HOME
+        country_code:
+          type: string
+          maxLength: 10
+          nullable: true
+        province_code:
+          type: string
+          maxLength: 10
+          nullable: true
+        city_code:
+          type: string
+          maxLength: 10
+          nullable: true
+        district_code:
+          type: string
+          maxLength: 10
+          nullable: true
+        subdistrict_code:
+          type: string
+          maxLength: 10
+          nullable: true
+        postal_code:
+          type: string
+          maxLength: 10
+          nullable: true
+        rt:
+          type: string
+          maxLength: 5
+          nullable: true
+        rw:
+          type: string
+          maxLength: 5
+          nullable: true
+        address_line:
+          type: string
+          maxLength: 500
+          nullable: true
+        is_primary:
+          type: boolean
+          example: true
+
+    SaveBankAccountRequest:
+      type: object
+      required: [bank_code, account_number, account_holder_name, currency_code]
+      properties:
+        id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Provide to update existing bank account; omit to create new
+        bank_code:
+          type: string
+          maxLength: 10
+          example: BCA
+        account_number:
+          type: string
+          maxLength: 50
+          example: "1234567890"
+        account_holder_name:
+          type: string
+          maxLength: 255
+          example: "John Doe"
+        account_type:
+          type: string
+          maxLength: 50
+          nullable: true
+        currency_code:
+          type: string
+          minLength: 3
+          maxLength: 3
+          example: IDR
+        is_primary:
+          type: boolean
+          example: true
+        issue_date:
+          type: string
+          format: date-time
+          nullable: true
+        expiry_date:
+          type: string
+          format: date-time
+          nullable: true
+
+    SaveFamilyMemberRequest:
+      type: object
+      required: [full_name, relationship_type]
+      properties:
+        id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Provide to update existing family member; omit to create new
+        full_name:
+          type: string
+          maxLength: 255
+          example: "Jane Doe"
+        relationship_type:
+          type: string
+          maxLength: 50
+          example: SPOUSE
+        is_dependent:
+          type: boolean
+          example: true
+        supporting_doc_file_path:
+          type: string
+          maxLength: 500
+          nullable: true
+
+    SaveEmploymentRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Provide to update existing employment record; omit to create new
+        personnel_number:
+          type: string
+          maxLength: 50
+          nullable: true
+        date_of_hire:
+          type: string
+          format: date-time
+          nullable: true
+        corporate_group_name:
+          type: string
+          maxLength: 255
+          nullable: true
+        legal_entity_code:
+          type: string
+          maxLength: 50
+          nullable: true
+        legal_entity_name:
+          type: string
+          maxLength: 255
+          nullable: true
+        business_unit_code:
+          type: string
+          maxLength: 50
+          nullable: true
+        business_unit_name:
+          type: string
+          maxLength: 255
+          nullable: true
+        tenant_name:
+          type: string
+          maxLength: 255
+          nullable: true
+        employment_status:
+          type: string
+          maxLength: 50
+          nullable: true
+          example: PERMANENT
+        position_name:
+          type: string
+          maxLength: 255
+          nullable: true
+        job_level:
+          type: string
+          maxLength: 50
+          nullable: true
+        location_code:
+          type: string
+          maxLength: 50
+          nullable: true
+        location_name:
+          type: string
+          maxLength: 255
+          nullable: true
+        sub_location_name:
+          type: string
+          maxLength: 255
+          nullable: true
+        retirement_date:
+          type: string
+          format: date-time
+          nullable: true
+        retirement_type_code:
+          type: string
+          maxLength: 50
+          nullable: true
+
+    SavePensionRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Provide to update existing pension record; omit to create new
+        participant_number:
+          type: string
+          maxLength: 50
+          nullable: true
+        pension_category:
+          type: string
+          maxLength: 50
+          nullable: true
+        pension_status:
+          type: string
+          maxLength: 50
+          nullable: true
+        effective_date:
+          type: string
+          format: date-time
+          nullable: true
+        end_date:
+          type: string
+          format: date-time
+          nullable: true
+        projected_retirement_date:
+          type: string
+          format: date-time
+          nullable: true
+
+    SaveBeneficiaryRequest:
+      type: object
+      required: [family_member_id]
+      properties:
+        id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Provide to update existing beneficiary; omit to create new
+        family_member_id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440001"
+        identity_photo_file_path:
+          type: string
+          maxLength: 500
+          nullable: true
+        family_card_photo_file_path:
+          type: string
+          maxLength: 500
+          nullable: true
+        bank_book_photo_file_path:
+          type: string
+          maxLength: 500
+          nullable: true
+        account_number:
+          type: string
+          maxLength: 50
+          nullable: true
+
+    RejectParticipantRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          minLength: 10
+          maxLength: 500
+          example: "Incomplete identity documentation. Please resubmit with valid KTP."
+
+    SelfRegisterParticipantRequest:
+      type: object
+      required: [organization, identity_number, participant_number, phone_number]
+      properties:
+        organization:
+          type: string
+          minLength: 6
+          maxLength: 50
+          description: Organization code that owns the participant record
+          example: "DAPEN001"
+        identity_number:
+          type: string
+          minLength: 16
+          maxLength: 16
+          pattern: '^\d{16}$'
+          description: 16-digit national identity number (KTP)
+          example: "3201012345678901"
+        participant_number:
+          type: string
+          minLength: 5
+          maxLength: 20
+          description: Alphanumeric participant number assigned by the organization
+          example: "PART001"
+        phone_number:
+          type: string
+          minLength: 9
+          maxLength: 16
+          description: Registered phone number of the participant
+          example: "+6281234567890"
+
+    SelfRegisterParticipantResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            is_linked:
+              type: boolean
+              description: True if this call created the link; false if already linked
+              example: true
+            registration_status:
+              type: string
+              description: Current registration status of the participant
+              example: APPROVED
+            data:
+              type: object
+              nullable: true
+              properties:
+                participant_number:
+                  type: string
+                  example: "PART001"
+                status:
+                  type: string
+                  example: APPROVED
+                created_at:
+                  type: string
+                  format: date-time
+
+    ParticipantResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/ParticipantData'
+
+    ParticipantData:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        product_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        full_name:
+          type: string
+        gender:
+          type: string
+          nullable: true
+        place_of_birth:
+          type: string
+          nullable: true
+        date_of_birth:
+          type: string
+          format: date-time
+          nullable: true
+        marital_status:
+          type: string
+          nullable: true
+        citizenship:
+          type: string
+          nullable: true
+        religion:
+          type: string
+          nullable: true
+        ktp_number:
+          type: string
+          nullable: true
+        employee_number:
+          type: string
+          nullable: true
+        phone_number:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [DRAFT, PENDING_APPROVAL, APPROVED, REJECTED]
+          example: DRAFT
+        identities:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParticipantIdentityData'
+        addresses:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParticipantAddressData'
+        bank_accounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParticipantBankAccountData'
+        family_members:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParticipantFamilyMemberData'
+        employment:
+          $ref: '#/components/schemas/ParticipantEmploymentData'
+          nullable: true
+        pension:
+          $ref: '#/components/schemas/ParticipantPensionData'
+          nullable: true
+        beneficiaries:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParticipantBeneficiaryData'
+        version:
+          type: integer
+          example: 1
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ParticipantIdentityData:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        identity_type:
+          type: string
+          example: KTP
+        identity_number:
+          type: string
+          example: "3201012345678901"
+        identity_authority:
+          type: string
+          nullable: true
+        issue_date:
+          type: string
+          format: date-time
+          nullable: true
+        expiry_date:
+          type: string
+          format: date-time
+          nullable: true
+        photo_file_path:
+          type: string
+          nullable: true
+
+    ParticipantAddressData:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        address_type:
+          type: string
+          example: HOME
+        country_code:
+          type: string
+          nullable: true
+        province_code:
+          type: string
+          nullable: true
+        city_code:
+          type: string
+          nullable: true
+        district_code:
+          type: string
+          nullable: true
+        subdistrict_code:
+          type: string
+          nullable: true
+        postal_code:
+          type: string
+          nullable: true
+        rt:
+          type: string
+          nullable: true
+        rw:
+          type: string
+          nullable: true
+        address_line:
+          type: string
+          nullable: true
+        is_primary:
+          type: boolean
+
+    ParticipantBankAccountData:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        bank_code:
+          type: string
+          example: BCA
+        account_number:
+          type: string
+        account_holder_name:
+          type: string
+        account_type:
+          type: string
+          nullable: true
+        currency_code:
+          type: string
+          example: IDR
+        is_primary:
+          type: boolean
+        issue_date:
+          type: string
+          format: date-time
+          nullable: true
+        expiry_date:
+          type: string
+          format: date-time
+          nullable: true
+
+    ParticipantFamilyMemberData:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        full_name:
+          type: string
+        relationship_type:
+          type: string
+          example: SPOUSE
+        is_dependent:
+          type: boolean
+        supporting_doc_file_path:
+          type: string
+          nullable: true
+
+    ParticipantEmploymentData:
+      type: object
+      nullable: true
+      properties:
+        id:
+          type: string
+          format: uuid
+        personnel_number:
+          type: string
+          nullable: true
+        date_of_hire:
+          type: string
+          format: date-time
+          nullable: true
+        corporate_group_name:
+          type: string
+          nullable: true
+        legal_entity_code:
+          type: string
+          nullable: true
+        legal_entity_name:
+          type: string
+          nullable: true
+        business_unit_code:
+          type: string
+          nullable: true
+        business_unit_name:
+          type: string
+          nullable: true
+        tenant_name:
+          type: string
+          nullable: true
+        employment_status:
+          type: string
+          nullable: true
+        position_name:
+          type: string
+          nullable: true
+        job_level:
+          type: string
+          nullable: true
+        location_code:
+          type: string
+          nullable: true
+        location_name:
+          type: string
+          nullable: true
+        sub_location_name:
+          type: string
+          nullable: true
+        retirement_date:
+          type: string
+          format: date-time
+          nullable: true
+        retirement_type_code:
+          type: string
+          nullable: true
+
+    ParticipantPensionData:
+      type: object
+      nullable: true
+      properties:
+        id:
+          type: string
+          format: uuid
+        participant_number:
+          type: string
+          nullable: true
+        pension_category:
+          type: string
+          nullable: true
+        pension_status:
+          type: string
+          nullable: true
+        effective_date:
+          type: string
+          format: date-time
+          nullable: true
+        end_date:
+          type: string
+          format: date-time
+          nullable: true
+        projected_retirement_date:
+          type: string
+          format: date-time
+          nullable: true
+        version:
+          type: integer
+          example: 1
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ParticipantBeneficiaryData:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        family_member_id:
+          type: string
+          format: uuid
+        identity_photo_file_path:
+          type: string
+          nullable: true
+        family_card_photo_file_path:
+          type: string
+          nullable: true
+        bank_book_photo_file_path:
+          type: string
+          nullable: true
+        account_number:
+          type: string
+          nullable: true
+
+    ParticipantListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParticipantData'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    ParticipantStatusHistoryResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              participant_id:
+                type: string
+                format: uuid
+              from_status:
+                type: string
+                nullable: true
+              to_status:
+                type: string
+                example: PENDING_APPROVAL
+              changed_by:
+                type: string
+                format: uuid
+                nullable: true
+              reason:
+                type: string
+                nullable: true
+              created_at:
+                type: string
+                format: date-time
+
+    FileUploadResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            file_path:
+              type: string
+              description: Storage path for the uploaded file
+              example: "participants/018f3a2b/identity_photo/document.jpg"
+            url:
+              type: string
+              description: Presigned URL (temporary, expires in 1 hour)
+              example: "https://storage.example.com/..."
+
+    # ---- Members ----
+    ApproveMemberRequest:
+      type: object
+      required: [role_code]
+      properties:
+        role_code:
+          type: string
+          example: MEMBER_PARTICIPANT
+          description: Role to assign to the approved member
+
+    RejectMemberRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          minLength: 10
+          maxLength: 500
+          example: "Registration does not meet the required criteria."
+
+    ChangeMemberRoleRequest:
+      type: object
+      required: [role_code]
+      properties:
+        role_code:
+          type: string
+          example: MEMBER_VIEWER
+
+    MemberRegisterResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            status:
+              type: string
+              enum: [PENDING_APPROVAL]
+              example: PENDING_APPROVAL
+            registration_type:
+              type: string
+              enum: [MEMBER]
+              example: MEMBER
+            created_at:
+              type: string
+              format: date-time
+
+    MemberDetailResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/MemberData'
+
+    MemberData:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        first_name:
+          type: string
+        last_name:
+          type: string
+        email:
+          type: string
+          format: email
+        status:
+          type: string
+          enum: [PENDING_APPROVAL, ACTIVE, REJECTED, INACTIVE]
+          example: ACTIVE
+        registration_type:
+          type: string
+          enum: [MEMBER]
+          example: MEMBER
+        role_code:
+          type: string
+          nullable: true
+          example: MEMBER_PARTICIPANT
+        role_name:
+          type: string
+          nullable: true
+        approved_by:
+          type: string
+          format: uuid
+          nullable: true
+        approved_at:
+          type: string
+          format: date-time
+          nullable: true
+        version:
+          type: integer
+          example: 1
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    MemberListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemberData'
+        pagination:
+          $ref: '#/components/schemas/Pagination'

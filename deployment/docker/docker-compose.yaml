@@ -1,0 +1,130 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:18
+    container_name: iam-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: iam
+      POSTGRES_PASSWORD: iam_secret
+      POSTGRES_DB: iam_db
+    ports:
+      - "8300:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U iam -d iam_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - iam-network
+
+  redis:
+    image: redis:latest
+    container_name: iam-redis
+    restart: unless-stopped
+    command: redis-server --requirepass redis_secret
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "redis_secret", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - iam-network
+
+  vault:
+    image: hashicorp/vault:latest
+    container_name: iam-vault
+    restart: unless-stopped
+    cap_add:
+      - IPC_LOCK
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: vault_root_token
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+      VAULT_ADDR: http://127.0.0.1:8200
+    ports:
+      - "8200:8200"
+    volumes:
+      - vault_data:/vault/data
+      - vault_logs:/vault/logs
+    healthcheck:
+      test: ["CMD", "vault", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - iam-network
+
+  minio:
+    image: minio/minio:latest
+    container_name: iam-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minio_admin
+      MINIO_ROOT_PASSWORD: minio_secret
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - iam-network
+
+  # IAM Service application
+
+  # app:
+  #   build:
+  #     context: ../..
+  #     dockerfile: deployments/docker/Dockerfile
+  #   container_name: iam-app
+  #   restart: unless-stopped
+  #   ports:
+  #     - "8080:8080"
+  #   environment:
+  #     POSTGRES_HOST: postgres
+  #     POSTGRES_PORT: 5432
+  #     POSTGRES_USER: iam
+  #     POSTGRES_PASSWORD: iam_secret
+  #     POSTGRES_DB: iam_db
+  #     REDIS_HOST: redis
+  #     REDIS_PORT: 6379
+  #     REDIS_PASSWORD: redis_secret
+  #     VAULT_ADDR: http://vault:8200
+  #     VAULT_TOKEN: vault_root_token
+  #     MINIO_ENDPOINT: minio:9000
+  #     MINIO_ACCESS_KEY: minio_admin
+  #     MINIO_SECRET_KEY: minio_secret
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #     vault:
+  #       condition: service_healthy
+  #     minio:
+  #       condition: service_healthy
+  #   networks:
+  #     - iam-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  vault_data:
+  vault_logs:
+  minio_data:
+
+networks:
+  iam-network:
+    driver: bridge
