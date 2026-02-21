@@ -1,4 +1,4 @@
-package roledto
+package role
 
 import "github.com/google/uuid"
 

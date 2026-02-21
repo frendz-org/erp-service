@@ -1,4 +1,4 @@
-package roledto
+package role
 
 import (
 	"time"

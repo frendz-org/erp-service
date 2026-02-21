@@ -4,12 +4,12 @@ import (
 	"erp-service/config"
 	"erp-service/delivery/http/controller"
 	"erp-service/delivery/http/middleware"
-	"erp-service/iam/auth/contract"
+	"erp-service/iam/auth"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-func SetupRoleRoutes(api fiber.Router, cfg *config.Config, roleController *controller.RoleController, blacklistStore ...contract.TokenBlacklistStore) {
+func SetupRoleRoutes(api fiber.Router, cfg *config.Config, roleController *controller.RoleController, blacklistStore ...auth.TokenBlacklistStore) {
 	roles := api.Group("/roles")
 
 	roles.Use(middleware.JWTAuth(cfg, blacklistStore...))

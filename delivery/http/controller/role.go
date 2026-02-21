@@ -4,7 +4,6 @@ import (
 	"erp-service/config"
 	"erp-service/delivery/http/dto/response"
 	"erp-service/iam/role"
-	"erp-service/iam/role/roledto"
 	"erp-service/pkg/errors"
 
 	"github.com/go-playground/validator/v10"
@@ -48,7 +47,7 @@ func NewRoleController(cfg *config.Config, roleUsecase role.Usecase) *RoleContro
 }
 
 func (rc *RoleController) Create(c *fiber.Ctx) error {
-	var req roledto.CreateRequest
+	var req role.CreateRequest
 	if err := c.BodyParser(&req); err != nil {
 		return errors.ErrBadRequest("Invalid request body")
 	}

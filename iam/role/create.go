@@ -1,15 +1,14 @@
-package internal
+package role
 
 import (
 	"context"
 	"time"
 
 	"erp-service/entity"
-	"erp-service/iam/role/roledto"
 	"erp-service/pkg/errors"
 )
 
-func (uc *usecase) Create(ctx context.Context, req *roledto.CreateRequest) (*roledto.CreateResponse, error) {
+func (uc *usecase) Create(ctx context.Context, req *CreateRequest) (*CreateResponse, error) {
 	tenant, err := uc.TenantRepo.GetByID(ctx, req.TenantID)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -71,7 +70,7 @@ func (uc *usecase) Create(ctx context.Context, req *roledto.CreateRequest) (*rol
 		return nil, errors.ErrInternal("failed to create role").WithError(err)
 	}
 
-	response := &roledto.CreateResponse{
+	response := &CreateResponse{
 		RoleID:      role.ID,
 		TenantID:    req.TenantID,
 		Code:        role.Code,
