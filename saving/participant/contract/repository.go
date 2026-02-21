@@ -2,6 +2,7 @@ package contract
 
 import (
 	"context"
+	"time"
 
 	"erp-service/entity"
 
@@ -26,6 +27,8 @@ type ParticipantRepository interface {
 	SoftDelete(ctx context.Context, id uuid.UUID) error
 	List(ctx context.Context, filter *ParticipantFilter) ([]*entity.Participant, int64, error)
 	GetByKTPAndPensionNumber(ctx context.Context, ktpNumber, pensionNumber string, tenantID, productID uuid.UUID) (*entity.Participant, *entity.ParticipantPension, error)
+	GetByKTPNumber(ctx context.Context, tenantID, productID uuid.UUID, ktpNumber string) (*entity.Participant, error)
+	GetByEmployeeNumber(ctx context.Context, tenantID, productID uuid.UUID, employeeNumber string) (*entity.Participant, error)
 }
 
 type TenantRepository interface {
@@ -63,6 +66,7 @@ type ParticipantAddressRepository interface {
 	ListByParticipantID(ctx context.Context, participantID uuid.UUID) ([]*entity.ParticipantAddress, error)
 	Update(ctx context.Context, address *entity.ParticipantAddress) error
 	SoftDelete(ctx context.Context, id uuid.UUID) error
+	SoftDeleteAllByParticipantID(ctx context.Context, participantID uuid.UUID) error
 }
 
 type ParticipantBankAccountRepository interface {
@@ -80,6 +84,7 @@ type ParticipantFamilyMemberRepository interface {
 	ListByParticipantID(ctx context.Context, participantID uuid.UUID) ([]*entity.ParticipantFamilyMember, error)
 	Update(ctx context.Context, member *entity.ParticipantFamilyMember) error
 	SoftDelete(ctx context.Context, id uuid.UUID) error
+	SoftDeleteAllByParticipantID(ctx context.Context, participantID uuid.UUID) error
 }
 
 type ParticipantEmploymentRepository interface {
@@ -103,6 +108,18 @@ type ParticipantBeneficiaryRepository interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*entity.ParticipantBeneficiary, error)
 	ListByParticipantID(ctx context.Context, participantID uuid.UUID) ([]*entity.ParticipantBeneficiary, error)
 	Update(ctx context.Context, beneficiary *entity.ParticipantBeneficiary) error
+	SoftDelete(ctx context.Context, id uuid.UUID) error
+	SoftDeleteAllByParticipantID(ctx context.Context, participantID uuid.UUID) error
+}
+
+type FileRepository interface {
+	Create(ctx context.Context, file *entity.File) error
+	GetByID(ctx context.Context, id uuid.UUID) (*entity.File, error)
+	SetPermanent(ctx context.Context, id uuid.UUID) error
+	SetExpiring(ctx context.Context, id uuid.UUID, expiry time.Time) error
+	ListExpired(ctx context.Context, limit int) ([]*entity.File, error)
+	ListExpiredForUpdate(ctx context.Context, limit int) ([]*entity.File, error)
+	IncrementFailedAttempts(ctx context.Context, id uuid.UUID) error
 	SoftDelete(ctx context.Context, id uuid.UUID) error
 }
 

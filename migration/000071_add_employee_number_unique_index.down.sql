@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS idx_participants_tenant_product_employee_number;

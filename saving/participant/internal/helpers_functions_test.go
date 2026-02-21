@@ -5,6 +5,7 @@ import (
 
 	"erp-service/entity"
 	"erp-service/pkg/errors"
+	"erp-service/saving/participant/participantdto"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -296,4 +297,52 @@ func TestGenerateObjectKey(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestBuildStepsCompleted_NilMap_ReturnsAllFalse(t *testing.T) {
+	result := buildStepsCompleted(nil)
+	assert.Equal(t, participantdto.StepsCompleted{}, result)
+	assert.False(t, result.PersonalData)
+	assert.False(t, result.Address)
+	assert.False(t, result.BankAccount)
+	assert.False(t, result.FamilyMembers)
+	assert.False(t, result.Employment)
+	assert.False(t, result.Beneficiaries)
+	assert.False(t, result.Pension)
+}
+
+func TestBuildStepsCompleted_PartialMap(t *testing.T) {
+	m := map[string]bool{
+		"personal_data": true,
+		"address":       true,
+		"bank_account":  false,
+	}
+	result := buildStepsCompleted(m)
+	assert.True(t, result.PersonalData)
+	assert.True(t, result.Address)
+	assert.False(t, result.BankAccount)
+	assert.False(t, result.FamilyMembers)
+	assert.False(t, result.Employment)
+	assert.False(t, result.Beneficiaries)
+	assert.False(t, result.Pension)
+}
+
+func TestBuildStepsCompleted_AllComplete(t *testing.T) {
+	m := map[string]bool{
+		"personal_data":  true,
+		"address":        true,
+		"bank_account":   true,
+		"family_members": true,
+		"employment":     true,
+		"beneficiaries":  true,
+		"pension":        true,
+	}
+	result := buildStepsCompleted(m)
+	assert.True(t, result.PersonalData)
+	assert.True(t, result.Address)
+	assert.True(t, result.BankAccount)
+	assert.True(t, result.FamilyMembers)
+	assert.True(t, result.Employment)
+	assert.True(t, result.Beneficiaries)
+	assert.True(t, result.Pension)
 }

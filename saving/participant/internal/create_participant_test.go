@@ -25,13 +25,17 @@ func TestUsecase_CreateParticipant(t *testing.T) {
 		{
 			name: "success - creates participant in DRAFT status",
 			req: &participantdto.CreateParticipantRequest{
-				TenantID:  uuid.New(),
-				ProductID: uuid.New(),
-				UserID:    uuid.New(),
-				FullName:  "John Doe",
+				TenantID:       uuid.New(),
+				ProductID:      uuid.New(),
+				UserID:         uuid.New(),
+				FullName:       "John Doe",
+				KTPNumber:      "1234567890123456",
+				EmployeeNumber: "EMP001",
 			},
 			setup: func(txMgr *MockTransactionManager, partRepo *MockParticipantRepository, histRepo *MockParticipantStatusHistoryRepository, identRepo *MockParticipantIdentityRepository, addrRepo *MockParticipantAddressRepository, bankRepo *MockParticipantBankAccountRepository, famRepo *MockParticipantFamilyMemberRepository, empRepo *MockParticipantEmploymentRepository, penRepo *MockParticipantPensionRepository, benRepo *MockParticipantBeneficiaryRepository) {
 				txMgr.On("WithTransaction", mock.Anything, mock.Anything).Return(nil)
+				partRepo.On("GetByKTPNumber", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.ErrNotFound("not found"))
+				partRepo.On("GetByEmployeeNumber", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.ErrNotFound("not found"))
 				partRepo.On("Create", mock.Anything, mock.MatchedBy(func(p *entity.Participant) bool {
 					return p.FullName == "John Doe" && p.Status == entity.ParticipantStatusDraft
 				})).Return(nil)
@@ -51,13 +55,17 @@ func TestUsecase_CreateParticipant(t *testing.T) {
 		{
 			name: "error - repository create fails",
 			req: &participantdto.CreateParticipantRequest{
-				TenantID:  uuid.New(),
-				ProductID: uuid.New(),
-				UserID:    uuid.New(),
-				FullName:  "John Doe",
+				TenantID:       uuid.New(),
+				ProductID:      uuid.New(),
+				UserID:         uuid.New(),
+				FullName:       "John Doe",
+				KTPNumber:      "1234567890123456",
+				EmployeeNumber: "EMP001",
 			},
 			setup: func(txMgr *MockTransactionManager, partRepo *MockParticipantRepository, histRepo *MockParticipantStatusHistoryRepository, identRepo *MockParticipantIdentityRepository, addrRepo *MockParticipantAddressRepository, bankRepo *MockParticipantBankAccountRepository, famRepo *MockParticipantFamilyMemberRepository, empRepo *MockParticipantEmploymentRepository, penRepo *MockParticipantPensionRepository, benRepo *MockParticipantBeneficiaryRepository) {
 				txMgr.On("WithTransaction", mock.Anything, mock.Anything).Return(nil)
+				partRepo.On("GetByKTPNumber", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.ErrNotFound("not found"))
+				partRepo.On("GetByEmployeeNumber", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.ErrNotFound("not found"))
 				partRepo.On("Create", mock.Anything, mock.Anything).Return(errors.ErrInternal("database error"))
 			},
 			wantErr: true,
@@ -65,13 +73,17 @@ func TestUsecase_CreateParticipant(t *testing.T) {
 		{
 			name: "error - status history creation fails",
 			req: &participantdto.CreateParticipantRequest{
-				TenantID:  uuid.New(),
-				ProductID: uuid.New(),
-				UserID:    uuid.New(),
-				FullName:  "John Doe",
+				TenantID:       uuid.New(),
+				ProductID:      uuid.New(),
+				UserID:         uuid.New(),
+				FullName:       "John Doe",
+				KTPNumber:      "1234567890123456",
+				EmployeeNumber: "EMP001",
 			},
 			setup: func(txMgr *MockTransactionManager, partRepo *MockParticipantRepository, histRepo *MockParticipantStatusHistoryRepository, identRepo *MockParticipantIdentityRepository, addrRepo *MockParticipantAddressRepository, bankRepo *MockParticipantBankAccountRepository, famRepo *MockParticipantFamilyMemberRepository, empRepo *MockParticipantEmploymentRepository, penRepo *MockParticipantPensionRepository, benRepo *MockParticipantBeneficiaryRepository) {
 				txMgr.On("WithTransaction", mock.Anything, mock.Anything).Return(nil)
+				partRepo.On("GetByKTPNumber", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.ErrNotFound("not found"))
+				partRepo.On("GetByEmployeeNumber", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.ErrNotFound("not found"))
 				partRepo.On("Create", mock.Anything, mock.Anything).Return(nil)
 				histRepo.On("Create", mock.Anything, mock.Anything).Return(errors.ErrInternal("database error"))
 			},

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"erp-service/entity"
+	"erp-service/pkg/errors"
 	"erp-service/saving/participant/participantdto"
 )
 
@@ -13,18 +14,45 @@ func (uc *usecase) CreateParticipant(ctx context.Context, req *participantdto.Cr
 	var result *participantdto.ParticipantResponse
 
 	err := uc.txManager.WithTransaction(ctx, func(txCtx context.Context) error {
+
+		existing, err := uc.participantRepo.GetByKTPNumber(txCtx, req.TenantID, req.ProductID, req.KTPNumber)
+		if err != nil && !errors.IsNotFound(err) {
+			return fmt.Errorf("check ktp number: %w", err)
+		}
+		if existing != nil {
+			if existing.Status == entity.ParticipantStatusDraft {
+				return errors.ErrParticipantDraftExists(existing.ID)
+			}
+			return errors.ErrParticipantAlreadyRegistered()
+		}
+
+		existingByEmp, err := uc.participantRepo.GetByEmployeeNumber(txCtx, req.TenantID, req.ProductID, req.EmployeeNumber)
+		if err != nil && !errors.IsNotFound(err) {
+			return fmt.Errorf("check employee number: %w", err)
+		}
+		if existingByEmp != nil {
+			if existingByEmp.Status == entity.ParticipantStatusDraft {
+				return errors.ErrParticipantDraftExists(existingByEmp.ID)
+			}
+			return errors.ErrParticipantAlreadyRegistered()
+		}
+
 		now := time.Now()
+		ktpNumber := req.KTPNumber
+		employeeNumber := req.EmployeeNumber
 
 		participant := &entity.Participant{
-			TenantID:  req.TenantID,
-			ProductID: req.ProductID,
-			UserID:    &req.UserID,
-			FullName:  req.FullName,
-			Status:    entity.ParticipantStatusDraft,
-			CreatedBy: req.UserID,
-			Version:   1,
-			CreatedAt: now,
-			UpdatedAt: now,
+			TenantID:       req.TenantID,
+			ProductID:      req.ProductID,
+			UserID:         &req.UserID,
+			FullName:       req.FullName,
+			KTPNumber:      &ktpNumber,
+			EmployeeNumber: &employeeNumber,
+			Status:         entity.ParticipantStatusDraft,
+			CreatedBy:      req.UserID,
+			Version:        1,
+			CreatedAt:      now,
+			UpdatedAt:      now,
 		}
 
 		if err := uc.participantRepo.Create(txCtx, participant); err != nil {

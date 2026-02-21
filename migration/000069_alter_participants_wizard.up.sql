@@ -1,0 +1,1 @@
+ALTER TABLE participants ADD COLUMN IF NOT EXISTS steps_completed JSONB NOT NULL DEFAULT '{}';

@@ -27,6 +27,19 @@ func (uc *usecase) SaveIdentity(ctx context.Context, req *participantdto.SaveIde
 			return err
 		}
 
+		if req.PhotoFileID != nil {
+			file, err := uc.fileRepo.GetByID(txCtx, *req.PhotoFileID)
+			if err != nil {
+				return fmt.Errorf("get photo file: %w", err)
+			}
+			if file.TenantID != req.TenantID || file.ProductID != req.ProductID {
+				return errors.ErrForbidden("photo_file_id does not belong to this tenant/product")
+			}
+			if err := uc.fileRepo.SetPermanent(txCtx, *req.PhotoFileID); err != nil {
+				return fmt.Errorf("set photo file permanent: %w", err)
+			}
+		}
+
 		var identity *entity.ParticipantIdentity
 
 		if req.ID != nil {
@@ -44,7 +57,7 @@ func (uc *usecase) SaveIdentity(ctx context.Context, req *participantdto.SaveIde
 			identity.IdentityAuthority = req.IdentityAuthority
 			identity.IssueDate = req.IssueDate
 			identity.ExpiryDate = req.ExpiryDate
-			identity.PhotoFilePath = req.PhotoFilePath
+			identity.PhotoFileID = req.PhotoFileID
 
 			if err := uc.identityRepo.Update(txCtx, identity); err != nil {
 				return fmt.Errorf("update identity: %w", err)
@@ -58,7 +71,7 @@ func (uc *usecase) SaveIdentity(ctx context.Context, req *participantdto.SaveIde
 				IdentityAuthority: req.IdentityAuthority,
 				IssueDate:         req.IssueDate,
 				ExpiryDate:        req.ExpiryDate,
-				PhotoFilePath:     req.PhotoFilePath,
+				PhotoFileID:       req.PhotoFileID,
 				Version:           1,
 				CreatedAt:         now,
 				UpdatedAt:         now,

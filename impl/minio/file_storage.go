@@ -44,12 +44,20 @@ func (fs *fileStorage) DeleteFile(ctx context.Context, bucket, objectKey string)
 	return nil
 }
 
+func (fs *fileStorage) DeleteObject(ctx context.Context, bucket, key string) error {
+	return fs.DeleteFile(ctx, bucket, key)
+}
+
 func (fs *fileStorage) GetPresignedURL(ctx context.Context, bucket, objectKey string, expiry time.Duration) (string, error) {
 	url, err := fs.client.PresignedGetObject(ctx, bucket, objectKey, expiry, nil)
 	if err != nil {
 		return "", fmt.Errorf("generate presigned URL: %w", err)
 	}
 	return url.String(), nil
+}
+
+func (fs *fileStorage) PresignGetURL(ctx context.Context, bucket, key string, ttl time.Duration) (string, error) {
+	return fs.GetPresignedURL(ctx, bucket, key, ttl)
 }
 
 func (fs *fileStorage) ensureBucketExists(ctx context.Context, bucket string) error {

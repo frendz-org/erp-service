@@ -3,10 +3,13 @@ package internal
 import (
 	"erp-service/config"
 	"erp-service/saving/participant/contract"
+
+	"go.uber.org/zap"
 )
 
 type usecase struct {
 	cfg               *config.Config
+	logger            *zap.Logger
 	txManager         contract.TransactionManager
 	participantRepo   contract.ParticipantRepository
 	identityRepo      contract.ParticipantIdentityRepository
@@ -18,6 +21,7 @@ type usecase struct {
 	beneficiaryRepo   contract.ParticipantBeneficiaryRepository
 	statusHistoryRepo contract.ParticipantStatusHistoryRepository
 	fileStorage       contract.FileStorageAdapter
+	fileRepo          contract.FileRepository
 
 	tenantRepo        contract.TenantRepository
 	productRepo       contract.ProductRepository
@@ -29,6 +33,7 @@ type usecase struct {
 
 func NewUsecase(
 	cfg *config.Config,
+	logger *zap.Logger,
 	txManager contract.TransactionManager,
 	participantRepo contract.ParticipantRepository,
 	identityRepo contract.ParticipantIdentityRepository,
@@ -40,6 +45,7 @@ func NewUsecase(
 	beneficiaryRepo contract.ParticipantBeneficiaryRepository,
 	statusHistoryRepo contract.ParticipantStatusHistoryRepository,
 	fileStorage contract.FileStorageAdapter,
+	fileRepo contract.FileRepository,
 	tenantRepo contract.TenantRepository,
 	productRepo contract.ProductRepository,
 	configRepo contract.ProductRegistrationConfigRepository,
@@ -49,6 +55,7 @@ func NewUsecase(
 ) contract.Usecase {
 	return &usecase{
 		cfg:               cfg,
+		logger:            logger,
 		txManager:         txManager,
 		participantRepo:   participantRepo,
 		identityRepo:      identityRepo,
@@ -60,6 +67,7 @@ func NewUsecase(
 		beneficiaryRepo:   beneficiaryRepo,
 		statusHistoryRepo: statusHistoryRepo,
 		fileStorage:       fileStorage,
+		fileRepo:          fileRepo,
 		tenantRepo:        tenantRepo,
 		productRepo:       productRepo,
 		configRepo:        configRepo,

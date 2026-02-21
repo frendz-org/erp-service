@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+var _ contract.FileRepository = (*MockFileRepository)(nil)
+
 type MockTransactionManager struct {
 	mock.Mock
 }
@@ -74,6 +76,22 @@ func (m *MockParticipantRepository) GetByKTPAndPensionNumber(ctx context.Context
 		pp = args.Get(1).(*entity.ParticipantPension)
 	}
 	return p, pp, args.Error(2)
+}
+
+func (m *MockParticipantRepository) GetByKTPNumber(ctx context.Context, tenantID, productID uuid.UUID, ktpNumber string) (*entity.Participant, error) {
+	args := m.Called(ctx, tenantID, productID, ktpNumber)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*entity.Participant), args.Error(1)
+}
+
+func (m *MockParticipantRepository) GetByEmployeeNumber(ctx context.Context, tenantID, productID uuid.UUID, employeeNumber string) (*entity.Participant, error) {
+	args := m.Called(ctx, tenantID, productID, employeeNumber)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*entity.Participant), args.Error(1)
 }
 
 type MockParticipantIdentityRepository struct {
@@ -143,6 +161,11 @@ func (m *MockParticipantAddressRepository) Update(ctx context.Context, address *
 
 func (m *MockParticipantAddressRepository) SoftDelete(ctx context.Context, id uuid.UUID) error {
 	args := m.Called(ctx, id)
+	return args.Error(0)
+}
+
+func (m *MockParticipantAddressRepository) SoftDeleteAllByParticipantID(ctx context.Context, participantID uuid.UUID) error {
+	args := m.Called(ctx, participantID)
 	return args.Error(0)
 }
 
@@ -218,6 +241,11 @@ func (m *MockParticipantFamilyMemberRepository) Update(ctx context.Context, memb
 
 func (m *MockParticipantFamilyMemberRepository) SoftDelete(ctx context.Context, id uuid.UUID) error {
 	args := m.Called(ctx, id)
+	return args.Error(0)
+}
+
+func (m *MockParticipantFamilyMemberRepository) SoftDeleteAllByParticipantID(ctx context.Context, participantID uuid.UUID) error {
+	args := m.Called(ctx, participantID)
 	return args.Error(0)
 }
 
@@ -326,6 +354,11 @@ func (m *MockParticipantBeneficiaryRepository) SoftDelete(ctx context.Context, i
 	return args.Error(0)
 }
 
+func (m *MockParticipantBeneficiaryRepository) SoftDeleteAllByParticipantID(ctx context.Context, participantID uuid.UUID) error {
+	args := m.Called(ctx, participantID)
+	return args.Error(0)
+}
+
 type MockParticipantStatusHistoryRepository struct {
 	mock.Mock
 }
@@ -360,4 +393,57 @@ func (m *MockFileStorageAdapter) DeleteFile(ctx context.Context, bucket, objectK
 func (m *MockFileStorageAdapter) GetPresignedURL(ctx context.Context, bucket, objectKey string, expiry time.Duration) (string, error) {
 	args := m.Called(ctx, bucket, objectKey, expiry)
 	return args.String(0), args.Error(1)
+}
+
+type MockFileRepository struct {
+	mock.Mock
+}
+
+func (m *MockFileRepository) Create(ctx context.Context, file *entity.File) error {
+	args := m.Called(ctx, file)
+	return args.Error(0)
+}
+
+func (m *MockFileRepository) GetByID(ctx context.Context, id uuid.UUID) (*entity.File, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*entity.File), args.Error(1)
+}
+
+func (m *MockFileRepository) SetPermanent(ctx context.Context, id uuid.UUID) error {
+	args := m.Called(ctx, id)
+	return args.Error(0)
+}
+
+func (m *MockFileRepository) SetExpiring(ctx context.Context, id uuid.UUID, expiry time.Time) error {
+	args := m.Called(ctx, id, expiry)
+	return args.Error(0)
+}
+
+func (m *MockFileRepository) ListExpired(ctx context.Context, limit int) ([]*entity.File, error) {
+	args := m.Called(ctx, limit)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*entity.File), args.Error(1)
+}
+
+func (m *MockFileRepository) ListExpiredForUpdate(ctx context.Context, limit int) ([]*entity.File, error) {
+	args := m.Called(ctx, limit)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*entity.File), args.Error(1)
+}
+
+func (m *MockFileRepository) IncrementFailedAttempts(ctx context.Context, id uuid.UUID) error {
+	args := m.Called(ctx, id)
+	return args.Error(0)
+}
+
+func (m *MockFileRepository) SoftDelete(ctx context.Context, id uuid.UUID) error {
+	args := m.Called(ctx, id)
+	return args.Error(0)
 }

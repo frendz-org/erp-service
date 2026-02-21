@@ -6,6 +6,16 @@ import (
 	"github.com/google/uuid"
 )
 
+type StepsCompleted struct {
+	PersonalData  bool `json:"personal_data"`
+	Address       bool `json:"address"`
+	BankAccount   bool `json:"bank_account"`
+	FamilyMembers bool `json:"family_members"`
+	Employment    bool `json:"employment"`
+	Beneficiaries bool `json:"beneficiaries"`
+	Pension       bool `json:"pension"`
+}
+
 type ParticipantResponse struct {
 	ID              uuid.UUID              `json:"id"`
 	TenantID        uuid.UUID              `json:"tenant_id"`
@@ -22,6 +32,7 @@ type ParticipantResponse struct {
 	EmployeeNumber  *string                `json:"employee_number,omitempty"`
 	PhoneNumber     *string                `json:"phone_number,omitempty"`
 	Status          string                 `json:"status"`
+	StepsCompleted  StepsCompleted         `json:"steps_completed"`
 	CreatedBy       uuid.UUID              `json:"created_by"`
 	SubmittedBy     *uuid.UUID             `json:"submitted_by,omitempty"`
 	SubmittedAt     *time.Time             `json:"submitted_at,omitempty"`
@@ -63,6 +74,8 @@ type IdentityResponse struct {
 	IssueDate         *time.Time `json:"issue_date,omitempty"`
 	ExpiryDate        *time.Time `json:"expiry_date,omitempty"`
 	PhotoFilePath     *string    `json:"photo_file_path,omitempty"`
+	PhotoFileID       *uuid.UUID `json:"photo_file_id,omitempty"`
+	PhotoURL          *string    `json:"photo_url,omitempty"`
 	Version           int        `json:"version"`
 	CreatedAt         time.Time  `json:"created_at"`
 	UpdatedAt         time.Time  `json:"updated_at"`
@@ -102,14 +115,16 @@ type BankAccountResponse struct {
 }
 
 type FamilyMemberResponse struct {
-	ID                    uuid.UUID `json:"id"`
-	FullName              string    `json:"full_name"`
-	RelationshipType      string    `json:"relationship_type"`
-	IsDependent           bool      `json:"is_dependent"`
-	SupportingDocFilePath *string   `json:"supporting_doc_file_path,omitempty"`
-	Version               int       `json:"version"`
-	CreatedAt             time.Time `json:"created_at"`
-	UpdatedAt             time.Time `json:"updated_at"`
+	ID                    uuid.UUID  `json:"id"`
+	FullName              string     `json:"full_name"`
+	RelationshipType      string     `json:"relationship_type"`
+	IsDependent           bool       `json:"is_dependent"`
+	SupportingDocFilePath *string    `json:"supporting_doc_file_path,omitempty"`
+	SupportingDocFileID   *uuid.UUID `json:"supporting_doc_file_id,omitempty"`
+	SupportingDocURL      *string    `json:"supporting_doc_url,omitempty"`
+	Version               int        `json:"version"`
+	CreatedAt             time.Time  `json:"created_at"`
+	UpdatedAt             time.Time  `json:"updated_at"`
 }
 
 type EmploymentResponse struct {
@@ -149,15 +164,21 @@ type PensionResponse struct {
 }
 
 type BeneficiaryResponse struct {
-	ID                      uuid.UUID `json:"id"`
-	FamilyMemberID          uuid.UUID `json:"family_member_id"`
-	IdentityPhotoFilePath   *string   `json:"identity_photo_file_path,omitempty"`
-	FamilyCardPhotoFilePath *string   `json:"family_card_photo_file_path,omitempty"`
-	BankBookPhotoFilePath   *string   `json:"bank_book_photo_file_path,omitempty"`
-	AccountNumber           *string   `json:"account_number,omitempty"`
-	Version                 int       `json:"version"`
-	CreatedAt               time.Time `json:"created_at"`
-	UpdatedAt               time.Time `json:"updated_at"`
+	ID                      uuid.UUID  `json:"id"`
+	FamilyMemberID          uuid.UUID  `json:"family_member_id"`
+	IdentityPhotoFilePath   *string    `json:"identity_photo_file_path,omitempty"`
+	IdentityPhotoFileID     *uuid.UUID `json:"identity_photo_file_id,omitempty"`
+	IdentityPhotoURL        *string    `json:"identity_photo_url,omitempty"`
+	FamilyCardPhotoFilePath *string    `json:"family_card_photo_file_path,omitempty"`
+	FamilyCardPhotoFileID   *uuid.UUID `json:"family_card_photo_file_id,omitempty"`
+	FamilyCardPhotoURL      *string    `json:"family_card_photo_url,omitempty"`
+	BankBookPhotoFilePath   *string    `json:"bank_book_photo_file_path,omitempty"`
+	BankBookPhotoFileID     *uuid.UUID `json:"bank_book_photo_file_id,omitempty"`
+	BankBookPhotoURL        *string    `json:"bank_book_photo_url,omitempty"`
+	AccountNumber           *string    `json:"account_number,omitempty"`
+	Version                 int        `json:"version"`
+	CreatedAt               time.Time  `json:"created_at"`
+	UpdatedAt               time.Time  `json:"updated_at"`
 }
 
 type StatusHistoryResponse struct {
@@ -183,8 +204,7 @@ type PaginationMeta struct {
 }
 
 type FileUploadResponse struct {
-	FilePath string `json:"file_path"`
-	URL      string `json:"url,omitempty"`
+	FileID uuid.UUID `json:"file_id"`
 }
 
 type SelfRegisterParticipantData struct {

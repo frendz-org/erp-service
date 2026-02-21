@@ -43,11 +43,15 @@ func participantError(c *fiber.Ctx, err error) error {
 			"code":    errors.CodeInternal,
 		})
 	}
-	return c.Status(appErr.HTTPStatus).JSON(fiber.Map{
+	resp := fiber.Map{
 		"success": false,
 		"error":   appErr.Message,
 		"code":    appErr.Code,
-	})
+	}
+	if len(appErr.Details) > 0 {
+		resp["details"] = appErr.Details
+	}
+	return c.Status(appErr.HTTPStatus).JSON(resp)
 }
 
 func (ctrl *ParticipantController) Create(c *fiber.Ctx) error {
@@ -758,14 +762,24 @@ func (ctrl *ParticipantController) UploadFile(c *fiber.Ctx) error {
 		return participantError(c, err)
 	}
 
+	uploaderID, err := middleware.GetUserID(c)
+	if err != nil {
+		return participantError(c, err)
+	}
+
 	req := &participantdto.UploadFileRequest{
 		TenantID:      tenantID,
 		ParticipantID: pID,
 		ProductID:     productID,
+		UploadedBy:    uploaderID,
 		FieldName:     fieldName,
+		FileName:      fileHeader.Filename,
+		ContentType:   detectedType,
+		Reader:        file,
+		Size:          fileHeader.Size,
 	}
 
-	result, err := ctrl.usecase.UploadFile(c.UserContext(), req, file, fileHeader.Size, detectedType, fileHeader.Filename)
+	result, err := ctrl.usecase.UploadFile(c.UserContext(), req)
 	if err != nil {
 		return participantError(c, err)
 	}
@@ -1008,4 +1022,154 @@ func (ctrl *ParticipantController) Delete(c *fiber.Ctx) error {
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)
+}
+
+func (ctrl *ParticipantController) SaveAddresses(c *fiber.Ctx) error {
+	pID, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return participantError(c, errors.ErrBadRequest("invalid participant ID"))
+	}
+
+	tenantID, err := middleware.GetTenantIDFromContext(c)
+	if err != nil {
+		return participantError(c, err)
+	}
+
+	userClaims, err := middleware.GetMultiTenantClaims(c)
+	if err != nil {
+		return participantError(c, err)
+	}
+
+	var req participantdto.SaveAddressesRequest
+	if err := c.BodyParser(&req); err != nil {
+		return participantError(c, errors.ErrBadRequest("invalid request body"))
+	}
+
+	if err := validate.Struct(&req); err != nil {
+		var ve validator.ValidationErrors
+		if stderrors.As(err, &ve) {
+			return participantError(c, errors.ErrValidationWithFields(convertValidationErrors(ve)))
+		}
+		return participantError(c, errors.ErrBadRequest("invalid request"))
+	}
+
+	productID, err := middleware.GetProductIDFromContext(c)
+	if err != nil {
+		return participantError(c, err)
+	}
+
+	req.TenantID = tenantID
+	req.ProductID = productID
+	req.ParticipantID = pID
+	req.UserID = userClaims.UserID
+
+	result, err := ctrl.usecase.SaveAddresses(c.UserContext(), &req)
+	if err != nil {
+		return participantError(c, err)
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"data":    result,
+	})
+}
+
+func (ctrl *ParticipantController) SaveFamilyMembers(c *fiber.Ctx) error {
+	pID, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return participantError(c, errors.ErrBadRequest("invalid participant ID"))
+	}
+
+	tenantID, err := middleware.GetTenantIDFromContext(c)
+	if err != nil {
+		return participantError(c, err)
+	}
+
+	userClaims, err := middleware.GetMultiTenantClaims(c)
+	if err != nil {
+		return participantError(c, err)
+	}
+
+	var req participantdto.SaveFamilyMembersRequest
+	if err := c.BodyParser(&req); err != nil {
+		return participantError(c, errors.ErrBadRequest("invalid request body"))
+	}
+
+	if err := validate.Struct(&req); err != nil {
+		var ve validator.ValidationErrors
+		if stderrors.As(err, &ve) {
+			return participantError(c, errors.ErrValidationWithFields(convertValidationErrors(ve)))
+		}
+		return participantError(c, errors.ErrBadRequest("invalid request"))
+	}
+
+	productID, err := middleware.GetProductIDFromContext(c)
+	if err != nil {
+		return participantError(c, err)
+	}
+
+	req.TenantID = tenantID
+	req.ProductID = productID
+	req.ParticipantID = pID
+	req.UserID = userClaims.UserID
+
+	result, err := ctrl.usecase.SaveFamilyMembers(c.UserContext(), &req)
+	if err != nil {
+		return participantError(c, err)
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"data":    result,
+	})
+}
+
+func (ctrl *ParticipantController) SaveBeneficiaries(c *fiber.Ctx) error {
+	pID, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return participantError(c, errors.ErrBadRequest("invalid participant ID"))
+	}
+
+	tenantID, err := middleware.GetTenantIDFromContext(c)
+	if err != nil {
+		return participantError(c, err)
+	}
+
+	userClaims, err := middleware.GetMultiTenantClaims(c)
+	if err != nil {
+		return participantError(c, err)
+	}
+
+	var req participantdto.SaveBeneficiariesRequest
+	if err := c.BodyParser(&req); err != nil {
+		return participantError(c, errors.ErrBadRequest("invalid request body"))
+	}
+
+	if err := validate.Struct(&req); err != nil {
+		var ve validator.ValidationErrors
+		if stderrors.As(err, &ve) {
+			return participantError(c, errors.ErrValidationWithFields(convertValidationErrors(ve)))
+		}
+		return participantError(c, errors.ErrBadRequest("invalid request"))
+	}
+
+	productID, err := middleware.GetProductIDFromContext(c)
+	if err != nil {
+		return participantError(c, err)
+	}
+
+	req.TenantID = tenantID
+	req.ProductID = productID
+	req.ParticipantID = pID
+	req.UserID = userClaims.UserID
+
+	result, err := ctrl.usecase.SaveBeneficiaries(c.UserContext(), &req)
+	if err != nil {
+		return participantError(c, err)
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"data":    result,
+	})
 }

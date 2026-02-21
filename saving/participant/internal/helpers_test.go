@@ -35,6 +35,7 @@ func newTestUsecase(
 		beneficiaryRepo:   beneficiaryRepo,
 		statusHistoryRepo: statusHistoryRepo,
 		fileStorage:       fileStorage,
+		fileRepo:          new(MockFileRepository),
 	}
 }
 

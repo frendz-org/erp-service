@@ -98,6 +98,28 @@ func (r *participantRepository) GetByID(ctx context.Context, id uuid.UUID) (*ent
 	return &participant, nil
 }
 
+func (r *participantRepository) GetByKTPNumber(ctx context.Context, tenantID, productID uuid.UUID, ktpNumber string) (*entity.Participant, error) {
+	var participant entity.Participant
+	err := r.getDB(ctx).
+		Where("tenant_id = ? AND product_id = ? AND ktp_number = ? AND deleted_at IS NULL", tenantID, productID, ktpNumber).
+		First(&participant).Error
+	if err != nil {
+		return nil, translateError(err, "participant")
+	}
+	return &participant, nil
+}
+
+func (r *participantRepository) GetByEmployeeNumber(ctx context.Context, tenantID, productID uuid.UUID, employeeNumber string) (*entity.Participant, error) {
+	var participant entity.Participant
+	err := r.getDB(ctx).
+		Where("tenant_id = ? AND product_id = ? AND employee_number = ? AND deleted_at IS NULL", tenantID, productID, employeeNumber).
+		First(&participant).Error
+	if err != nil {
+		return nil, translateError(err, "participant")
+	}
+	return &participant, nil
+}
+
 func (r *participantRepository) Update(ctx context.Context, participant *entity.Participant) error {
 	oldVersion := participant.Version
 	participant.Version = oldVersion + 1

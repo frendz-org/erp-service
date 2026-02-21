@@ -4,12 +4,15 @@ import (
 	"erp-service/config"
 	"erp-service/saving/participant/contract"
 	"erp-service/saving/participant/internal"
+
+	"go.uber.org/zap"
 )
 
 type Usecase = contract.Usecase
 
 func NewUsecase(
 	cfg *config.Config,
+	logger *zap.Logger,
 	txManager contract.TransactionManager,
 	participantRepo contract.ParticipantRepository,
 	identityRepo contract.ParticipantIdentityRepository,
@@ -21,6 +24,7 @@ func NewUsecase(
 	beneficiaryRepo contract.ParticipantBeneficiaryRepository,
 	statusHistoryRepo contract.ParticipantStatusHistoryRepository,
 	fileStorage contract.FileStorageAdapter,
+	fileRepo contract.FileRepository,
 	tenantRepo contract.TenantRepository,
 	productRepo contract.ProductRepository,
 	configRepo contract.ProductRegistrationConfigRepository,
@@ -30,6 +34,7 @@ func NewUsecase(
 ) Usecase {
 	return internal.NewUsecase(
 		cfg,
+		logger,
 		txManager,
 		participantRepo,
 		identityRepo,
@@ -41,6 +46,7 @@ func NewUsecase(
 		beneficiaryRepo,
 		statusHistoryRepo,
 		fileStorage,
+		fileRepo,
 		tenantRepo,
 		productRepo,
 		configRepo,

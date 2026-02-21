@@ -74,3 +74,13 @@ func (r *participantBeneficiaryRepository) SoftDelete(ctx context.Context, id uu
 	}
 	return nil
 }
+
+func (r *participantBeneficiaryRepository) SoftDeleteAllByParticipantID(ctx context.Context, participantID uuid.UUID) error {
+	err := r.getDB(ctx).Model(&entity.ParticipantBeneficiary{}).
+		Where("participant_id = ? AND deleted_at IS NULL", participantID).
+		Update("deleted_at", gorm.Expr("NOW()")).Error
+	if err != nil {
+		return translateError(err, "participant beneficiary")
+	}
+	return nil
+}

@@ -75,6 +75,7 @@ func mapIdentityToResponse(identity *entity.ParticipantIdentity) participantdto.
 		IssueDate:         identity.IssueDate,
 		ExpiryDate:        identity.ExpiryDate,
 		PhotoFilePath:     identity.PhotoFilePath,
+		PhotoFileID:       identity.PhotoFileID,
 		Version:           identity.Version,
 		CreatedAt:         identity.CreatedAt,
 		UpdatedAt:         identity.UpdatedAt,
@@ -125,6 +126,7 @@ func mapFamilyMemberToResponse(member *entity.ParticipantFamilyMember) participa
 		RelationshipType:      member.RelationshipType,
 		IsDependent:           member.IsDependent,
 		SupportingDocFilePath: member.SupportingDocFilePath,
+		SupportingDocFileID:   member.SupportingDocFileID,
 		Version:               member.Version,
 		CreatedAt:             member.CreatedAt,
 		UpdatedAt:             member.UpdatedAt,
@@ -176,8 +178,11 @@ func mapBeneficiaryToResponse(beneficiary *entity.ParticipantBeneficiary) partic
 		ID:                      beneficiary.ID,
 		FamilyMemberID:          beneficiary.FamilyMemberID,
 		IdentityPhotoFilePath:   beneficiary.IdentityPhotoFilePath,
+		IdentityPhotoFileID:     beneficiary.IdentityPhotoFileID,
 		FamilyCardPhotoFilePath: beneficiary.FamilyCardPhotoFilePath,
+		FamilyCardPhotoFileID:   beneficiary.FamilyCardPhotoFileID,
 		BankBookPhotoFilePath:   beneficiary.BankBookPhotoFilePath,
+		BankBookPhotoFileID:     beneficiary.BankBookPhotoFileID,
 		AccountNumber:           beneficiary.AccountNumber,
 		Version:                 beneficiary.Version,
 		CreatedAt:               beneficiary.CreatedAt,
@@ -194,6 +199,21 @@ func mapStatusHistoryToResponse(history *entity.ParticipantStatusHistory) partic
 		Reason:     history.Reason,
 		ChangedAt:  history.ChangedAt,
 		CreatedAt:  history.CreatedAt,
+	}
+}
+
+func buildStepsCompleted(m map[string]bool) participantdto.StepsCompleted {
+	if m == nil {
+		return participantdto.StepsCompleted{}
+	}
+	return participantdto.StepsCompleted{
+		PersonalData:  m["personal_data"],
+		Address:       m["address"],
+		BankAccount:   m["bank_account"],
+		FamilyMembers: m["family_members"],
+		Employment:    m["employment"],
+		Beneficiaries: m["beneficiaries"],
+		Pension:       m["pension"],
 	}
 }
 
@@ -214,6 +234,7 @@ func (uc *usecase) buildFullParticipantResponse(ctx context.Context, participant
 		EmployeeNumber:  participant.EmployeeNumber,
 		PhoneNumber:     participant.PhoneNumber,
 		Status:          string(participant.Status),
+		StepsCompleted:  buildStepsCompleted(participant.StepsCompleted),
 		CreatedBy:       participant.CreatedBy,
 		SubmittedBy:     participant.SubmittedBy,
 		SubmittedAt:     participant.SubmittedAt,

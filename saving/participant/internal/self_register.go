@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"erp-service/entity"
-	"erp-service/masterdata/masterdatadto"
+	"erp-service/masterdata"
 	apperrors "erp-service/pkg/errors"
 	"erp-service/saving/participant/participantdto"
 
@@ -95,7 +95,7 @@ func (uc *usecase) SelfRegister(ctx context.Context, req *participantdto.SelfReg
 		return nil, apperrors.ErrValidationWithFields(fieldErrs)
 	}
 
-	validateResp, err := uc.masterdataUsecase.ValidateItemCode(ctx, &masterdatadto.ValidateCodeRequest{
+	validateResp, err := uc.masterdataUsecase.ValidateItemCode(ctx, &masterdata.ValidateCodeRequest{
 		CategoryCode:   "TENANT_TYPE",
 		ItemCode:       req.Organization,
 		ParentItemCode: "TENANT_TYPE_002",

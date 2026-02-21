@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"erp-service/entity"
-	"erp-service/masterdata/masterdatadto"
+	"erp-service/masterdata"
 	apperrors "erp-service/pkg/errors"
 	"erp-service/saving/participant/participantdto"
 
@@ -85,12 +85,12 @@ type mockMasterdataValidator struct {
 	mock.Mock
 }
 
-func (m *mockMasterdataValidator) ValidateItemCode(ctx context.Context, req *masterdatadto.ValidateCodeRequest) (*masterdatadto.ValidateCodeResponse, error) {
+func (m *mockMasterdataValidator) ValidateItemCode(ctx context.Context, req *masterdata.ValidateCodeRequest) (*masterdata.ValidateCodeResponse, error) {
 	args := m.Called(ctx, req)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*masterdatadto.ValidateCodeResponse), args.Error(1)
+	return args.Get(0).(*masterdata.ValidateCodeResponse), args.Error(1)
 }
 
 type mockParticipantRepositoryWithKTP struct {
@@ -208,9 +208,9 @@ func TestSelfRegister_Success_NewParticipant(t *testing.T) {
 	profileRepo := &mockUserProfileRepository{}
 	mdValidator := &mockMasterdataValidator{}
 
-	mdValidator.On("ValidateItemCode", ctx, mock.MatchedBy(func(r *masterdatadto.ValidateCodeRequest) bool {
+	mdValidator.On("ValidateItemCode", ctx, mock.MatchedBy(func(r *masterdata.ValidateCodeRequest) bool {
 		return r.CategoryCode == "TENANT_TYPE" && r.ItemCode == req.Organization
-	})).Return(&masterdatadto.ValidateCodeResponse{Valid: true}, nil)
+	})).Return(&masterdata.ValidateCodeResponse{Valid: true}, nil)
 
 	tenantRepo.On("GetByCode", ctx, req.Organization).Return(tenant, nil)
 	productRepo.On("GetByCodeAndTenant", ctx, tenant.ID, "frendz-saving").Return(product, nil)
@@ -267,7 +267,7 @@ func TestSelfRegister_Success_ResponseDataHasNoKTPNumber(t *testing.T) {
 	profileRepo := &mockUserProfileRepository{}
 	mdValidator := &mockMasterdataValidator{}
 
-	mdValidator.On("ValidateItemCode", ctx, mock.Anything).Return(&masterdatadto.ValidateCodeResponse{Valid: true}, nil)
+	mdValidator.On("ValidateItemCode", ctx, mock.Anything).Return(&masterdata.ValidateCodeResponse{Valid: true}, nil)
 	tenantRepo.On("GetByCode", ctx, req.Organization).Return(tenant, nil)
 	productRepo.On("GetByCodeAndTenant", ctx, tenant.ID, "frendz-saving").Return(product, nil)
 	configRepo.On("GetByProductAndType", ctx, product.ID, "PARTICIPANT").Return(config, nil)
@@ -329,7 +329,7 @@ func TestSelfRegister_Success_LinkExistingParticipant(t *testing.T) {
 	profileRepo := &mockUserProfileRepository{}
 	mdValidator := &mockMasterdataValidator{}
 
-	mdValidator.On("ValidateItemCode", ctx, mock.Anything).Return(&masterdatadto.ValidateCodeResponse{Valid: true}, nil)
+	mdValidator.On("ValidateItemCode", ctx, mock.Anything).Return(&masterdata.ValidateCodeResponse{Valid: true}, nil)
 	tenantRepo.On("GetByCode", ctx, req.Organization).Return(tenant, nil)
 	productRepo.On("GetByCodeAndTenant", ctx, tenant.ID, "frendz-saving").Return(product, nil)
 	configRepo.On("GetByProductAndType", ctx, product.ID, "PARTICIPANT").Return(config, nil)
@@ -449,7 +449,7 @@ func TestSelfRegister_OrganizationNotInTenantType002(t *testing.T) {
 	req := validSelfRegisterRequest()
 
 	mdValidator := &mockMasterdataValidator{}
-	mdValidator.On("ValidateItemCode", ctx, mock.Anything).Return(&masterdatadto.ValidateCodeResponse{
+	mdValidator.On("ValidateItemCode", ctx, mock.Anything).Return(&masterdata.ValidateCodeResponse{
 		Valid:   false,
 		Message: "item not found in parent",
 	}, nil)
@@ -477,7 +477,7 @@ func TestSelfRegister_TenantInactive(t *testing.T) {
 	}
 
 	mdValidator := &mockMasterdataValidator{}
-	mdValidator.On("ValidateItemCode", ctx, mock.Anything).Return(&masterdatadto.ValidateCodeResponse{Valid: true}, nil)
+	mdValidator.On("ValidateItemCode", ctx, mock.Anything).Return(&masterdata.ValidateCodeResponse{Valid: true}, nil)
 	tenantRepo := &mockTenantRepository{}
 	tenantRepo.On("GetByCode", ctx, req.Organization).Return(inactiveTenant, nil)
 
@@ -500,7 +500,7 @@ func TestSelfRegister_ProductNotFound(t *testing.T) {
 	tenant := activeTenant()
 
 	mdValidator := &mockMasterdataValidator{}
-	mdValidator.On("ValidateItemCode", ctx, mock.Anything).Return(&masterdatadto.ValidateCodeResponse{Valid: true}, nil)
+	mdValidator.On("ValidateItemCode", ctx, mock.Anything).Return(&masterdata.ValidateCodeResponse{Valid: true}, nil)
 	tenantRepo := &mockTenantRepository{}
 	tenantRepo.On("GetByCode", ctx, req.Organization).Return(tenant, nil)
 	productRepo := &mockProductRepository{}
@@ -527,7 +527,7 @@ func TestSelfRegister_ConfigNotFound(t *testing.T) {
 	product := activeProduct(tenant.ID)
 
 	mdValidator := &mockMasterdataValidator{}
-	mdValidator.On("ValidateItemCode", ctx, mock.Anything).Return(&masterdatadto.ValidateCodeResponse{Valid: true}, nil)
+	mdValidator.On("ValidateItemCode", ctx, mock.Anything).Return(&masterdata.ValidateCodeResponse{Valid: true}, nil)
 	tenantRepo := &mockTenantRepository{}
 	tenantRepo.On("GetByCode", ctx, req.Organization).Return(tenant, nil)
 	productRepo := &mockProductRepository{}
@@ -564,7 +564,7 @@ func TestSelfRegister_ConfigNotActive(t *testing.T) {
 	}
 
 	mdValidator := &mockMasterdataValidator{}
-	mdValidator.On("ValidateItemCode", ctx, mock.Anything).Return(&masterdatadto.ValidateCodeResponse{Valid: true}, nil)
+	mdValidator.On("ValidateItemCode", ctx, mock.Anything).Return(&masterdata.ValidateCodeResponse{Valid: true}, nil)
 	tenantRepo := &mockTenantRepository{}
 	tenantRepo.On("GetByCode", ctx, req.Organization).Return(tenant, nil)
 	productRepo := &mockProductRepository{}
@@ -603,7 +603,7 @@ func TestSelfRegister_IncompleteProfile_MissingGender(t *testing.T) {
 	}
 
 	mdValidator := &mockMasterdataValidator{}
-	mdValidator.On("ValidateItemCode", ctx, mock.Anything).Return(&masterdatadto.ValidateCodeResponse{Valid: true}, nil)
+	mdValidator.On("ValidateItemCode", ctx, mock.Anything).Return(&masterdata.ValidateCodeResponse{Valid: true}, nil)
 	tenantRepo := &mockTenantRepository{}
 	tenantRepo.On("GetByCode", ctx, req.Organization).Return(tenant, nil)
 	productRepo := &mockProductRepository{}
@@ -651,7 +651,7 @@ func TestSelfRegister_AlreadyLinked_DifferentUser(t *testing.T) {
 	}
 
 	mdValidator := &mockMasterdataValidator{}
-	mdValidator.On("ValidateItemCode", ctx, mock.Anything).Return(&masterdatadto.ValidateCodeResponse{Valid: true}, nil)
+	mdValidator.On("ValidateItemCode", ctx, mock.Anything).Return(&masterdata.ValidateCodeResponse{Valid: true}, nil)
 	tenantRepo := &mockTenantRepository{}
 	tenantRepo.On("GetByCode", ctx, req.Organization).Return(tenant, nil)
 	productRepo := &mockProductRepository{}
@@ -706,7 +706,7 @@ func TestSelfRegister_AlreadyLinked_SameUser(t *testing.T) {
 	}
 
 	mdValidator := &mockMasterdataValidator{}
-	mdValidator.On("ValidateItemCode", ctx, mock.Anything).Return(&masterdatadto.ValidateCodeResponse{Valid: true}, nil)
+	mdValidator.On("ValidateItemCode", ctx, mock.Anything).Return(&masterdata.ValidateCodeResponse{Valid: true}, nil)
 	tenantRepo := &mockTenantRepository{}
 	tenantRepo.On("GetByCode", ctx, req.Organization).Return(tenant, nil)
 	productRepo := &mockProductRepository{}
@@ -747,7 +747,7 @@ func TestSelfRegister_AlreadyRegistered_UTRExists(t *testing.T) {
 	profile := completeProfile(req.UserID)
 
 	mdValidator := &mockMasterdataValidator{}
-	mdValidator.On("ValidateItemCode", ctx, mock.Anything).Return(&masterdatadto.ValidateCodeResponse{Valid: true}, nil)
+	mdValidator.On("ValidateItemCode", ctx, mock.Anything).Return(&masterdata.ValidateCodeResponse{Valid: true}, nil)
 	tenantRepo := &mockTenantRepository{}
 	tenantRepo.On("GetByCode", ctx, req.Organization).Return(tenant, nil)
 	productRepo := &mockProductRepository{}
@@ -802,7 +802,7 @@ func TestSelfRegister_UniqueConstraintViolation_OnCreate(t *testing.T) {
 	profileRepo := &mockUserProfileRepository{}
 	mdValidator := &mockMasterdataValidator{}
 
-	mdValidator.On("ValidateItemCode", ctx, mock.Anything).Return(&masterdatadto.ValidateCodeResponse{Valid: true}, nil)
+	mdValidator.On("ValidateItemCode", ctx, mock.Anything).Return(&masterdata.ValidateCodeResponse{Valid: true}, nil)
 	tenantRepo.On("GetByCode", ctx, req.Organization).Return(tenant, nil)
 	productRepo.On("GetByCodeAndTenant", ctx, tenant.ID, "frendz-saving").Return(product, nil)
 	configRepo.On("GetByProductAndType", ctx, product.ID, "PARTICIPANT").Return(config, nil)
@@ -846,7 +846,7 @@ func TestSelfRegister_TransactionRollback_OnUTRCreateFailure(t *testing.T) {
 	profileRepo := &mockUserProfileRepository{}
 	mdValidator := &mockMasterdataValidator{}
 
-	mdValidator.On("ValidateItemCode", ctx, mock.Anything).Return(&masterdatadto.ValidateCodeResponse{Valid: true}, nil)
+	mdValidator.On("ValidateItemCode", ctx, mock.Anything).Return(&masterdata.ValidateCodeResponse{Valid: true}, nil)
 	tenantRepo.On("GetByCode", ctx, req.Organization).Return(tenant, nil)
 	productRepo.On("GetByCodeAndTenant", ctx, tenant.ID, "frendz-saving").Return(product, nil)
 	configRepo.On("GetByProductAndType", ctx, product.ID, "PARTICIPANT").Return(config, nil)

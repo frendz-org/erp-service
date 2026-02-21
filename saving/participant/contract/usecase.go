@@ -2,14 +2,13 @@ package contract
 
 import (
 	"context"
-	"io"
 
-	"erp-service/masterdata/masterdatadto"
+	"erp-service/masterdata"
 	"erp-service/saving/participant/participantdto"
 )
 
 type MasterdataValidateUsecase interface {
-	ValidateItemCode(ctx context.Context, req *masterdatadto.ValidateCodeRequest) (*masterdatadto.ValidateCodeResponse, error)
+	ValidateItemCode(ctx context.Context, req *masterdata.ValidateCodeRequest) (*masterdata.ValidateCodeResponse, error)
 }
 
 type MasterdataUsecase interface {
@@ -26,12 +25,14 @@ type Usecase interface {
 	DeleteIdentity(ctx context.Context, req *participantdto.DeleteChildEntityRequest) error
 
 	SaveAddress(ctx context.Context, req *participantdto.SaveAddressRequest) (*participantdto.AddressResponse, error)
+	SaveAddresses(ctx context.Context, req *participantdto.SaveAddressesRequest) ([]participantdto.AddressResponse, error)
 	DeleteAddress(ctx context.Context, req *participantdto.DeleteChildEntityRequest) error
 
 	SaveBankAccount(ctx context.Context, req *participantdto.SaveBankAccountRequest) (*participantdto.BankAccountResponse, error)
 	DeleteBankAccount(ctx context.Context, req *participantdto.DeleteChildEntityRequest) error
 
 	SaveFamilyMember(ctx context.Context, req *participantdto.SaveFamilyMemberRequest) (*participantdto.FamilyMemberResponse, error)
+	SaveFamilyMembers(ctx context.Context, req *participantdto.SaveFamilyMembersRequest) ([]participantdto.FamilyMemberResponse, error)
 	DeleteFamilyMember(ctx context.Context, req *participantdto.DeleteChildEntityRequest) error
 
 	SaveEmployment(ctx context.Context, req *participantdto.SaveEmploymentRequest) (*participantdto.EmploymentResponse, error)
@@ -39,9 +40,10 @@ type Usecase interface {
 	SavePension(ctx context.Context, req *participantdto.SavePensionRequest) (*participantdto.PensionResponse, error)
 
 	SaveBeneficiary(ctx context.Context, req *participantdto.SaveBeneficiaryRequest) (*participantdto.BeneficiaryResponse, error)
+	SaveBeneficiaries(ctx context.Context, req *participantdto.SaveBeneficiariesRequest) ([]participantdto.BeneficiaryResponse, error)
 	DeleteBeneficiary(ctx context.Context, req *participantdto.DeleteChildEntityRequest) error
 
-	UploadFile(ctx context.Context, req *participantdto.UploadFileRequest, file io.Reader, fileSize int64, contentType, filename string) (*participantdto.FileUploadResponse, error)
+	UploadFile(ctx context.Context, req *participantdto.UploadFileRequest) (*participantdto.FileUploadResponse, error)
 
 	SubmitParticipant(ctx context.Context, req *participantdto.SubmitParticipantRequest) (*participantdto.ParticipantResponse, error)
 	ApproveParticipant(ctx context.Context, req *participantdto.ApproveParticipantRequest) (*participantdto.ParticipantResponse, error)

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io"
 	"net/http/httptest"
 	"testing"
 
@@ -140,8 +139,32 @@ func (m *MockParticipantUsecase) DeleteBeneficiary(ctx context.Context, req *par
 	return args.Error(0)
 }
 
-func (m *MockParticipantUsecase) UploadFile(ctx context.Context, req *participantdto.UploadFileRequest, file io.Reader, fileSize int64, contentType, filename string) (*participantdto.FileUploadResponse, error) {
-	args := m.Called(ctx, req, file, fileSize, contentType, filename)
+func (m *MockParticipantUsecase) SaveAddresses(ctx context.Context, req *participantdto.SaveAddressesRequest) ([]participantdto.AddressResponse, error) {
+	args := m.Called(ctx, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]participantdto.AddressResponse), args.Error(1)
+}
+
+func (m *MockParticipantUsecase) SaveFamilyMembers(ctx context.Context, req *participantdto.SaveFamilyMembersRequest) ([]participantdto.FamilyMemberResponse, error) {
+	args := m.Called(ctx, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]participantdto.FamilyMemberResponse), args.Error(1)
+}
+
+func (m *MockParticipantUsecase) SaveBeneficiaries(ctx context.Context, req *participantdto.SaveBeneficiariesRequest) ([]participantdto.BeneficiaryResponse, error) {
+	args := m.Called(ctx, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]participantdto.BeneficiaryResponse), args.Error(1)
+}
+
+func (m *MockParticipantUsecase) UploadFile(ctx context.Context, req *participantdto.UploadFileRequest) (*participantdto.FileUploadResponse, error) {
+	args := m.Called(ctx, req)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
