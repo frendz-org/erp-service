@@ -3,20 +3,17 @@ package controller
 import (
 	"erp-service/config"
 	"erp-service/delivery/http/dto/response"
-	"erp-service/health"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 type HealthController struct {
-	config        *config.Config
-	healthUsecase health.Usecase
+	config *config.Config
 }
 
-func NewHealthController(cfg *config.Config, healthUsecase health.Usecase) *HealthController {
+func NewHealthController(cfg *config.Config) *HealthController {
 	return &HealthController{
-		config:        cfg,
-		healthUsecase: healthUsecase,
+		config: cfg,
 	}
 }
 
@@ -30,14 +27,6 @@ func (h *HealthController) Check(c *fiber.Ctx) error {
 }
 
 func (h *HealthController) Ready(c *fiber.Ctx) error {
-	if err := h.healthUsecase.CheckHealth(); err != nil {
-		return c.Status(fiber.StatusServiceUnavailable).JSON(response.ErrorResponseWithDetails(
-			"SERVICE_UNAVAILABLE",
-			"Service not ready",
-			fiber.Map{"status": "not ready"},
-		))
-	}
-
 	return c.JSON(response.SuccessResponse("Service ready", fiber.Map{
 		"status": "ready",
 	}))
