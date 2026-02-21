@@ -1,4 +1,4 @@
-package memberdto
+package member
 
 import (
 	"time"
@@ -31,16 +31,16 @@ type MemberDetailResponse struct {
 }
 
 type MemberListItem struct {
-	ID               uuid.UUID  `json:"id"`
-	UserID           uuid.UUID  `json:"user_id"`
-	FirstName        string     `json:"first_name"`
-	LastName         string     `json:"last_name"`
-	Email            string     `json:"email"`
-	Status           string     `json:"status"`
-	RegistrationType string     `json:"registration_type"`
-	RoleCode         *string    `json:"role_code,omitempty"`
-	RoleName         *string    `json:"role_name,omitempty"`
-	CreatedAt        time.Time  `json:"created_at"`
+	ID               uuid.UUID `json:"id"`
+	UserID           uuid.UUID `json:"user_id"`
+	FirstName        string    `json:"first_name"`
+	LastName         string    `json:"last_name"`
+	Email            string    `json:"email"`
+	Status           string    `json:"status"`
+	RegistrationType string    `json:"registration_type"`
+	RoleCode         *string   `json:"role_code,omitempty"`
+	RoleName         *string   `json:"role_name,omitempty"`
+	CreatedAt        time.Time `json:"created_at"`
 }
 
 type PaginationMeta struct {

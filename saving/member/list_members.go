@@ -1,14 +1,9 @@
-package internal
+package member
 
-import (
-	"context"
+import "context"
 
-	"erp-service/saving/member/contract"
-	"erp-service/saving/member/memberdto"
-)
-
-func (uc *usecase) ListMembers(ctx context.Context, req *memberdto.ListRequest) (*memberdto.ListResponse, error) {
-	filter := &contract.MemberListFilter{
+func (uc *usecase) ListMembers(ctx context.Context, req *ListRequest) (*ListResponse, error) {
+	filter := &MemberListFilter{
 		TenantID:  req.TenantID,
 		ProductID: req.ProductID,
 		Status:    req.Status,
@@ -24,14 +19,14 @@ func (uc *usecase) ListMembers(ctx context.Context, req *memberdto.ListRequest) 
 		return nil, err
 	}
 
-	members := make([]memberdto.MemberListItem, 0, len(rows))
+	members := make([]MemberListItem, 0, len(rows))
 	for _, row := range rows {
 		members = append(members, mapRowToListItem(row))
 	}
 
-	return &memberdto.ListResponse{
+	return &ListResponse{
 		Members: members,
-		Pagination: memberdto.PaginationMeta{
+		Pagination: PaginationMeta{
 			Page:    req.Page,
 			PerPage: req.PerPage,
 			Total:   total,

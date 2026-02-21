@@ -1,4 +1,4 @@
-package internal
+package member
 
 import (
 	"context"
@@ -6,10 +6,9 @@ import (
 
 	"erp-service/entity"
 	"erp-service/pkg/errors"
-	"erp-service/saving/member/memberdto"
 )
 
-func (uc *usecase) ApproveMember(ctx context.Context, req *memberdto.ApproveRequest) (*memberdto.MemberDetailResponse, error) {
+func (uc *usecase) ApproveMember(ctx context.Context, req *ApproveRequest) (*MemberDetailResponse, error) {
 	reg, err := uc.utrRepo.GetByID(ctx, req.MemberID)
 	if err != nil {
 		return nil, err

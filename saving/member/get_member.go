@@ -1,13 +1,12 @@
-package internal
+package member
 
 import (
 	"context"
 
 	"erp-service/pkg/errors"
-	"erp-service/saving/member/memberdto"
 )
 
-func (uc *usecase) GetMember(ctx context.Context, req *memberdto.GetMemberRequest) (*memberdto.MemberDetailResponse, error) {
+func (uc *usecase) GetMember(ctx context.Context, req *GetMemberRequest) (*MemberDetailResponse, error) {
 	reg, err := uc.utrRepo.GetByID(ctx, req.MemberID)
 	if err != nil {
 		return nil, err

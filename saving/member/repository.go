@@ -1,4 +1,4 @@
-package contract
+package member
 
 import (
 	"context"

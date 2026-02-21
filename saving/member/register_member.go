@@ -1,4 +1,4 @@
-package internal
+package member
 
 import (
 	"context"
@@ -6,10 +6,9 @@ import (
 
 	"erp-service/entity"
 	"erp-service/pkg/errors"
-	"erp-service/saving/member/memberdto"
 )
 
-func (uc *usecase) RegisterMember(ctx context.Context, req *memberdto.RegisterRequest) (*memberdto.RegisterResponse, error) {
+func (uc *usecase) RegisterMember(ctx context.Context, req *RegisterRequest) (*RegisterResponse, error) {
 	_, err := uc.productRepo.GetByIDAndTenant(ctx, req.ProductID, req.TenantID)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -51,7 +50,7 @@ func (uc *usecase) RegisterMember(ctx context.Context, req *memberdto.RegisterRe
 		return nil, err
 	}
 
-	return &memberdto.RegisterResponse{
+	return &RegisterResponse{
 		ID:               reg.ID,
 		Status:           string(reg.Status),
 		RegistrationType: reg.RegistrationType,

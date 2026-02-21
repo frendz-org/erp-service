@@ -2,10 +2,10 @@ package presenter
 
 import (
 	"erp-service/delivery/http/dto/response"
-	"erp-service/saving/member/memberdto"
+	"erp-service/saving/member"
 )
 
-func MapMemberRegisterResponse(dto *memberdto.RegisterResponse) response.MemberRegisterResponse {
+func MapMemberRegisterResponse(dto *member.RegisterResponse) response.MemberRegisterResponse {
 	return response.MemberRegisterResponse{
 		ID:               dto.ID,
 		Status:           dto.Status,
@@ -14,7 +14,7 @@ func MapMemberRegisterResponse(dto *memberdto.RegisterResponse) response.MemberR
 	}
 }
 
-func MapMemberDetailResponse(dto *memberdto.MemberDetailResponse) response.MemberDetailResponse {
+func MapMemberDetailResponse(dto *member.MemberDetailResponse) response.MemberDetailResponse {
 	return response.MemberDetailResponse{
 		ID:               dto.ID,
 		UserID:           dto.UserID,
@@ -33,7 +33,7 @@ func MapMemberDetailResponse(dto *memberdto.MemberDetailResponse) response.Membe
 	}
 }
 
-func MapMemberListResponse(dto *memberdto.ListResponse) response.MemberListResponse {
+func MapMemberListResponse(dto *member.ListResponse) response.MemberListResponse {
 	members := make([]response.MemberListItemResponse, 0, len(dto.Members))
 	for _, m := range dto.Members {
 		members = append(members, response.MemberListItemResponse{

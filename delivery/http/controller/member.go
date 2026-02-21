@@ -7,7 +7,6 @@ import (
 	"erp-service/delivery/http/presenter"
 	"erp-service/pkg/errors"
 	"erp-service/saving/member"
-	"erp-service/saving/member/memberdto"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -52,7 +51,7 @@ func (ctrl *MemberController) Register(c *fiber.Ctx) error {
 		})
 	}
 
-	req := &memberdto.RegisterRequest{
+	req := &member.RegisterRequest{
 		TenantID:  tenantID,
 		ProductID: productID,
 		UserID:    userClaims.UserID,
@@ -101,7 +100,7 @@ func (ctrl *MemberController) List(c *fiber.Ctx) error {
 		perPage = 10
 	}
 
-	req := &memberdto.ListRequest{
+	req := &member.ListRequest{
 		TenantID:  tenantID,
 		ProductID: productID,
 		Search:    c.Query("search"),
@@ -157,7 +156,7 @@ func (ctrl *MemberController) Get(c *fiber.Ctx) error {
 		})
 	}
 
-	req := &memberdto.GetMemberRequest{
+	req := &member.GetMemberRequest{
 		MemberID:  memberID,
 		TenantID:  tenantID,
 		ProductID: productID,
@@ -228,7 +227,7 @@ func (ctrl *MemberController) Approve(c *fiber.Ctx) error {
 		return errors.ErrValidationWithFields(convertValidationErrors(err.(validator.ValidationErrors)))
 	}
 
-	req := &memberdto.ApproveRequest{
+	req := &member.ApproveRequest{
 		MemberID:   memberID,
 		TenantID:   tenantID,
 		ProductID:  productID,
@@ -301,7 +300,7 @@ func (ctrl *MemberController) Reject(c *fiber.Ctx) error {
 		return errors.ErrValidationWithFields(convertValidationErrors(err.(validator.ValidationErrors)))
 	}
 
-	req := &memberdto.RejectRequest{
+	req := &member.RejectRequest{
 		MemberID:   memberID,
 		TenantID:   tenantID,
 		ProductID:  productID,
@@ -374,7 +373,7 @@ func (ctrl *MemberController) ChangeRole(c *fiber.Ctx) error {
 		return errors.ErrValidationWithFields(convertValidationErrors(err.(validator.ValidationErrors)))
 	}
 
-	req := &memberdto.ChangeRoleRequest{
+	req := &member.ChangeRoleRequest{
 		MemberID:  memberID,
 		TenantID:  tenantID,
 		ProductID: productID,
@@ -433,7 +432,7 @@ func (ctrl *MemberController) Deactivate(c *fiber.Ctx) error {
 		})
 	}
 
-	req := &memberdto.DeactivateRequest{
+	req := &member.DeactivateRequest{
 		MemberID:  memberID,
 		TenantID:  tenantID,
 		ProductID: productID,

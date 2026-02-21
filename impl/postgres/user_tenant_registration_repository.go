@@ -8,7 +8,7 @@ import (
 
 	"erp-service/entity"
 	apperrors "erp-service/pkg/errors"
-	membercontract "erp-service/saving/member/contract"
+	membercontract "erp-service/saving/member"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"

@@ -1,12 +1,10 @@
-package internal
+package member
 
 import (
 	"context"
 
 	"erp-service/entity"
 	"erp-service/pkg/errors"
-	"erp-service/saving/member/contract"
-	"erp-service/saving/member/memberdto"
 
 	"github.com/google/uuid"
 )
@@ -32,8 +30,8 @@ func (uc *usecase) validateTenantBoundary(reg *entity.UserTenantRegistration, te
 	return true
 }
 
-func mapRowToListItem(row contract.MemberListRow) memberdto.MemberListItem {
-	return memberdto.MemberListItem{
+func mapRowToListItem(row MemberListRow) MemberListItem {
+	return MemberListItem{
 		ID:               row.Registration.ID,
 		UserID:           row.Registration.UserID,
 		FirstName:        row.FirstName,
@@ -47,8 +45,8 @@ func mapRowToListItem(row contract.MemberListRow) memberdto.MemberListItem {
 	}
 }
 
-func mapToDetailResponse(reg *entity.UserTenantRegistration, profile *entity.UserProfile, email string, roleCode, roleName *string) *memberdto.MemberDetailResponse {
-	resp := &memberdto.MemberDetailResponse{
+func mapToDetailResponse(reg *entity.UserTenantRegistration, profile *entity.UserProfile, email string, roleCode, roleName *string) *MemberDetailResponse {
+	resp := &MemberDetailResponse{
 		ID:               reg.ID,
 		UserID:           reg.UserID,
 		Email:            email,

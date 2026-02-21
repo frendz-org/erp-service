@@ -1,14 +1,13 @@
-package internal
+package member
 
 import (
 	"context"
 
 	"erp-service/entity"
 	"erp-service/pkg/errors"
-	"erp-service/saving/member/memberdto"
 )
 
-func (uc *usecase) DeactivateMember(ctx context.Context, req *memberdto.DeactivateRequest) (*memberdto.MemberDetailResponse, error) {
+func (uc *usecase) DeactivateMember(ctx context.Context, req *DeactivateRequest) (*MemberDetailResponse, error) {
 	reg, err := uc.utrRepo.GetByID(ctx, req.MemberID)
 	if err != nil {
 		return nil, err
