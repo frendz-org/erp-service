@@ -1,17 +1,16 @@
-package internal
+package user
 
 import (
 	"context"
 	"time"
 
 	"erp-service/entity"
-	"erp-service/iam/user/userdto"
 	"erp-service/pkg/errors"
 
 	"github.com/google/uuid"
 )
 
-func (uc *usecase) Approve(ctx context.Context, id uuid.UUID, approverID uuid.UUID) (*userdto.ApproveResponse, error) {
+func (uc *usecase) Approve(ctx context.Context, id uuid.UUID, approverID uuid.UUID) (*ApproveResponse, error) {
 	user, err := uc.UserRepo.GetByID(ctx, id)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -33,7 +32,7 @@ func (uc *usecase) Approve(ctx context.Context, id uuid.UUID, approverID uuid.UU
 		return nil, errors.ErrInternal("failed to approve user").WithError(err)
 	}
 
-	return &userdto.ApproveResponse{
+	return &ApproveResponse{
 		UserID:  id,
 		Message: "User approved successfully",
 	}, nil

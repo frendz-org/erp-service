@@ -1,20 +1,18 @@
-package internal
+package user
 
 import (
 	"context"
 
 	"erp-service/entity"
-	"erp-service/iam/user/contract"
-	"erp-service/iam/user/userdto"
 	"erp-service/pkg/errors"
 
 	"github.com/google/uuid"
 )
 
-func (uc *usecase) List(ctx context.Context, tenantID *uuid.UUID, req *userdto.ListRequest) (*userdto.ListResponse, error) {
+func (uc *usecase) List(ctx context.Context, tenantID *uuid.UUID, req *ListRequest) (*ListResponse, error) {
 	req.SetDefaults()
 
-	filter := &contract.UserListFilter{
+	filter := &UserListFilter{
 		RoleID:    req.RoleID,
 		Search:    req.Search,
 		Page:      req.Page,
@@ -33,7 +31,7 @@ func (uc *usecase) List(ctx context.Context, tenantID *uuid.UUID, req *userdto.L
 		return nil, errors.ErrInternal("failed to list users").WithError(err)
 	}
 
-	items := make([]userdto.UserListItem, 0, len(users))
+	items := make([]UserListItem, 0, len(users))
 	for _, user := range users {
 		profile, _ := uc.UserProfileRepo.GetByUserID(ctx, user.ID)
 		securityState, _ := uc.UserSecurityStateRepo.GetByUserID(ctx, user.ID)
@@ -45,9 +43,9 @@ func (uc *usecase) List(ctx context.Context, tenantID *uuid.UUID, req *userdto.L
 		totalPages++
 	}
 
-	return &userdto.ListResponse{
+	return &ListResponse{
 		Users: items,
-		Pagination: userdto.Pagination{
+		Pagination: Pagination{
 			Total:      total,
 			Page:       req.Page,
 			PerPage:    req.PerPage,

@@ -1,15 +1,14 @@
-package internal
+package user
 
 import (
 	"context"
 
-	"erp-service/iam/user/userdto"
 	"erp-service/pkg/errors"
 
 	"github.com/google/uuid"
 )
 
-func (uc *usecase) ResetPIN(ctx context.Context, id uuid.UUID) (*userdto.ResetPINResponse, error) {
+func (uc *usecase) ResetPIN(ctx context.Context, id uuid.UUID) (*ResetPINResponse, error) {
 	_, err := uc.UserRepo.GetByID(ctx, id)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -37,7 +36,7 @@ func (uc *usecase) ResetPIN(ctx context.Context, id uuid.UUID) (*userdto.ResetPI
 		return nil, errors.ErrInternal("failed to reset PIN").WithError(err)
 	}
 
-	return &userdto.ResetPINResponse{
+	return &ResetPINResponse{
 		UserID:  id,
 		Message: "PIN reset successfully. User will need to set a new PIN.",
 	}, nil

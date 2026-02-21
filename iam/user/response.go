@@ -1,4 +1,4 @@
-package userdto
+package user
 
 import (
 	"time"

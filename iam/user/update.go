@@ -1,16 +1,15 @@
-package internal
+package user
 
 import (
 	"context"
 
 	"erp-service/entity"
-	"erp-service/iam/user/userdto"
 	"erp-service/pkg/errors"
 
 	"github.com/google/uuid"
 )
 
-func (uc *usecase) Update(ctx context.Context, callerTenantID *uuid.UUID, id uuid.UUID, req *userdto.UpdateRequest) (*userdto.UserDetailResponse, error) {
+func (uc *usecase) Update(ctx context.Context, callerTenantID *uuid.UUID, id uuid.UUID, req *UpdateRequest) (*UserDetailResponse, error) {
 	user, err := uc.UserRepo.GetByID(ctx, id)
 	if err != nil {
 		if errors.IsNotFound(err) {

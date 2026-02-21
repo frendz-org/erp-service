@@ -1,17 +1,16 @@
-package internal
+package user
 
 import (
 	"context"
 	"time"
 
 	"erp-service/entity"
-	"erp-service/iam/user/userdto"
 	"erp-service/pkg/errors"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
-func (uc *usecase) Create(ctx context.Context, req *userdto.CreateRequest) (*userdto.CreateResponse, error) {
+func (uc *usecase) Create(ctx context.Context, req *CreateRequest) (*CreateResponse, error) {
 	tenant, err := uc.TenantRepo.GetByID(ctx, req.TenantID)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -52,7 +51,7 @@ func (uc *usecase) Create(ctx context.Context, req *userdto.CreateRequest) (*use
 		return nil, errors.ErrInternal("failed to hash password").WithError(err)
 	}
 
-	var response *userdto.CreateResponse
+	var response *CreateResponse
 	now := time.Now()
 	passwordHashStr := string(passwordHash)
 
@@ -102,7 +101,7 @@ func (uc *usecase) Create(ctx context.Context, req *userdto.CreateRequest) (*use
 			return err
 		}
 
-		response = &userdto.CreateResponse{
+		response = &CreateResponse{
 			UserID:   user.ID,
 			Email:    req.Email,
 			FullName: req.FirstName + " " + req.LastName,
@@ -119,6 +118,7 @@ func (uc *usecase) Create(ctx context.Context, req *userdto.CreateRequest) (*use
 
 	return response, nil
 }
+
 func validatePassword(password string) error {
 	if len(password) < 8 {
 		return errors.ErrValidation("password must be at least 8 characters")

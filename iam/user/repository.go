@@ -1,4 +1,4 @@
-package contract
+package user
 
 import (
 	"context"
@@ -27,21 +27,25 @@ type UserRepository interface {
 	EmailExists(ctx context.Context, email string) (bool, error)
 	List(ctx context.Context, filter *UserListFilter) ([]*entity.User, int64, error)
 }
+
 type UserProfileRepository interface {
 	Create(ctx context.Context, profile *entity.UserProfile) error
 	GetByUserID(ctx context.Context, userID uuid.UUID) (*entity.UserProfile, error)
 	Update(ctx context.Context, profile *entity.UserProfile) error
 }
+
 type UserAuthMethodRepository interface {
 	Create(ctx context.Context, authMethod *entity.UserAuthMethod) error
 	GetByUserID(ctx context.Context, userID uuid.UUID) (*entity.UserAuthMethod, error)
 	Update(ctx context.Context, authMethod *entity.UserAuthMethod) error
 }
+
 type UserSecurityStateRepository interface {
 	Create(ctx context.Context, securityState *entity.UserSecurityState) error
 	GetByUserID(ctx context.Context, userID uuid.UUID) (*entity.UserSecurityState, error)
 	Update(ctx context.Context, securityState *entity.UserSecurityState) error
 }
+
 type EmailVerificationRepository interface {
 	Create(ctx context.Context, verification *entity.EmailVerification) error
 	GetByID(ctx context.Context, id uuid.UUID) (*entity.EmailVerification, error)
@@ -51,6 +55,7 @@ type EmailVerificationRepository interface {
 	CountActiveOTPsByEmail(ctx context.Context, email string, otpType entity.OTPType) (int, error)
 	DeleteExpiredByEmail(ctx context.Context, email string) error
 }
+
 type TenantRepository interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*entity.Tenant, error)
 	GetByCode(ctx context.Context, code string) (*entity.Tenant, error)
@@ -63,6 +68,7 @@ type RoleRepository interface {
 	GetByName(ctx context.Context, productID uuid.UUID, name string) (*entity.Role, error)
 	GetByCode(ctx context.Context, productID uuid.UUID, code string) (*entity.Role, error)
 }
+
 type RefreshTokenRepository interface {
 	Create(ctx context.Context, token *entity.RefreshToken) error
 	GetByTokenHash(ctx context.Context, tokenHash string) (*entity.RefreshToken, error)
@@ -70,6 +76,7 @@ type RefreshTokenRepository interface {
 	RevokeAllByUserID(ctx context.Context, userID uuid.UUID, reason string) error
 	RevokeByFamily(ctx context.Context, tokenFamily uuid.UUID, reason string) error
 }
+
 type PINVerificationLogRepository interface {
 	Create(ctx context.Context, log *entity.PINVerificationLog) error
 	CountRecentFailures(ctx context.Context, userID uuid.UUID, since int) (int, error)

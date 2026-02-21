@@ -1,17 +1,16 @@
-package internal
+package user
 
 import (
 	"context"
 	"time"
 
 	"erp-service/entity"
-	"erp-service/iam/user/userdto"
 	"erp-service/pkg/errors"
 
 	"github.com/google/uuid"
 )
 
-func (uc *usecase) Reject(ctx context.Context, id uuid.UUID, approverID uuid.UUID, req *userdto.RejectRequest) (*userdto.RejectResponse, error) {
+func (uc *usecase) Reject(ctx context.Context, id uuid.UUID, approverID uuid.UUID, req *RejectRequest) (*RejectResponse, error) {
 	user, err := uc.UserRepo.GetByID(ctx, id)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -33,7 +32,7 @@ func (uc *usecase) Reject(ctx context.Context, id uuid.UUID, approverID uuid.UUI
 		return nil, errors.ErrInternal("failed to reject user").WithError(err)
 	}
 
-	return &userdto.RejectResponse{
+	return &RejectResponse{
 		UserID:  id,
 		Message: "User rejected successfully",
 	}, nil
