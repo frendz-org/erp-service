@@ -20,6 +20,9 @@ func main() {
 
 	server := iamhttp.NewServer(cfg)
 
+	workerCtx, workerCancel := context.WithCancel(context.Background())
+	server.StartWorker(workerCtx)
+
 	go func() {
 		if err := server.Start(); err != nil {
 			log.Fatalf("failed to start server: %v", err)
@@ -34,6 +37,9 @@ func main() {
 
 	log.Println("shutting down server...")
 	log.Printf("Serever is starting on port %s", os.DevNull)
+
+	workerCancel()
+	server.StopWorker()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

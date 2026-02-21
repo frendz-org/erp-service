@@ -8,7 +8,7 @@ import (
 	"erp-service/delivery/http/dto/response"
 	"erp-service/delivery/http/middleware"
 	"erp-service/delivery/http/router"
-	"erp-service/health"
+	"erp-service/delivery/worker"
 	"erp-service/iam/auth"
 	"erp-service/iam/product"
 	"erp-service/iam/role"
@@ -34,9 +34,11 @@ import (
 )
 
 type Server struct {
-	app    *fiber.App
-	config *config.Config
-	logger *zap.Logger
+	app          *fiber.App
+	config       *config.Config
+	logger       *zap.Logger
+	fileWorker   *worker.Worker
+	workerCancel context.CancelFunc
 }
 
 func NewServer(cfg *config.Config) *Server {
@@ -46,10 +48,10 @@ func NewServer(cfg *config.Config) *Server {
 	})
 
 	app := fiber.New(fiber.Config{
-		JSONEncoder:  json.Marshal,
-		JSONDecoder:  json.Unmarshal,
-		AppName:      cfg.App.Name,
-		BodyLimit:    256 * 1024,
+		JSONEncoder: json.Marshal,
+		JSONDecoder: json.Unmarshal,
+		AppName:     cfg.App.Name,
+		BodyLimit:    6 * 1024 * 1024,
 		ReadTimeout:  cfg.Server.ReadTimeout,
 		WriteTimeout: cfg.Server.WriteTimeout,
 		IdleTimeout:  cfg.Server.IdleTimeout,
@@ -98,6 +100,7 @@ func NewServer(cfg *config.Config) *Server {
 	participantPensionRepo := postgres.NewParticipantPensionRepository(postgresDB)
 	participantBeneficiaryRepo := postgres.NewParticipantBeneficiaryRepository(postgresDB)
 	participantStatusHistoryRepo := postgres.NewParticipantStatusHistoryRepository(postgresDB)
+	fileRepo := postgres.NewFileRepository(postgresDB)
 
 	minioClient, err := infrastructure.NewMinIOClient(cfg)
 	if err != nil {
@@ -106,8 +109,6 @@ func NewServer(cfg *config.Config) *Server {
 	fileStorage := implminio.NewFileStorage(minioClient)
 
 	emailService := mailer.NewEmailService(&cfg.Email)
-
-	healthUsecase := health.NewUsecase()
 
 	masterdataUsecase := masterdata.NewUsecase(
 		cfg,
@@ -168,6 +169,7 @@ func NewServer(cfg *config.Config) *Server {
 	)
 	participantUsecase := participant.NewUsecase(
 		cfg,
+		zapLogger,
 		txManager,
 		participantRepo,
 		participantIdentityRepo,
@@ -179,6 +181,7 @@ func NewServer(cfg *config.Config) *Server {
 		participantBeneficiaryRepo,
 		participantStatusHistoryRepo,
 		fileStorage,
+		fileRepo,
 		tenantRepo,
 		productRepo,
 		productRegConfigRepo,
@@ -187,7 +190,7 @@ func NewServer(cfg *config.Config) *Server {
 		masterdataUsecase,
 	)
 
-	healthController := controller.NewHealthController(cfg, healthUsecase)
+	healthController := controller.NewHealthController(cfg)
 	authController := controller.NewRegistrationController(cfg, authUsecase)
 	roleController := controller.NewRoleController(cfg, roleUsecase)
 	userController := controller.NewUserController(cfg, userUsecase)
@@ -195,10 +198,13 @@ func NewServer(cfg *config.Config) *Server {
 	memberController := controller.NewMemberController(memberUsecase)
 	participantController := controller.NewParticipantController(participantUsecase)
 
+	fileWorker := worker.NewWorker(fileRepo, fileStorage, txManager, zapLogger)
+
 	server := &Server{
-		app:    app,
-		config: cfg,
-		logger: zapLogger,
+		app:        app,
+		config:     cfg,
+		logger:     zapLogger,
+		fileWorker: fileWorker,
 	}
 
 	mw := middleware.New(cfg, zapLogger)
@@ -253,6 +259,17 @@ func (s *Server) Start() error {
 
 func (s *Server) Shutdown(ctx context.Context) error {
 	return s.app.ShutdownWithContext(ctx)
+
+func (s *Server) StartWorker(ctx context.Context) {
+	workerCtx, cancel := context.WithCancel(ctx)
+	s.workerCancel = cancel
+	s.fileWorker.Start(workerCtx)
+
+func (s *Server) StopWorker() {
+	if s.workerCancel != nil {
+		s.workerCancel()
+	}
+	s.fileWorker.Stop()
 }
 
 func createErrorHandler(cfg *config.Config, zapLogger *zap.Logger) fiber.ErrorHandler {
