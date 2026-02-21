@@ -1,15 +1,14 @@
-package internal
+package masterdata
 
 import (
 	"context"
 	"fmt"
 
 	"erp-service/entity"
-	"erp-service/masterdata/masterdatadto"
 	"erp-service/pkg/errors"
 )
 
-func (uc *usecase) CreateCategory(ctx context.Context, req *masterdatadto.CreateCategoryRequest) (*masterdatadto.CategoryResponse, error) {
+func (uc *usecase) CreateCategory(ctx context.Context, req *CreateCategoryRequest) (*CategoryResponse, error) {
 	exists, err := uc.categoryRepo.ExistsByCode(ctx, req.Code)
 	if err != nil {
 		return nil, err
@@ -51,5 +50,5 @@ func (uc *usecase) CreateCategory(ctx context.Context, req *masterdatadto.Create
 
 	_ = uc.cache.InvalidateCategories(ctx)
 
-	return masterdatadto.MapCategoryToResponse(category), nil
+	return MapCategoryToResponse(category), nil
 }

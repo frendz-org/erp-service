@@ -1,4 +1,4 @@
-package internal
+package masterdata
 
 import (
 	"context"
@@ -6,13 +6,12 @@ import (
 	"time"
 
 	"erp-service/entity"
-	"erp-service/masterdata/masterdatadto"
 	"erp-service/pkg/errors"
 
 	"github.com/google/uuid"
 )
 
-func (uc *usecase) UpdateItem(ctx context.Context, id uuid.UUID, req *masterdatadto.UpdateItemRequest) (*masterdatadto.ItemResponse, error) {
+func (uc *usecase) UpdateItem(ctx context.Context, id uuid.UUID, req *UpdateItemRequest) (*ItemResponse, error) {
 	item, err := uc.itemRepo.GetByID(ctx, id)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -90,5 +89,5 @@ func (uc *usecase) UpdateItem(ctx context.Context, id uuid.UUID, req *masterdata
 
 	_ = uc.cache.InvalidateItems(ctx)
 
-	return masterdatadto.MapItemToResponse(item), nil
+	return MapItemToResponse(item), nil
 }

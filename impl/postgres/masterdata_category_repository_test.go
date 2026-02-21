@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"erp-service/entity"
-	"erp-service/masterdata/contract"
+	"erp-service/masterdata"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"
@@ -174,7 +174,7 @@ func TestMasterdataCategoryRepository_List(t *testing.T) {
 			WithArgs("ACTIVE").
 			WillReturnRows(dataRows)
 
-		filter := &contract.CategoryFilter{
+		filter := &masterdata.CategoryFilter{
 			Status: "ACTIVE",
 		}
 		categories, total, err := repo.List(ctx, filter)
@@ -200,7 +200,7 @@ func TestMasterdataCategoryRepository_List(t *testing.T) {
 			WithArgs(5).
 			WillReturnRows(dataRows)
 
-		filter := &contract.CategoryFilter{
+		filter := &masterdata.CategoryFilter{
 			Page:    1,
 			PerPage: 5,
 		}

@@ -1,17 +1,16 @@
-package internal
+package masterdata
 
 import (
 	"context"
 	"fmt"
 
 	"erp-service/entity"
-	"erp-service/masterdata/masterdatadto"
 	"erp-service/pkg/errors"
 
 	"github.com/google/uuid"
 )
 
-func (uc *usecase) UpdateCategory(ctx context.Context, id uuid.UUID, req *masterdatadto.UpdateCategoryRequest) (*masterdatadto.CategoryResponse, error) {
+func (uc *usecase) UpdateCategory(ctx context.Context, id uuid.UUID, req *UpdateCategoryRequest) (*CategoryResponse, error) {
 	category, err := uc.categoryRepo.GetByID(ctx, id)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -73,5 +72,5 @@ func (uc *usecase) UpdateCategory(ctx context.Context, id uuid.UUID, req *master
 
 	_ = uc.cache.InvalidateCategories(ctx)
 
-	return masterdatadto.MapCategoryToResponse(category), nil
+	return MapCategoryToResponse(category), nil
 }

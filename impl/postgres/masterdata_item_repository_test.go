@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"erp-service/entity"
-	"erp-service/masterdata/contract"
+	"erp-service/masterdata"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"
@@ -208,7 +208,7 @@ func TestMasterdataItemRepository_List(t *testing.T) {
 		mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "masterdata_items"`)).
 			WillReturnRows(dataRows)
 
-		filter := &contract.ItemFilter{
+		filter := &masterdata.ItemFilter{
 			CategoryID: &categoryID,
 			Status:     "ACTIVE",
 		}

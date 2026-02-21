@@ -1,19 +1,17 @@
-package internal
+package masterdata
 
 import (
 	"context"
 	"fmt"
-
-	"erp-service/masterdata/masterdatadto"
 )
 
-func (uc *usecase) ValidateItemCode(ctx context.Context, req *masterdatadto.ValidateCodeRequest) (*masterdatadto.ValidateCodeResponse, error) {
+func (uc *usecase) ValidateItemCode(ctx context.Context, req *ValidateCodeRequest) (*ValidateCodeResponse, error) {
 	valid, err := uc.itemRepo.ValidateCode(ctx, req.CategoryCode, req.ItemCode, req.TenantID)
 	if err != nil {
 		return nil, err
 	}
 
-	response := &masterdatadto.ValidateCodeResponse{
+	response := &ValidateCodeResponse{
 		Valid:        valid,
 		CategoryCode: req.CategoryCode,
 		ItemCode:     req.ItemCode,

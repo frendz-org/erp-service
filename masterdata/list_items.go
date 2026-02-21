@@ -1,13 +1,10 @@
-package internal
+package masterdata
 
 import (
 	"context"
-
-	"erp-service/masterdata/contract"
-	"erp-service/masterdata/masterdatadto"
 )
 
-func (uc *usecase) ListItems(ctx context.Context, req *masterdatadto.ListItemsRequest) (*masterdatadto.ListItemsResponse, error) {
+func (uc *usecase) ListItems(ctx context.Context, req *ListItemsRequest) (*ListItemsResponse, error) {
 	req.Page, req.PerPage = normalizePageParams(req.Page, req.PerPage)
 
 	filterHash := hashFilter(req)
@@ -15,7 +12,7 @@ func (uc *usecase) ListItems(ctx context.Context, req *masterdatadto.ListItemsRe
 		return cached, nil
 	}
 
-	filter := &contract.ItemFilter{
+	filter := &ItemFilter{
 		CategoryID:   req.CategoryID,
 		CategoryCode: req.CategoryCode,
 		TenantID:     req.TenantID,
@@ -36,13 +33,13 @@ func (uc *usecase) ListItems(ctx context.Context, req *masterdatadto.ListItemsRe
 		return nil, err
 	}
 
-	response := &masterdatadto.ListItemsResponse{
-		Items: masterdatadto.MapItemsToResponse(items),
-		Pagination: masterdatadto.Pagination{
+	response := &ListItemsResponse{
+		Items: MapItemsToResponse(items),
+		Pagination: Pagination{
 			Total:      total,
 			Page:       req.Page,
 			PerPage:    req.PerPage,
-			TotalPages: masterdatadto.CalculateTotalPages(total, req.PerPage),
+			TotalPages: CalculateTotalPages(total, req.PerPage),
 		},
 	}
 

@@ -2,10 +2,10 @@ package presenter
 
 import (
 	"erp-service/delivery/http/dto/response"
-	"erp-service/masterdata/masterdatadto"
+	"erp-service/masterdata"
 )
 
-func ToCategoryResponse(category *masterdatadto.CategoryResponse) *response.MasterdataCategoryResponse {
+func ToCategoryResponse(category *masterdata.CategoryResponse) *response.MasterdataCategoryResponse {
 	if category == nil {
 		return nil
 	}
@@ -19,7 +19,7 @@ func ToCategoryResponse(category *masterdatadto.CategoryResponse) *response.Mast
 	}
 }
 
-func ToCategoryListResponse(categories []*masterdatadto.CategoryResponse) []*response.MasterdataCategoryResponse {
+func ToCategoryListResponse(categories []*masterdata.CategoryResponse) []*response.MasterdataCategoryResponse {
 	if categories == nil {
 		return nil
 	}

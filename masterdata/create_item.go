@@ -1,4 +1,4 @@
-package internal
+package masterdata
 
 import (
 	"context"
@@ -6,11 +6,10 @@ import (
 	"time"
 
 	"erp-service/entity"
-	"erp-service/masterdata/masterdatadto"
 	"erp-service/pkg/errors"
 )
 
-func (uc *usecase) CreateItem(ctx context.Context, req *masterdatadto.CreateItemRequest) (*masterdatadto.ItemResponse, error) {
+func (uc *usecase) CreateItem(ctx context.Context, req *CreateItemRequest) (*ItemResponse, error) {
 	category, err := uc.categoryRepo.GetByID(ctx, req.CategoryID)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -86,5 +85,5 @@ func (uc *usecase) CreateItem(ctx context.Context, req *masterdatadto.CreateItem
 
 	_ = uc.cache.InvalidateItems(ctx)
 
-	return masterdatadto.MapItemToResponse(item), nil
+	return MapItemToResponse(item), nil
 }

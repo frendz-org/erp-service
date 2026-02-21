@@ -1,13 +1,11 @@
-package internal
+package masterdata
 
 import (
 	"context"
-
-	"erp-service/masterdata/masterdatadto"
 )
 
-func (uc *usecase) ValidateItemCodes(ctx context.Context, req *masterdatadto.ValidateCodesRequest) (*masterdatadto.ValidateCodesResponse, error) {
-	results := make([]masterdatadto.ValidationResult, len(req.Validations))
+func (uc *usecase) ValidateItemCodes(ctx context.Context, req *ValidateCodesRequest) (*ValidateCodesResponse, error) {
+	results := make([]ValidationResult, len(req.Validations))
 	allValid := true
 
 	for i, v := range req.Validations {
@@ -16,7 +14,7 @@ func (uc *usecase) ValidateItemCodes(ctx context.Context, req *masterdatadto.Val
 			return nil, err
 		}
 
-		result := masterdatadto.ValidationResult{
+		result := ValidationResult{
 			CategoryCode: v.CategoryCode,
 			ItemCode:     v.ItemCode,
 			Valid:        valid,
@@ -30,7 +28,7 @@ func (uc *usecase) ValidateItemCodes(ctx context.Context, req *masterdatadto.Val
 		results[i] = result
 	}
 
-	return &masterdatadto.ValidateCodesResponse{
+	return &ValidateCodesResponse{
 		AllValid: allValid,
 		Results:  results,
 	}, nil

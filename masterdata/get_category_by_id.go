@@ -1,15 +1,14 @@
-package internal
+package masterdata
 
 import (
 	"context"
 
-	"erp-service/masterdata/masterdatadto"
 	"erp-service/pkg/errors"
 
 	"github.com/google/uuid"
 )
 
-func (uc *usecase) GetCategoryByID(ctx context.Context, id uuid.UUID) (*masterdatadto.CategoryResponse, error) {
+func (uc *usecase) GetCategoryByID(ctx context.Context, id uuid.UUID) (*CategoryResponse, error) {
 	if cached, _ := uc.cache.GetCategoryByID(ctx, id); cached != nil {
 		return cached, nil
 	}
@@ -22,7 +21,7 @@ func (uc *usecase) GetCategoryByID(ctx context.Context, id uuid.UUID) (*masterda
 		return nil, err
 	}
 
-	response := masterdatadto.MapCategoryToResponse(category)
+	response := MapCategoryToResponse(category)
 
 	_ = uc.cache.SetCategoryByID(ctx, id, response, uc.config.Masterdata.CacheTTLCategories)
 

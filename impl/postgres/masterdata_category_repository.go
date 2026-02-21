@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"erp-service/entity"
-	"erp-service/masterdata/contract"
+	"erp-service/masterdata"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -14,13 +14,13 @@ type masterdataCategoryRepository struct {
 	baseRepository
 }
 
-func NewMasterdataCategoryRepository(db *gorm.DB) contract.CategoryRepository {
+func NewMasterdataCategoryRepository(db *gorm.DB) masterdata.CategoryRepository {
 	return &masterdataCategoryRepository{
 		baseRepository: baseRepository{db: db},
 	}
 }
 
-func (r *masterdataCategoryRepository) List(ctx context.Context, filter *contract.CategoryFilter) ([]*entity.MasterdataCategory, int64, error) {
+func (r *masterdataCategoryRepository) List(ctx context.Context, filter *masterdata.CategoryFilter) ([]*entity.MasterdataCategory, int64, error) {
 	var categories []*entity.MasterdataCategory
 	var total int64
 

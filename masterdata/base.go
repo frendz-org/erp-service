@@ -1,4 +1,4 @@
-package internal
+package masterdata
 
 import (
 	"crypto/sha256"
@@ -6,21 +6,20 @@ import (
 	"encoding/json"
 
 	"erp-service/config"
-	"erp-service/masterdata/contract"
 )
 
 type usecase struct {
 	config       *config.Config
-	categoryRepo contract.CategoryRepository
-	itemRepo     contract.ItemRepository
-	cache        contract.MasterdataCache
+	categoryRepo CategoryRepository
+	itemRepo     ItemRepository
+	cache        MasterdataCache
 }
 
-func NewUsecase(
+func newUsecase(
 	cfg *config.Config,
-	categoryRepo contract.CategoryRepository,
-	itemRepo contract.ItemRepository,
-	cache contract.MasterdataCache,
+	categoryRepo CategoryRepository,
+	itemRepo ItemRepository,
+	cache MasterdataCache,
 ) *usecase {
 	return &usecase{
 		config:       cfg,

@@ -1,4 +1,4 @@
-package masterdatadto
+package masterdata
 
 import (
 	"encoding/json"

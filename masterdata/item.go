@@ -1,4 +1,4 @@
-package internal
+package masterdata
 
 import (
 	"context"
@@ -6,14 +6,12 @@ import (
 	"time"
 
 	"erp-service/entity"
-	"erp-service/masterdata/contract"
-	"erp-service/masterdata/masterdatadto"
 	"erp-service/pkg/errors"
 
 	"github.com/google/uuid"
 )
 
-func (uc *usecase) ItemList(ctx context.Context, req *masterdatadto.ListItemsRequest) (*masterdatadto.ListItemsResponse, error) {
+func (uc *usecase) ItemList(ctx context.Context, req *ListItemsRequest) (*ListItemsResponse, error) {
 	req.Page, req.PerPage = normalizePageParams(req.Page, req.PerPage)
 
 	filterHash := hashFilter(req)
@@ -21,7 +19,7 @@ func (uc *usecase) ItemList(ctx context.Context, req *masterdatadto.ListItemsReq
 		return cached, nil
 	}
 
-	filter := &contract.ItemFilter{
+	filter := &ItemFilter{
 		CategoryID:   req.CategoryID,
 		CategoryCode: req.CategoryCode,
 		TenantID:     req.TenantID,
@@ -42,13 +40,13 @@ func (uc *usecase) ItemList(ctx context.Context, req *masterdatadto.ListItemsReq
 		return nil, err
 	}
 
-	response := &masterdatadto.ListItemsResponse{
-		Items: masterdatadto.MapItemsToResponse(items),
-		Pagination: masterdatadto.Pagination{
+	response := &ListItemsResponse{
+		Items: MapItemsToResponse(items),
+		Pagination: Pagination{
 			Total:      total,
 			Page:       req.Page,
 			PerPage:    req.PerPage,
-			TotalPages: masterdatadto.CalculateTotalPages(total, req.PerPage),
+			TotalPages: CalculateTotalPages(total, req.PerPage),
 		},
 	}
 
@@ -57,7 +55,7 @@ func (uc *usecase) ItemList(ctx context.Context, req *masterdatadto.ListItemsReq
 	return response, nil
 }
 
-func (uc *usecase) ItemGetByID(ctx context.Context, id uuid.UUID) (*masterdatadto.ItemResponse, error) {
+func (uc *usecase) ItemGetByID(ctx context.Context, id uuid.UUID) (*ItemResponse, error) {
 
 	if cached, _ := uc.cache.GetItemByID(ctx, id); cached != nil {
 		return cached, nil
@@ -71,14 +69,14 @@ func (uc *usecase) ItemGetByID(ctx context.Context, id uuid.UUID) (*masterdatadt
 		return nil, err
 	}
 
-	response := masterdatadto.MapItemToResponse(item)
+	response := MapItemToResponse(item)
 
 	_ = uc.cache.SetItemByID(ctx, id, response, uc.config.Masterdata.CacheTTLItems)
 
 	return response, nil
 }
 
-func (uc *usecase) ItemGetByCode(ctx context.Context, categoryCode string, tenantID *uuid.UUID, itemCode string) (*masterdatadto.ItemResponse, error) {
+func (uc *usecase) ItemGetByCode(ctx context.Context, categoryCode string, tenantID *uuid.UUID, itemCode string) (*ItemResponse, error) {
 
 	category, err := uc.categoryRepo.GetByCode(ctx, categoryCode)
 	if err != nil {
@@ -100,14 +98,14 @@ func (uc *usecase) ItemGetByCode(ctx context.Context, categoryCode string, tenan
 		return nil, err
 	}
 
-	response := masterdatadto.MapItemToResponse(item)
+	response := MapItemToResponse(item)
 
 	_ = uc.cache.SetItemByCode(ctx, category.ID, tenantID, itemCode, response, uc.config.Masterdata.CacheTTLItems)
 
 	return response, nil
 }
 
-func (uc *usecase) ItemCreate(ctx context.Context, req *masterdatadto.CreateItemRequest) (*masterdatadto.ItemResponse, error) {
+func (uc *usecase) ItemCreate(ctx context.Context, req *CreateItemRequest) (*ItemResponse, error) {
 
 	category, err := uc.categoryRepo.GetByID(ctx, req.CategoryID)
 	if err != nil {
@@ -184,10 +182,10 @@ func (uc *usecase) ItemCreate(ctx context.Context, req *masterdatadto.CreateItem
 
 	_ = uc.cache.InvalidateItems(ctx)
 
-	return masterdatadto.MapItemToResponse(item), nil
+	return MapItemToResponse(item), nil
 }
 
-func (uc *usecase) ItemUpdate(ctx context.Context, id uuid.UUID, req *masterdatadto.UpdateItemRequest) (*masterdatadto.ItemResponse, error) {
+func (uc *usecase) ItemUpdate(ctx context.Context, id uuid.UUID, req *UpdateItemRequest) (*ItemResponse, error) {
 
 	item, err := uc.itemRepo.GetByID(ctx, id)
 	if err != nil {
@@ -266,7 +264,7 @@ func (uc *usecase) ItemUpdate(ctx context.Context, id uuid.UUID, req *masterdata
 
 	_ = uc.cache.InvalidateItems(ctx)
 
-	return masterdatadto.MapItemToResponse(item), nil
+	return MapItemToResponse(item), nil
 }
 
 func (uc *usecase) ItemDelete(ctx context.Context, id uuid.UUID) error {
@@ -292,7 +290,7 @@ func (uc *usecase) ItemDelete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (uc *usecase) ItemGetChildren(ctx context.Context, parentID uuid.UUID) ([]*masterdatadto.ItemResponse, error) {
+func (uc *usecase) ItemGetChildren(ctx context.Context, parentID uuid.UUID) ([]*ItemResponse, error) {
 
 	if cached, _ := uc.cache.GetItemChildren(ctx, parentID); cached != nil {
 		return cached, nil
@@ -303,14 +301,14 @@ func (uc *usecase) ItemGetChildren(ctx context.Context, parentID uuid.UUID) ([]*
 		return nil, err
 	}
 
-	response := masterdatadto.MapItemsToResponse(children)
+	response := MapItemsToResponse(children)
 
 	_ = uc.cache.SetItemChildren(ctx, parentID, response, uc.config.Masterdata.CacheTTLItems)
 
 	return response, nil
 }
 
-func (uc *usecase) ItemGetTree(ctx context.Context, categoryCode string, tenantID *uuid.UUID) ([]*masterdatadto.ItemResponse, error) {
+func (uc *usecase) ItemGetTree(ctx context.Context, categoryCode string, tenantID *uuid.UUID) ([]*ItemResponse, error) {
 
 	if cached, _ := uc.cache.GetItemTree(ctx, categoryCode, tenantID); cached != nil {
 		return cached, nil
@@ -321,24 +319,24 @@ func (uc *usecase) ItemGetTree(ctx context.Context, categoryCode string, tenantI
 		return nil, err
 	}
 
-	response := masterdatadto.MapItemsToResponse(items)
+	response := MapItemsToResponse(items)
 
 	_ = uc.cache.SetItemTree(ctx, categoryCode, tenantID, response, uc.config.Masterdata.CacheTTLTree)
 
 	return response, nil
 }
 
-func (uc *usecase) ItemListByParent(ctx context.Context, categoryCode string, parentCode string, tenantID *uuid.UUID) ([]*masterdatadto.ItemResponse, error) {
+func (uc *usecase) ItemListByParent(ctx context.Context, categoryCode string, parentCode string, tenantID *uuid.UUID) ([]*ItemResponse, error) {
 
 	items, err := uc.itemRepo.ListByParent(ctx, categoryCode, parentCode, tenantID)
 	if err != nil {
 		return nil, err
 	}
 
-	return masterdatadto.MapItemsToResponse(items), nil
+	return MapItemsToResponse(items), nil
 }
 
-func (uc *usecase) ItemGetDefault(ctx context.Context, categoryCode string, tenantID *uuid.UUID) (*masterdatadto.ItemResponse, error) {
+func (uc *usecase) ItemGetDefault(ctx context.Context, categoryCode string, tenantID *uuid.UUID) (*ItemResponse, error) {
 
 	category, err := uc.categoryRepo.GetByCode(ctx, categoryCode)
 	if err != nil {
@@ -360,20 +358,20 @@ func (uc *usecase) ItemGetDefault(ctx context.Context, categoryCode string, tena
 		return nil, err
 	}
 
-	response := masterdatadto.MapItemToResponse(item)
+	response := MapItemToResponse(item)
 
 	_ = uc.cache.SetItemDefault(ctx, category.ID, tenantID, response, uc.config.Masterdata.CacheTTLItems)
 
 	return response, nil
 }
 
-func (uc *usecase) ItemValidateCode(ctx context.Context, req *masterdatadto.ValidateCodeRequest) (*masterdatadto.ValidateCodeResponse, error) {
+func (uc *usecase) ItemValidateCode(ctx context.Context, req *ValidateCodeRequest) (*ValidateCodeResponse, error) {
 	valid, err := uc.itemRepo.ValidateCode(ctx, req.CategoryCode, req.ItemCode, req.TenantID)
 	if err != nil {
 		return nil, err
 	}
 
-	response := &masterdatadto.ValidateCodeResponse{
+	response := &ValidateCodeResponse{
 		Valid:        valid,
 		CategoryCode: req.CategoryCode,
 		ItemCode:     req.ItemCode,
@@ -386,8 +384,8 @@ func (uc *usecase) ItemValidateCode(ctx context.Context, req *masterdatadto.Vali
 	return response, nil
 }
 
-func (uc *usecase) ItemValidateCodes(ctx context.Context, req *masterdatadto.ValidateCodesRequest) (*masterdatadto.ValidateCodesResponse, error) {
-	results := make([]masterdatadto.ValidationResult, len(req.Validations))
+func (uc *usecase) ItemValidateCodes(ctx context.Context, req *ValidateCodesRequest) (*ValidateCodesResponse, error) {
+	results := make([]ValidationResult, len(req.Validations))
 	allValid := true
 
 	for i, v := range req.Validations {
@@ -396,7 +394,7 @@ func (uc *usecase) ItemValidateCodes(ctx context.Context, req *masterdatadto.Val
 			return nil, err
 		}
 
-		result := masterdatadto.ValidationResult{
+		result := ValidationResult{
 			CategoryCode: v.CategoryCode,
 			ItemCode:     v.ItemCode,
 			Valid:        valid,
@@ -410,7 +408,7 @@ func (uc *usecase) ItemValidateCodes(ctx context.Context, req *masterdatadto.Val
 		results[i] = result
 	}
 
-	return &masterdatadto.ValidateCodesResponse{
+	return &ValidateCodesResponse{
 		AllValid: allValid,
 		Results:  results,
 	}, nil

@@ -1,15 +1,14 @@
-package internal
+package masterdata
 
 import (
 	"context"
 
-	"erp-service/masterdata/masterdatadto"
 	"erp-service/pkg/errors"
 
 	"github.com/google/uuid"
 )
 
-func (uc *usecase) GetItemByID(ctx context.Context, id uuid.UUID) (*masterdatadto.ItemResponse, error) {
+func (uc *usecase) GetItemByID(ctx context.Context, id uuid.UUID) (*ItemResponse, error) {
 	if cached, _ := uc.cache.GetItemByID(ctx, id); cached != nil {
 		return cached, nil
 	}
@@ -22,7 +21,7 @@ func (uc *usecase) GetItemByID(ctx context.Context, id uuid.UUID) (*masterdatadt
 		return nil, err
 	}
 
-	response := masterdatadto.MapItemToResponse(item)
+	response := MapItemToResponse(item)
 
 	_ = uc.cache.SetItemByID(ctx, id, response, uc.config.Masterdata.CacheTTLItems)
 

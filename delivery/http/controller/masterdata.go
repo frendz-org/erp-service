@@ -5,7 +5,6 @@ import (
 	"erp-service/delivery/http/dto/response"
 	"erp-service/delivery/http/presenter"
 	"erp-service/masterdata"
-	"erp-service/masterdata/masterdatadto"
 	"erp-service/pkg/errors"
 
 	"github.com/go-playground/validator/v10"
@@ -28,7 +27,7 @@ func NewMasterdataController(cfg *config.Config, usecase masterdata.Usecase) *Ma
 }
 
 func (mc *MasterdataController) ListCategories(c *fiber.Ctx) error {
-	var req masterdatadto.ListCategoriesRequest
+	var req masterdata.ListCategoriesRequest
 	if err := c.QueryParser(&req); err != nil {
 		return errors.ErrBadRequest("Invalid query parameters")
 	}
@@ -81,7 +80,7 @@ func (mc *MasterdataController) GetCategoryByCode(c *fiber.Ctx) error {
 }
 
 func (mc *MasterdataController) CreateCategory(c *fiber.Ctx) error {
-	var req masterdatadto.CreateCategoryRequest
+	var req masterdata.CreateCategoryRequest
 	if err := c.BodyParser(&req); err != nil {
 		return errors.ErrBadRequest("Invalid request body")
 	}
@@ -108,7 +107,7 @@ func (mc *MasterdataController) UpdateCategory(c *fiber.Ctx) error {
 		return errors.ErrBadRequest("Invalid category ID format")
 	}
 
-	var req masterdatadto.UpdateCategoryRequest
+	var req masterdata.UpdateCategoryRequest
 	if err := c.BodyParser(&req); err != nil {
 		return errors.ErrBadRequest("Invalid request body")
 	}
@@ -155,7 +154,7 @@ func (mc *MasterdataController) GetCategoryChildren(c *fiber.Ctx) error {
 }
 
 func (mc *MasterdataController) ListItems(c *fiber.Ctx) error {
-	var req masterdatadto.ListItemsRequest
+	var req masterdata.ListItemsRequest
 	if err := c.QueryParser(&req); err != nil {
 		return errors.ErrBadRequest("Invalid query parameters")
 	}
@@ -222,7 +221,7 @@ func (mc *MasterdataController) GetItemByCode(c *fiber.Ctx) error {
 }
 
 func (mc *MasterdataController) CreateItem(c *fiber.Ctx) error {
-	var req masterdatadto.CreateItemRequest
+	var req masterdata.CreateItemRequest
 	if err := c.BodyParser(&req); err != nil {
 		return errors.ErrBadRequest("Invalid request body")
 	}
@@ -253,7 +252,7 @@ func (mc *MasterdataController) UpdateItem(c *fiber.Ctx) error {
 		return errors.ErrBadRequest("Invalid item ID format")
 	}
 
-	var req masterdatadto.UpdateItemRequest
+	var req masterdata.UpdateItemRequest
 	if err := c.BodyParser(&req); err != nil {
 		return errors.ErrBadRequest("Invalid request body")
 	}
@@ -374,7 +373,7 @@ func (mc *MasterdataController) GetDefaultItem(c *fiber.Ctx) error {
 }
 
 func (mc *MasterdataController) ValidateCode(c *fiber.Ctx) error {
-	var req masterdatadto.ValidateCodeRequest
+	var req masterdata.ValidateCodeRequest
 	if err := c.BodyParser(&req); err != nil {
 		return errors.ErrBadRequest("Invalid request body")
 	}
@@ -392,7 +391,7 @@ func (mc *MasterdataController) ValidateCode(c *fiber.Ctx) error {
 }
 
 func (mc *MasterdataController) ValidateCodes(c *fiber.Ctx) error {
-	var req masterdatadto.ValidateCodesRequest
+	var req masterdata.ValidateCodesRequest
 	if err := c.BodyParser(&req); err != nil {
 		return errors.ErrBadRequest("Invalid request body")
 	}

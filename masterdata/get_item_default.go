@@ -1,16 +1,15 @@
-package internal
+package masterdata
 
 import (
 	"context"
 	"fmt"
 
-	"erp-service/masterdata/masterdatadto"
 	"erp-service/pkg/errors"
 
 	"github.com/google/uuid"
 )
 
-func (uc *usecase) GetItemDefault(ctx context.Context, categoryCode string, tenantID *uuid.UUID) (*masterdatadto.ItemResponse, error) {
+func (uc *usecase) GetItemDefault(ctx context.Context, categoryCode string, tenantID *uuid.UUID) (*ItemResponse, error) {
 	category, err := uc.categoryRepo.GetByCode(ctx, categoryCode)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -31,7 +30,7 @@ func (uc *usecase) GetItemDefault(ctx context.Context, categoryCode string, tena
 		return nil, err
 	}
 
-	response := masterdatadto.MapItemToResponse(item)
+	response := MapItemToResponse(item)
 
 	_ = uc.cache.SetItemDefault(ctx, category.ID, tenantID, response, uc.config.Masterdata.CacheTTLItems)
 

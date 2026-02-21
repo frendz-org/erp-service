@@ -1,13 +1,12 @@
-package internal
+package masterdata
 
 import (
 	"context"
 
-	"erp-service/masterdata/masterdatadto"
 	"erp-service/pkg/errors"
 )
 
-func (uc *usecase) GetCategoryByCode(ctx context.Context, code string) (*masterdatadto.CategoryResponse, error) {
+func (uc *usecase) GetCategoryByCode(ctx context.Context, code string) (*CategoryResponse, error) {
 	if cached, _ := uc.cache.GetCategoryByCode(ctx, code); cached != nil {
 		return cached, nil
 	}
@@ -20,7 +19,7 @@ func (uc *usecase) GetCategoryByCode(ctx context.Context, code string) (*masterd
 		return nil, err
 	}
 
-	response := masterdatadto.MapCategoryToResponse(category)
+	response := MapCategoryToResponse(category)
 
 	_ = uc.cache.SetCategoryByCode(ctx, code, response, uc.config.Masterdata.CacheTTLCategories)
 

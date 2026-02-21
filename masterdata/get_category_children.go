@@ -1,14 +1,12 @@
-package internal
+package masterdata
 
 import (
 	"context"
 
-	"erp-service/masterdata/masterdatadto"
-
 	"github.com/google/uuid"
 )
 
-func (uc *usecase) GetCategoryChildren(ctx context.Context, parentID uuid.UUID) ([]*masterdatadto.CategoryResponse, error) {
+func (uc *usecase) GetCategoryChildren(ctx context.Context, parentID uuid.UUID) ([]*CategoryResponse, error) {
 	if cached, _ := uc.cache.GetCategoryChildren(ctx, parentID); cached != nil {
 		return cached, nil
 	}
@@ -18,7 +16,7 @@ func (uc *usecase) GetCategoryChildren(ctx context.Context, parentID uuid.UUID) 
 		return nil, err
 	}
 
-	response := masterdatadto.MapCategoriesToResponse(children)
+	response := MapCategoriesToResponse(children)
 
 	_ = uc.cache.SetCategoryChildren(ctx, parentID, response, uc.config.Masterdata.CacheTTLCategories)
 
