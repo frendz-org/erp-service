@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"erp-service/entity"
-	"erp-service/iam/auth/contract"
+	"erp-service/iam/auth"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -15,7 +15,7 @@ type userSessionRepository struct {
 	baseRepository
 }
 
-func NewUserSessionRepository(db *gorm.DB) contract.UserSessionRepository {
+func NewUserSessionRepository(db *gorm.DB) auth.UserSessionRepository {
 	return &userSessionRepository{
 		baseRepository: baseRepository{db: db},
 	}

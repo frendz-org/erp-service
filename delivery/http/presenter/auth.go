@@ -2,10 +2,10 @@ package presenter
 
 import (
 	"erp-service/delivery/http/dto/response"
-	"erp-service/iam/auth/authdto"
+	"erp-service/iam/auth"
 )
 
-func ToInitiateRegistrationResponse(resp *authdto.InitiateRegistrationResponse) *response.InitiateRegistrationResponse {
+func ToInitiateRegistrationResponse(resp *auth.InitiateRegistrationResponse) *response.InitiateRegistrationResponse {
 	if resp == nil {
 		return nil
 	}
@@ -22,7 +22,7 @@ func ToInitiateRegistrationResponse(resp *authdto.InitiateRegistrationResponse) 
 	}
 }
 
-func ToVerifyRegistrationOTPResponse(resp *authdto.VerifyRegistrationOTPResponse) *response.VerifyRegistrationOTPResponse {
+func ToVerifyRegistrationOTPResponse(resp *auth.VerifyRegistrationOTPResponse) *response.VerifyRegistrationOTPResponse {
 	if resp == nil {
 		return nil
 	}
@@ -39,7 +39,7 @@ func ToVerifyRegistrationOTPResponse(resp *authdto.VerifyRegistrationOTPResponse
 	}
 }
 
-func ToResendRegistrationOTPResponse(resp *authdto.ResendRegistrationOTPResponse) *response.ResendRegistrationOTPResponse {
+func ToResendRegistrationOTPResponse(resp *auth.ResendRegistrationOTPResponse) *response.ResendRegistrationOTPResponse {
 	if resp == nil {
 		return nil
 	}
@@ -52,7 +52,7 @@ func ToResendRegistrationOTPResponse(resp *authdto.ResendRegistrationOTPResponse
 	}
 }
 
-func ToRegistrationStatusResponse(resp *authdto.RegistrationStatusResponse) *response.RegistrationStatusResponse {
+func ToRegistrationStatusResponse(resp *auth.RegistrationStatusResponse) *response.RegistrationStatusResponse {
 	if resp == nil {
 		return nil
 	}
@@ -66,7 +66,7 @@ func ToRegistrationStatusResponse(resp *authdto.RegistrationStatusResponse) *res
 	}
 }
 
-func ToSetPasswordResponse(resp *authdto.SetPasswordResponse) *response.SetPasswordResponse {
+func ToSetPasswordResponse(resp *auth.SetPasswordResponse) *response.SetPasswordResponse {
 	if resp == nil {
 		return nil
 	}
@@ -83,7 +83,7 @@ func ToSetPasswordResponse(resp *authdto.SetPasswordResponse) *response.SetPassw
 	}
 }
 
-func ToCompleteProfileRegistrationResponse(resp *authdto.CompleteProfileRegistrationResponse) *response.CompleteProfileRegistrationResponse {
+func ToCompleteProfileRegistrationResponse(resp *auth.CompleteProfileRegistrationResponse) *response.CompleteProfileRegistrationResponse {
 	if resp == nil {
 		return nil
 	}
@@ -103,7 +103,7 @@ func ToCompleteProfileRegistrationResponse(resp *authdto.CompleteProfileRegistra
 	}
 }
 
-func ToCompleteRegistrationResponse(resp *authdto.CompleteRegistrationResponse) *response.CompleteRegistrationResponse {
+func ToCompleteRegistrationResponse(resp *auth.CompleteRegistrationResponse) *response.CompleteRegistrationResponse {
 	if resp == nil {
 		return nil
 	}

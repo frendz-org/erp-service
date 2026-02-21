@@ -7,7 +7,6 @@ import (
 	"erp-service/delivery/http/dto/response"
 	"erp-service/delivery/http/presenter"
 	"erp-service/iam/auth"
-	"erp-service/iam/auth/authdto"
 	"erp-service/pkg/errors"
 
 	"github.com/go-playground/validator/v10"
@@ -51,7 +50,7 @@ func NewRegistrationController(cfg *config.Config, authUsecase auth.Usecase) *Au
 	}
 }
 func (rc *AuthController) Logout(c *fiber.Ctx) error {
-	var req authdto.LogoutRequest
+	var req auth.LogoutRequest
 	if err := c.BodyParser(&req); err != nil {
 		return errors.ErrBadRequest("Invalid request body")
 	}
@@ -87,7 +86,7 @@ func (rc *AuthController) LogoutAll(c *fiber.Ctx) error {
 		return err
 	}
 
-	req := &authdto.LogoutAllRequest{
+	req := &auth.LogoutAllRequest{
 		UserID:    userID,
 		IPAddress: getClientIP(c).String(),
 		UserAgent: getUserAgent(c),
@@ -104,7 +103,7 @@ func (rc *AuthController) LogoutAll(c *fiber.Ctx) error {
 }
 
 func (rc *AuthController) InitiateRegistration(c *fiber.Ctx) error {
-	var req authdto.InitiateRegistrationRequest
+	var req auth.InitiateRegistrationRequest
 	if err := c.BodyParser(&req); err != nil {
 		return errors.ErrBadRequest("Invalid request body")
 	}
@@ -133,7 +132,7 @@ func (rc *AuthController) VerifyRegistrationOTP(c *fiber.Ctx) error {
 		return errors.ErrBadRequest("Invalid registration ID format")
 	}
 
-	var req authdto.VerifyRegistrationOTPRequest
+	var req auth.VerifyRegistrationOTPRequest
 	if err := c.BodyParser(&req); err != nil {
 		return errors.ErrBadRequest("Invalid request body")
 	}
@@ -161,7 +160,7 @@ func (rc *AuthController) ResendRegistrationOTP(c *fiber.Ctx) error {
 		return errors.ErrBadRequest("Invalid registration ID format")
 	}
 
-	var req authdto.ResendRegistrationOTPRequest
+	var req auth.ResendRegistrationOTPRequest
 	if err := c.BodyParser(&req); err != nil {
 		return errors.ErrBadRequest("Invalid request body")
 	}
@@ -221,7 +220,7 @@ func (rc *AuthController) SetPassword(c *fiber.Ctx) error {
 		return errors.ErrUnauthorized("Invalid authorization format. Use: Bearer <token>")
 	}
 
-	var req authdto.SetPasswordRequest
+	var req auth.SetPasswordRequest
 	if err := c.BodyParser(&req); err != nil {
 		return errors.ErrBadRequest("Invalid request body")
 	}
@@ -260,7 +259,7 @@ func (rc *AuthController) CompleteProfileRegistration(c *fiber.Ctx) error {
 		return errors.ErrUnauthorized("Invalid authorization format. Use: Bearer <token>")
 	}
 
-	var req authdto.CompleteProfileRegistrationRequest
+	var req auth.CompleteProfileRegistrationRequest
 	if err := c.BodyParser(&req); err != nil {
 		return errors.ErrBadRequest("Invalid request body")
 	}
@@ -299,7 +298,7 @@ func (rc *AuthController) CompleteRegistration(c *fiber.Ctx) error {
 		return errors.ErrUnauthorized("Invalid authorization format. Use: Bearer <token>")
 	}
 
-	var req authdto.CompleteRegistrationRequest
+	var req auth.CompleteRegistrationRequest
 	if err := c.BodyParser(&req); err != nil {
 		return errors.ErrBadRequest("Invalid request body")
 	}

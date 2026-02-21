@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"erp-service/entity"
-	"erp-service/iam/auth/contract"
+	"erp-service/iam/auth"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -15,7 +15,7 @@ type refreshTokenRepository struct {
 	baseRepository
 }
 
-func NewRefreshTokenRepository(db *gorm.DB) contract.RefreshTokenRepository {
+func NewRefreshTokenRepository(db *gorm.DB) auth.RefreshTokenRepository {
 	return &refreshTokenRepository{
 		baseRepository: baseRepository{db: db},
 	}

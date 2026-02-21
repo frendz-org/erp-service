@@ -1,14 +1,14 @@
 package middleware
 
 import (
-	"erp-service/iam/auth/contract"
+	"erp-service/iam/auth"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
-func checkBlacklist(c *fiber.Ctx, store contract.TokenBlacklistStore, jti string, userID uuid.UUID, claims jwt.RegisteredClaims) error {
+func checkBlacklist(c *fiber.Ctx, store auth.TokenBlacklistStore, jti string, userID uuid.UUID, claims jwt.RegisteredClaims) error {
 	if jti == "" {
 		return nil
 	}
