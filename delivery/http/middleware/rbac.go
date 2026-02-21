@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"iam-service/pkg/errors"
+	"erp-service/pkg/errors"
 
 	"github.com/gofiber/fiber/v2"
 )

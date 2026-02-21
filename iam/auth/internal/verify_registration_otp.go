@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"iam-service/entity"
-	"iam-service/iam/auth/authdto"
-	"iam-service/pkg/errors"
+	"erp-service/entity"
+	"erp-service/iam/auth/authdto"
+	"erp-service/pkg/errors"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"

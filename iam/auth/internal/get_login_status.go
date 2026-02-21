@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"iam-service/iam/auth/authdto"
-	"iam-service/pkg/errors"
+	"erp-service/iam/auth/authdto"
+	"erp-service/pkg/errors"
 )
 
 func (uc *usecase) GetLoginStatus(

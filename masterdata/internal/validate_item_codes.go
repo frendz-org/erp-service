@@ -3,7 +3,7 @@ package internal
 import (
 	"context"
 
-	"iam-service/masterdata/masterdatadto"
+	"erp-service/masterdata/masterdatadto"
 )
 
 func (uc *usecase) ValidateItemCodes(ctx context.Context, req *masterdatadto.ValidateCodesRequest) (*masterdatadto.ValidateCodesResponse, error) {

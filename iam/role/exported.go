@@ -1,9 +1,9 @@
 package role
 
 import (
-	"iam-service/config"
-	"iam-service/iam/role/contract"
-	"iam-service/iam/role/internal"
+	"erp-service/config"
+	"erp-service/iam/role/contract"
+	"erp-service/iam/role/internal"
 )
 
 type Usecase = contract.Usecase

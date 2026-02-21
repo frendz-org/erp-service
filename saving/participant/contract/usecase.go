@@ -4,8 +4,8 @@ import (
 	"context"
 	"io"
 
-	"iam-service/masterdata/masterdatadto"
-	"iam-service/saving/participant/participantdto"
+	"erp-service/masterdata/masterdatadto"
+	"erp-service/saving/participant/participantdto"
 )
 
 type MasterdataValidateUsecase interface {

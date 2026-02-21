@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"iam-service/config"
-	"iam-service/entity"
-	"iam-service/pkg/errors"
+	"erp-service/config"
+	"erp-service/entity"
+	"erp-service/pkg/errors"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -95,8 +95,8 @@ func TestGetRegistrationStatus(t *testing.T) {
 			tt.setupMocks(redis)
 
 			uc := &usecase{
-				Config: &config.Config{},
-				InMemoryStore:  redis,
+				Config:        &config.Config{},
+				InMemoryStore: redis,
 			}
 
 			ctx := context.Background()

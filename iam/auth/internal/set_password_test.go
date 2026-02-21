@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"iam-service/config"
-	"iam-service/entity"
-	"iam-service/iam/auth/authdto"
-	"iam-service/pkg/errors"
+	"erp-service/config"
+	"erp-service/entity"
+	"erp-service/iam/auth/authdto"
+	"erp-service/pkg/errors"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -227,8 +227,8 @@ func TestSetPassword(t *testing.T) {
 			}
 
 			uc := &usecase{
-				Config: cfg,
-				InMemoryStore:  redis,
+				Config:        cfg,
+				InMemoryStore: redis,
 			}
 
 			tt.req.RegistrationID = registrationID

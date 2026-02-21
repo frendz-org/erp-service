@@ -3,7 +3,7 @@ package iamclient
 import (
 	"strings"
 
-	"iam-service/pkg/jwt"
+	"erp-service/pkg/jwt"
 
 	"github.com/gofiber/fiber/v2"
 )

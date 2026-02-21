@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"iam-service/config"
-	"iam-service/entity"
-	"iam-service/masterdata/masterdatadto"
-	pkgerrors "iam-service/pkg/errors"
+	"erp-service/config"
+	"erp-service/entity"
+	"erp-service/masterdata/masterdatadto"
+	pkgerrors "erp-service/pkg/errors"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"

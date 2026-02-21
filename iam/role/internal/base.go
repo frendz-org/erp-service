@@ -1,8 +1,8 @@
 package internal
 
 import (
-	"iam-service/config"
-	"iam-service/iam/role/contract"
+	"erp-service/config"
+	"erp-service/iam/role/contract"
 )
 
 type usecase struct {

@@ -1,9 +1,9 @@
 package controller
 
 import (
-	"iam-service/config"
-	"iam-service/delivery/http/dto/response"
-	"iam-service/health"
+	"erp-service/config"
+	"erp-service/delivery/http/dto/response"
+	"erp-service/health"
 
 	"github.com/gofiber/fiber/v2"
 )

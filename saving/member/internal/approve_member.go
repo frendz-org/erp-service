@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"iam-service/entity"
-	"iam-service/pkg/errors"
-	"iam-service/saving/member/memberdto"
+	"erp-service/entity"
+	"erp-service/pkg/errors"
+	"erp-service/saving/member/memberdto"
 )
 
 func (uc *usecase) ApproveMember(ctx context.Context, req *memberdto.ApproveRequest) (*memberdto.MemberDetailResponse, error) {

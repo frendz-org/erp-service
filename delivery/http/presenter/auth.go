@@ -1,8 +1,8 @@
 package presenter
 
 import (
-	"iam-service/delivery/http/dto/response"
-	"iam-service/iam/auth/authdto"
+	"erp-service/delivery/http/dto/response"
+	"erp-service/iam/auth/authdto"
 )
 
 func ToInitiateRegistrationResponse(resp *authdto.InitiateRegistrationResponse) *response.InitiateRegistrationResponse {

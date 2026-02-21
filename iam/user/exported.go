@@ -2,10 +2,10 @@ package user
 
 import (
 	"context"
-	"iam-service/config"
-	"iam-service/iam/user/contract"
-	"iam-service/iam/user/internal"
-	"iam-service/iam/user/userdto"
+	"erp-service/config"
+	"erp-service/iam/user/contract"
+	"erp-service/iam/user/internal"
+	"erp-service/iam/user/userdto"
 
 	"github.com/google/uuid"
 )

@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"iam-service/entity"
-	usercontract "iam-service/iam/user/contract"
-	"iam-service/masterdata/masterdatadto"
+	"erp-service/entity"
+	usercontract "erp-service/iam/user/contract"
+	"erp-service/masterdata/masterdatadto"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"

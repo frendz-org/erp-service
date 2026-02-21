@@ -6,7 +6,7 @@ import (
 	"io"
 	"time"
 
-	"iam-service/saving/participant/contract"
+	"erp-service/saving/participant/contract"
 
 	"github.com/minio/minio-go/v7"
 )

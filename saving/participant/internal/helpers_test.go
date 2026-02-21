@@ -3,8 +3,8 @@ package internal
 import (
 	"time"
 
-	"iam-service/config"
-	"iam-service/entity"
+	"erp-service/config"
+	"erp-service/entity"
 
 	"github.com/google/uuid"
 )
@@ -41,16 +41,16 @@ func newTestUsecase(
 func createMockParticipant(status entity.ParticipantStatus, tenantID, productID, userID uuid.UUID) *entity.Participant {
 	now := time.Now()
 	return &entity.Participant{
-		ID:            uuid.New(),
-		TenantID:      tenantID,
+		ID:        uuid.New(),
+		TenantID:  tenantID,
 		ProductID: productID,
-		UserID:        &userID,
-		FullName:      "Test Participant",
-		Status:        status,
-		CreatedBy:     userID,
-		Version:       1,
-		CreatedAt:     now,
-		UpdatedAt:     now,
+		UserID:    &userID,
+		FullName:  "Test Participant",
+		Status:    status,
+		CreatedBy: userID,
+		Version:   1,
+		CreatedAt: now,
+		UpdatedAt: now,
 	}
 }
 
@@ -161,4 +161,3 @@ func strPtr(s string) *string {
 func timePtr(t time.Time) *time.Time {
 	return &t
 }
-

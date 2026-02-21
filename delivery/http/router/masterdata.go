@@ -1,10 +1,10 @@
 package router
 
 import (
-	"iam-service/config"
-	"iam-service/delivery/http/controller"
-	"iam-service/delivery/http/middleware"
-	"iam-service/iam/auth/contract"
+	"erp-service/config"
+	"erp-service/delivery/http/controller"
+	"erp-service/delivery/http/middleware"
+	"erp-service/iam/auth/contract"
 
 	"github.com/gofiber/fiber/v2"
 )

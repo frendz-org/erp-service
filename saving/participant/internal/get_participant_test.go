@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"iam-service/entity"
-	"iam-service/pkg/errors"
-	"iam-service/saving/participant/participantdto"
+	"erp-service/entity"
+	"erp-service/pkg/errors"
+	"erp-service/saving/participant/participantdto"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -22,18 +22,18 @@ func TestUsecase_GetParticipant(t *testing.T) {
 	otherTenantID := uuid.New()
 
 	tests := []struct {
-		name          string
-		req           *participantdto.GetParticipantRequest
-		setup         func(*MockParticipantRepository, *MockParticipantIdentityRepository, *MockParticipantAddressRepository, *MockParticipantBankAccountRepository, *MockParticipantFamilyMemberRepository, *MockParticipantEmploymentRepository, *MockParticipantPensionRepository, *MockParticipantBeneficiaryRepository)
-		wantErr       bool
-		errKind       errors.Kind
+		name    string
+		req     *participantdto.GetParticipantRequest
+		setup   func(*MockParticipantRepository, *MockParticipantIdentityRepository, *MockParticipantAddressRepository, *MockParticipantBankAccountRepository, *MockParticipantFamilyMemberRepository, *MockParticipantEmploymentRepository, *MockParticipantPensionRepository, *MockParticipantBeneficiaryRepository)
+		wantErr bool
+		errKind errors.Kind
 	}{
 		{
 			name: "success - retrieves participant with all child entities",
 			req: &participantdto.GetParticipantRequest{
 				ParticipantID: participantID,
 				TenantID:      tenantID,
-				ProductID: productID,
+				ProductID:     productID,
 			},
 			setup: func(partRepo *MockParticipantRepository, identRepo *MockParticipantIdentityRepository, addrRepo *MockParticipantAddressRepository, bankRepo *MockParticipantBankAccountRepository, famRepo *MockParticipantFamilyMemberRepository, empRepo *MockParticipantEmploymentRepository, penRepo *MockParticipantPensionRepository, benRepo *MockParticipantBeneficiaryRepository) {
 				participant := createMockParticipant(entity.ParticipantStatusDraft, tenantID, productID, userID)
@@ -67,7 +67,7 @@ func TestUsecase_GetParticipant(t *testing.T) {
 			req: &participantdto.GetParticipantRequest{
 				ParticipantID: participantID,
 				TenantID:      tenantID,
-				ProductID: productID,
+				ProductID:     productID,
 			},
 			setup: func(partRepo *MockParticipantRepository, identRepo *MockParticipantIdentityRepository, addrRepo *MockParticipantAddressRepository, bankRepo *MockParticipantBankAccountRepository, famRepo *MockParticipantFamilyMemberRepository, empRepo *MockParticipantEmploymentRepository, penRepo *MockParticipantPensionRepository, benRepo *MockParticipantBeneficiaryRepository) {
 				participant := createMockParticipant(entity.ParticipantStatusDraft, tenantID, productID, userID)
@@ -89,7 +89,7 @@ func TestUsecase_GetParticipant(t *testing.T) {
 			req: &participantdto.GetParticipantRequest{
 				ParticipantID: participantID,
 				TenantID:      tenantID,
-				ProductID: productID,
+				ProductID:     productID,
 			},
 			setup: func(partRepo *MockParticipantRepository, identRepo *MockParticipantIdentityRepository, addrRepo *MockParticipantAddressRepository, bankRepo *MockParticipantBankAccountRepository, famRepo *MockParticipantFamilyMemberRepository, empRepo *MockParticipantEmploymentRepository, penRepo *MockParticipantPensionRepository, benRepo *MockParticipantBeneficiaryRepository) {
 				partRepo.On("GetByID", mock.Anything, participantID).Return(nil, errors.ErrNotFound("participant not found"))
@@ -102,7 +102,7 @@ func TestUsecase_GetParticipant(t *testing.T) {
 			req: &participantdto.GetParticipantRequest{
 				ParticipantID: participantID,
 				TenantID:      otherTenantID,
-				ProductID: productID,
+				ProductID:     productID,
 			},
 			setup: func(partRepo *MockParticipantRepository, identRepo *MockParticipantIdentityRepository, addrRepo *MockParticipantAddressRepository, bankRepo *MockParticipantBankAccountRepository, famRepo *MockParticipantFamilyMemberRepository, empRepo *MockParticipantEmploymentRepository, penRepo *MockParticipantPensionRepository, benRepo *MockParticipantBeneficiaryRepository) {
 				participant := createMockParticipant(entity.ParticipantStatusDraft, tenantID, productID, userID)

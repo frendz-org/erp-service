@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"iam-service/entity"
-	"iam-service/masterdata/contract"
+	"erp-service/entity"
+	"erp-service/masterdata/contract"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"

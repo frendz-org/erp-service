@@ -1,10 +1,10 @@
 package controller
 
 import (
-	"iam-service/delivery/http/dto/response"
-	"iam-service/delivery/http/presenter"
-	"iam-service/iam/auth/authdto"
-	"iam-service/pkg/errors"
+	"erp-service/delivery/http/dto/response"
+	"erp-service/delivery/http/presenter"
+	"erp-service/iam/auth/authdto"
+	"erp-service/pkg/errors"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"

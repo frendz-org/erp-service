@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"iam-service/pkg/errors"
-	"iam-service/saving/participant/participantdto"
+	"erp-service/pkg/errors"
+	"erp-service/saving/participant/participantdto"
 )
 
 func (uc *usecase) DeleteIdentity(ctx context.Context, req *participantdto.DeleteChildEntityRequest) error {

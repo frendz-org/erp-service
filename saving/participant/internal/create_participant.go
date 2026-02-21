@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"iam-service/entity"
-	"iam-service/saving/participant/participantdto"
+	"erp-service/entity"
+	"erp-service/saving/participant/participantdto"
 )
 
 func (uc *usecase) CreateParticipant(ctx context.Context, req *participantdto.CreateParticipantRequest) (*participantdto.ParticipantResponse, error) {
@@ -19,12 +19,12 @@ func (uc *usecase) CreateParticipant(ctx context.Context, req *participantdto.Cr
 			TenantID:  req.TenantID,
 			ProductID: req.ProductID,
 			UserID:    &req.UserID,
-			FullName:      req.FullName,
-			Status:        entity.ParticipantStatusDraft,
-			CreatedBy:     req.UserID,
-			Version:       1,
-			CreatedAt:     now,
-			UpdatedAt:     now,
+			FullName:  req.FullName,
+			Status:    entity.ParticipantStatusDraft,
+			CreatedBy: req.UserID,
+			Version:   1,
+			CreatedAt: now,
+			UpdatedAt: now,
 		}
 
 		if err := uc.participantRepo.Create(txCtx, participant); err != nil {

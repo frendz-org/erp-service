@@ -1,10 +1,10 @@
 package middleware
 
 import (
-	"iam-service/config"
-	"iam-service/iam/auth/contract"
-	"iam-service/pkg/errors"
-	jwtpkg "iam-service/pkg/jwt"
+	"erp-service/config"
+	"erp-service/iam/auth/contract"
+	"erp-service/pkg/errors"
+	jwtpkg "erp-service/pkg/jwt"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"

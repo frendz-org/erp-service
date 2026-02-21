@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"iam-service/iam/auth/contract"
+	"erp-service/iam/auth/contract"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"

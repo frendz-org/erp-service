@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"iam-service/masterdata/masterdatadto"
+	"erp-service/masterdata/masterdatadto"
 )
 
 func (uc *usecase) ValidateItemCode(ctx context.Context, req *masterdatadto.ValidateCodeRequest) (*masterdatadto.ValidateCodeResponse, error) {

@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"iam-service/entity"
-	"iam-service/pkg/errors"
-	"iam-service/saving/participant/participantdto"
+	"erp-service/entity"
+	"erp-service/pkg/errors"
+	"erp-service/saving/participant/participantdto"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -36,7 +36,7 @@ func TestUsecase_DeleteIdentity(t *testing.T) {
 				ChildID:       identityID,
 				ParticipantID: participantID,
 				TenantID:      tenantID,
-				ProductID: productID,
+				ProductID:     productID,
 			},
 			setup: func(txMgr *MockTransactionManager, partRepo *MockParticipantRepository, identRepo *MockParticipantIdentityRepository) {
 				txMgr.On("WithTransaction", mock.Anything, mock.Anything).Return(nil)
@@ -57,7 +57,7 @@ func TestUsecase_DeleteIdentity(t *testing.T) {
 				ChildID:       identityID,
 				ParticipantID: participantID,
 				TenantID:      tenantID,
-				ProductID: productID,
+				ProductID:     productID,
 			},
 			setup: func(txMgr *MockTransactionManager, partRepo *MockParticipantRepository, identRepo *MockParticipantIdentityRepository) {
 				txMgr.On("WithTransaction", mock.Anything, mock.Anything).Return(nil)
@@ -78,7 +78,7 @@ func TestUsecase_DeleteIdentity(t *testing.T) {
 				ChildID:       identityID,
 				ParticipantID: participantID,
 				TenantID:      tenantID,
-				ProductID: productID,
+				ProductID:     productID,
 			},
 			setup: func(txMgr *MockTransactionManager, partRepo *MockParticipantRepository, identRepo *MockParticipantIdentityRepository) {
 				txMgr.On("WithTransaction", mock.Anything, mock.Anything).Return(nil)
@@ -93,7 +93,7 @@ func TestUsecase_DeleteIdentity(t *testing.T) {
 				ChildID:       identityID,
 				ParticipantID: participantID,
 				TenantID:      otherTenantID,
-				ProductID: productID,
+				ProductID:     productID,
 			},
 			setup: func(txMgr *MockTransactionManager, partRepo *MockParticipantRepository, identRepo *MockParticipantIdentityRepository) {
 				txMgr.On("WithTransaction", mock.Anything, mock.Anything).Return(nil)
@@ -110,7 +110,7 @@ func TestUsecase_DeleteIdentity(t *testing.T) {
 				ChildID:       identityID,
 				ParticipantID: participantID,
 				TenantID:      tenantID,
-				ProductID: productID,
+				ProductID:     productID,
 			},
 			setup: func(txMgr *MockTransactionManager, partRepo *MockParticipantRepository, identRepo *MockParticipantIdentityRepository) {
 				txMgr.On("WithTransaction", mock.Anything, mock.Anything).Return(nil)
@@ -127,7 +127,7 @@ func TestUsecase_DeleteIdentity(t *testing.T) {
 				ChildID:       identityID,
 				ParticipantID: participantID,
 				TenantID:      tenantID,
-				ProductID: productID,
+				ProductID:     productID,
 			},
 			setup: func(txMgr *MockTransactionManager, partRepo *MockParticipantRepository, identRepo *MockParticipantIdentityRepository) {
 				txMgr.On("WithTransaction", mock.Anything, mock.Anything).Return(nil)
@@ -144,7 +144,7 @@ func TestUsecase_DeleteIdentity(t *testing.T) {
 				ChildID:       identityID,
 				ParticipantID: participantID,
 				TenantID:      tenantID,
-				ProductID: productID,
+				ProductID:     productID,
 			},
 			setup: func(txMgr *MockTransactionManager, partRepo *MockParticipantRepository, identRepo *MockParticipantIdentityRepository) {
 				txMgr.On("WithTransaction", mock.Anything, mock.Anything).Return(nil)
@@ -162,7 +162,7 @@ func TestUsecase_DeleteIdentity(t *testing.T) {
 				ChildID:       identityID,
 				ParticipantID: participantID,
 				TenantID:      tenantID,
-				ProductID: productID,
+				ProductID:     productID,
 			},
 			setup: func(txMgr *MockTransactionManager, partRepo *MockParticipantRepository, identRepo *MockParticipantIdentityRepository) {
 				txMgr.On("WithTransaction", mock.Anything, mock.Anything).Return(nil)

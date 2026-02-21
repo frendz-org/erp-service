@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"iam-service/entity"
-	"iam-service/iam/product/contract"
+	"erp-service/entity"
+	"erp-service/iam/product/contract"
 
 	"github.com/google/uuid"
 )

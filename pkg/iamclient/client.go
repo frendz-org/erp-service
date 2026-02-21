@@ -3,7 +3,7 @@ package iamclient
 import (
 	"fmt"
 
-	"iam-service/pkg/jwt"
+	"erp-service/pkg/jwt"
 )
 
 type Client struct {
@@ -36,8 +36,8 @@ func NewClient(config *Config) (*Client, error) {
 func (c *Client) ValidateToken(tokenString string) (*jwt.JWTClaims, error) {
 	tokenConfig := &jwt.TokenConfig{
 		SigningMethod: "HS256",
-		AccessSecret: c.AccessSecret,
-		Issuer:       c.Issuer,
+		AccessSecret:  c.AccessSecret,
+		Issuer:        c.Issuer,
 	}
 
 	claims, err := jwt.ParseAccessToken(tokenString, tokenConfig)

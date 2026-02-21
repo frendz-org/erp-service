@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"iam-service/pkg/errors"
-	"iam-service/pkg/logger"
+	"erp-service/pkg/errors"
+	"erp-service/pkg/logger"
 
 	"golang.org/x/crypto/bcrypt"
 )

@@ -3,8 +3,8 @@ package internal
 import (
 	"context"
 
-	"iam-service/masterdata/contract"
-	"iam-service/masterdata/masterdatadto"
+	"erp-service/masterdata/contract"
+	"erp-service/masterdata/masterdatadto"
 )
 
 func (uc *usecase) ListCategories(ctx context.Context, req *masterdatadto.ListCategoriesRequest) (*masterdatadto.ListCategoriesResponse, error) {

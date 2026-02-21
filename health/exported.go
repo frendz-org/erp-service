@@ -1,6 +1,6 @@
 package health
 
-import "iam-service/health/internal"
+import "erp-service/health/internal"
 
 type Usecase interface {
 	CheckHealth() error

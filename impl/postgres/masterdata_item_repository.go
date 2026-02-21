@@ -4,8 +4,8 @@ import (
 	"context"
 	"strings"
 
-	"iam-service/entity"
-	"iam-service/masterdata/contract"
+	"erp-service/entity"
+	"erp-service/masterdata/contract"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"

@@ -1,9 +1,9 @@
 package internal
 
 import (
-	"iam-service/config"
-	"iam-service/iam/auth/contract"
-	"iam-service/pkg/logger"
+	"erp-service/config"
+	"erp-service/iam/auth/contract"
+	"erp-service/pkg/logger"
 )
 
 type usecase struct {
@@ -24,8 +24,8 @@ type usecase struct {
 	UserSessionRepo       contract.UserSessionRepository
 	UserTenantRegRepo     contract.UserTenantRegistrationRepository
 	ProductsByTenantRepo  contract.ProductsByTenantRepository
-	AuditLogger      logger.AuditLogger
-	MasterdataUsecase contract.MasterdataUsecase
+	AuditLogger           logger.AuditLogger
+	MasterdataUsecase     contract.MasterdataUsecase
 }
 
 func NewUsecase(
@@ -67,7 +67,7 @@ func NewUsecase(
 		UserSessionRepo:       userSessionRepo,
 		UserTenantRegRepo:     userTenantRegRepo,
 		ProductsByTenantRepo:  productsByTenantRepo,
-		AuditLogger:      auditLogger,
-		MasterdataUsecase: masterdataUsecase,
+		AuditLogger:           auditLogger,
+		MasterdataUsecase:     masterdataUsecase,
 	}
 }

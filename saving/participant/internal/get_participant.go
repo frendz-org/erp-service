@@ -3,7 +3,7 @@ package internal
 import (
 	"context"
 
-	"iam-service/saving/participant/participantdto"
+	"erp-service/saving/participant/participantdto"
 )
 
 func (uc *usecase) GetParticipant(ctx context.Context, req *participantdto.GetParticipantRequest) (*participantdto.ParticipantResponse, error) {

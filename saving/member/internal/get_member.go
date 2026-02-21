@@ -3,8 +3,8 @@ package internal
 import (
 	"context"
 
-	"iam-service/pkg/errors"
-	"iam-service/saving/member/memberdto"
+	"erp-service/pkg/errors"
+	"erp-service/saving/member/memberdto"
 )
 
 func (uc *usecase) GetMember(ctx context.Context, req *memberdto.GetMemberRequest) (*memberdto.MemberDetailResponse, error) {

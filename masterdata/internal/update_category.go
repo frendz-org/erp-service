@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"iam-service/entity"
-	"iam-service/masterdata/masterdatadto"
-	"iam-service/pkg/errors"
+	"erp-service/entity"
+	"erp-service/masterdata/masterdatadto"
+	"erp-service/pkg/errors"
 
 	"github.com/google/uuid"
 )

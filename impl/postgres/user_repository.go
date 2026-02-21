@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"iam-service/entity"
-	"iam-service/iam/user/contract"
-	"iam-service/pkg/errors"
+	"erp-service/entity"
+	"erp-service/iam/user/contract"
+	"erp-service/pkg/errors"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"

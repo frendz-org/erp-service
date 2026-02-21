@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"strconv"
 
-	"iam-service/delivery/http/middleware"
-	"iam-service/delivery/http/presenter"
-	"iam-service/pkg/errors"
-	"iam-service/saving/participant"
-	"iam-service/saving/participant/participantdto"
+	"erp-service/delivery/http/middleware"
+	"erp-service/delivery/http/presenter"
+	"erp-service/pkg/errors"
+	"erp-service/saving/participant"
+	"erp-service/saving/participant/participantdto"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -113,7 +113,7 @@ func (ctrl *ParticipantController) Get(c *fiber.Ctx) error {
 	result, err := ctrl.usecase.GetParticipant(c.UserContext(), &participantdto.GetParticipantRequest{
 		ParticipantID: pID,
 		TenantID:      tenantID,
-		ProductID: productID,
+		ProductID:     productID,
 	})
 	if err != nil {
 		return participantError(c, err)
@@ -146,14 +146,14 @@ func (ctrl *ParticipantController) List(c *fiber.Ctx) error {
 	}
 
 	req := &participantdto.ListParticipantsRequest{
-		TenantID:      tenantID,
+		TenantID:  tenantID,
 		ProductID: productID,
-		Search:        c.Query("search"),
-		Status:        nil,
-		Page:          page,
-		PerPage:       perPage,
-		SortBy:        c.Query("sort_by", "created_at"),
-		SortOrder:     c.Query("sort_order", "desc"),
+		Search:    c.Query("search"),
+		Status:    nil,
+		Page:      page,
+		PerPage:   perPage,
+		SortBy:    c.Query("sort_by", "created_at"),
+		SortOrder: c.Query("sort_order", "desc"),
 	}
 
 	if status := c.Query("status"); status != "" {
@@ -298,7 +298,7 @@ func (ctrl *ParticipantController) DeleteIdentity(c *fiber.Ctx) error {
 		ChildID:       iID,
 		ParticipantID: pID,
 		TenantID:      tenantID,
-		ProductID: productID,
+		ProductID:     productID,
 	}); err != nil {
 		return participantError(c, err)
 	}
@@ -375,7 +375,7 @@ func (ctrl *ParticipantController) DeleteAddress(c *fiber.Ctx) error {
 		ChildID:       aID,
 		ParticipantID: pID,
 		TenantID:      tenantID,
-		ProductID: productID,
+		ProductID:     productID,
 	}); err != nil {
 		return participantError(c, err)
 	}
@@ -452,7 +452,7 @@ func (ctrl *ParticipantController) DeleteBankAccount(c *fiber.Ctx) error {
 		ChildID:       aID,
 		ParticipantID: pID,
 		TenantID:      tenantID,
-		ProductID: productID,
+		ProductID:     productID,
 	}); err != nil {
 		return participantError(c, err)
 	}
@@ -529,7 +529,7 @@ func (ctrl *ParticipantController) DeleteFamilyMember(c *fiber.Ctx) error {
 		ChildID:       mID,
 		ParticipantID: pID,
 		TenantID:      tenantID,
-		ProductID: productID,
+		ProductID:     productID,
 	}); err != nil {
 		return participantError(c, err)
 	}
@@ -694,7 +694,7 @@ func (ctrl *ParticipantController) DeleteBeneficiary(c *fiber.Ctx) error {
 		ChildID:       bID,
 		ParticipantID: pID,
 		TenantID:      tenantID,
-		ProductID: productID,
+		ProductID:     productID,
 	}); err != nil {
 		return participantError(c, err)
 	}
@@ -761,7 +761,7 @@ func (ctrl *ParticipantController) UploadFile(c *fiber.Ctx) error {
 	req := &participantdto.UploadFileRequest{
 		TenantID:      tenantID,
 		ParticipantID: pID,
-		ProductID: productID,
+		ProductID:     productID,
 		FieldName:     fieldName,
 	}
 
@@ -795,7 +795,7 @@ func (ctrl *ParticipantController) GetStatusHistory(c *fiber.Ctx) error {
 	result, err := ctrl.usecase.GetStatusHistory(c.UserContext(), &participantdto.GetParticipantRequest{
 		ParticipantID: pID,
 		TenantID:      tenantID,
-		ProductID: productID,
+		ProductID:     productID,
 	})
 	if err != nil {
 		return participantError(c, err)
@@ -831,7 +831,7 @@ func (ctrl *ParticipantController) Submit(c *fiber.Ctx) error {
 	req := &participantdto.SubmitParticipantRequest{
 		TenantID:      tenantID,
 		ParticipantID: pID,
-		ProductID: productID,
+		ProductID:     productID,
 		UserID:        userClaims.UserID,
 	}
 
@@ -870,7 +870,7 @@ func (ctrl *ParticipantController) Approve(c *fiber.Ctx) error {
 	req := &participantdto.ApproveParticipantRequest{
 		TenantID:      tenantID,
 		ParticipantID: pID,
-		ProductID: productID,
+		ProductID:     productID,
 		UserID:        userClaims.UserID,
 	}
 
@@ -924,7 +924,7 @@ func (ctrl *ParticipantController) Reject(c *fiber.Ctx) error {
 	req := &participantdto.RejectParticipantRequest{
 		TenantID:      tenantID,
 		ParticipantID: pID,
-		ProductID: productID,
+		ProductID:     productID,
 		UserID:        userClaims.UserID,
 		Reason:        body.Reason,
 	}
@@ -1000,7 +1000,7 @@ func (ctrl *ParticipantController) Delete(c *fiber.Ctx) error {
 	err = ctrl.usecase.DeleteParticipant(c.UserContext(), &participantdto.DeleteParticipantRequest{
 		ParticipantID: pID,
 		TenantID:      tenantID,
-		ProductID: productID,
+		ProductID:     productID,
 		UserID:        userClaims.UserID,
 	})
 	if err != nil {

@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"iam-service/entity"
-	"iam-service/saving/participant/participantdto"
-	"iam-service/pkg/errors"
+	"erp-service/entity"
+	"erp-service/pkg/errors"
+	"erp-service/saving/participant/participantdto"
 
 	"github.com/google/uuid"
 	"golang.org/x/sync/errgroup"
@@ -32,13 +32,13 @@ func validateEditableState(participant *entity.Participant) error {
 }
 
 var allowedFieldNames = map[string]bool{
-	"ktp_photo":        true,
-	"passport_photo":   true,
-	"family_card":      true,
-	"identity_photo":   true,
-	"bank_book_photo":  true,
-	"supporting_doc":   true,
-	"profile_photo":    true,
+	"ktp_photo":       true,
+	"passport_photo":  true,
+	"family_card":     true,
+	"identity_photo":  true,
+	"bank_book_photo": true,
+	"supporting_doc":  true,
+	"profile_photo":   true,
 }
 
 func sanitizeFieldName(fieldName string) string {

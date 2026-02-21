@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"iam-service/entity"
-	"iam-service/saving/participant/participantdto"
-	"iam-service/pkg/errors"
+	"erp-service/entity"
+	"erp-service/pkg/errors"
+	"erp-service/saving/participant/participantdto"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -24,11 +24,11 @@ func TestUsecase_SaveIdentity(t *testing.T) {
 	otherTenantID := uuid.New()
 
 	tests := []struct {
-		name    string
-		req     *participantdto.SaveIdentityRequest
-		setup   func(*MockTransactionManager, *MockParticipantRepository, *MockParticipantIdentityRepository)
-		wantErr bool
-		errKind errors.Kind
+		name     string
+		req      *participantdto.SaveIdentityRequest
+		setup    func(*MockTransactionManager, *MockParticipantRepository, *MockParticipantIdentityRepository)
+		wantErr  bool
+		errKind  errors.Kind
 		isUpdate bool
 	}{
 		{
@@ -36,7 +36,7 @@ func TestUsecase_SaveIdentity(t *testing.T) {
 			req: &participantdto.SaveIdentityRequest{
 				ParticipantID:  participantID,
 				TenantID:       tenantID,
-				ProductID:  productID,
+				ProductID:      productID,
 				IdentityType:   "KTP",
 				IdentityNumber: "1234567890123456",
 			},
@@ -51,7 +51,7 @@ func TestUsecase_SaveIdentity(t *testing.T) {
 						i.IdentityNumber == "1234567890123456"
 				})).Return(nil)
 			},
-			wantErr: false,
+			wantErr:  false,
 			isUpdate: false,
 		},
 		{
@@ -60,7 +60,7 @@ func TestUsecase_SaveIdentity(t *testing.T) {
 				ID:             &identityID,
 				ParticipantID:  participantID,
 				TenantID:       tenantID,
-				ProductID:  productID,
+				ProductID:      productID,
 				IdentityType:   "PASSPORT",
 				IdentityNumber: "A1234567",
 			},
@@ -79,7 +79,7 @@ func TestUsecase_SaveIdentity(t *testing.T) {
 						i.IdentityNumber == "A1234567"
 				})).Return(nil)
 			},
-			wantErr: false,
+			wantErr:  false,
 			isUpdate: true,
 		},
 		{
@@ -87,7 +87,7 @@ func TestUsecase_SaveIdentity(t *testing.T) {
 			req: &participantdto.SaveIdentityRequest{
 				ParticipantID:  participantID,
 				TenantID:       tenantID,
-				ProductID:  productID,
+				ProductID:      productID,
 				IdentityType:   "KTP",
 				IdentityNumber: "1234567890123456",
 			},
@@ -98,7 +98,7 @@ func TestUsecase_SaveIdentity(t *testing.T) {
 				partRepo.On("GetByID", mock.Anything, participantID).Return(participant, nil)
 				identRepo.On("Create", mock.Anything, mock.Anything).Return(nil)
 			},
-			wantErr: false,
+			wantErr:  false,
 			isUpdate: false,
 		},
 		{
@@ -106,7 +106,7 @@ func TestUsecase_SaveIdentity(t *testing.T) {
 			req: &participantdto.SaveIdentityRequest{
 				ParticipantID:  participantID,
 				TenantID:       tenantID,
-				ProductID:  productID,
+				ProductID:      productID,
 				IdentityType:   "KTP",
 				IdentityNumber: "1234567890123456",
 			},
@@ -122,7 +122,7 @@ func TestUsecase_SaveIdentity(t *testing.T) {
 			req: &participantdto.SaveIdentityRequest{
 				ParticipantID:  participantID,
 				TenantID:       otherTenantID,
-				ProductID:  productID,
+				ProductID:      productID,
 				IdentityType:   "KTP",
 				IdentityNumber: "1234567890123456",
 			},
@@ -140,7 +140,7 @@ func TestUsecase_SaveIdentity(t *testing.T) {
 			req: &participantdto.SaveIdentityRequest{
 				ParticipantID:  participantID,
 				TenantID:       tenantID,
-				ProductID:  productID,
+				ProductID:      productID,
 				IdentityType:   "KTP",
 				IdentityNumber: "1234567890123456",
 			},
@@ -158,7 +158,7 @@ func TestUsecase_SaveIdentity(t *testing.T) {
 			req: &participantdto.SaveIdentityRequest{
 				ParticipantID:  participantID,
 				TenantID:       tenantID,
-				ProductID:  productID,
+				ProductID:      productID,
 				IdentityType:   "KTP",
 				IdentityNumber: "1234567890123456",
 			},
@@ -177,7 +177,7 @@ func TestUsecase_SaveIdentity(t *testing.T) {
 				ID:             &identityID,
 				ParticipantID:  participantID,
 				TenantID:       tenantID,
-				ProductID:  productID,
+				ProductID:      productID,
 				IdentityType:   "PASSPORT",
 				IdentityNumber: "A1234567",
 			},
@@ -188,8 +188,8 @@ func TestUsecase_SaveIdentity(t *testing.T) {
 				partRepo.On("GetByID", mock.Anything, participantID).Return(participant, nil)
 				identRepo.On("GetByID", mock.Anything, identityID).Return(nil, errors.ErrNotFound("identity not found"))
 			},
-			wantErr: true,
-			errKind: errors.KindNotFound,
+			wantErr:  true,
+			errKind:  errors.KindNotFound,
 			isUpdate: true,
 		},
 		{
@@ -198,7 +198,7 @@ func TestUsecase_SaveIdentity(t *testing.T) {
 				ID:             &identityID,
 				ParticipantID:  participantID,
 				TenantID:       tenantID,
-				ProductID:  productID,
+				ProductID:      productID,
 				IdentityType:   "PASSPORT",
 				IdentityNumber: "A1234567",
 			},
@@ -212,8 +212,8 @@ func TestUsecase_SaveIdentity(t *testing.T) {
 				identity.ID = identityID
 				identRepo.On("GetByID", mock.Anything, identityID).Return(identity, nil)
 			},
-			wantErr: true,
-			errKind: errors.KindForbidden,
+			wantErr:  true,
+			errKind:  errors.KindForbidden,
 			isUpdate: true,
 		},
 	}

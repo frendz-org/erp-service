@@ -2,8 +2,8 @@ package mailer
 
 import (
 	"context"
+	"erp-service/config"
 	"fmt"
-	"iam-service/config"
 	"log"
 	"strings"
 

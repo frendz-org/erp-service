@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"iam-service/entity"
-	"iam-service/iam/auth/authdto"
-	"iam-service/masterdata/masterdatadto"
-	"iam-service/pkg/errors"
+	"erp-service/entity"
+	"erp-service/iam/auth/authdto"
+	"erp-service/masterdata/masterdatadto"
+	"erp-service/pkg/errors"
 )
 
 var genderCodePattern = regexp.MustCompile(`^GENDER_\d{3}$`)

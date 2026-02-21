@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"iam-service/entity"
-	"iam-service/saving/participant/participantdto"
-	"iam-service/pkg/errors"
+	"erp-service/entity"
+	"erp-service/pkg/errors"
+	"erp-service/saving/participant/participantdto"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -25,10 +25,10 @@ func TestUsecase_CreateParticipant(t *testing.T) {
 		{
 			name: "success - creates participant in DRAFT status",
 			req: &participantdto.CreateParticipantRequest{
-				TenantID:      uuid.New(),
+				TenantID:  uuid.New(),
 				ProductID: uuid.New(),
-				UserID:        uuid.New(),
-				FullName:      "John Doe",
+				UserID:    uuid.New(),
+				FullName:  "John Doe",
 			},
 			setup: func(txMgr *MockTransactionManager, partRepo *MockParticipantRepository, histRepo *MockParticipantStatusHistoryRepository, identRepo *MockParticipantIdentityRepository, addrRepo *MockParticipantAddressRepository, bankRepo *MockParticipantBankAccountRepository, famRepo *MockParticipantFamilyMemberRepository, empRepo *MockParticipantEmploymentRepository, penRepo *MockParticipantPensionRepository, benRepo *MockParticipantBeneficiaryRepository) {
 				txMgr.On("WithTransaction", mock.Anything, mock.Anything).Return(nil)
@@ -51,10 +51,10 @@ func TestUsecase_CreateParticipant(t *testing.T) {
 		{
 			name: "error - repository create fails",
 			req: &participantdto.CreateParticipantRequest{
-				TenantID:      uuid.New(),
+				TenantID:  uuid.New(),
 				ProductID: uuid.New(),
-				UserID:        uuid.New(),
-				FullName:      "John Doe",
+				UserID:    uuid.New(),
+				FullName:  "John Doe",
 			},
 			setup: func(txMgr *MockTransactionManager, partRepo *MockParticipantRepository, histRepo *MockParticipantStatusHistoryRepository, identRepo *MockParticipantIdentityRepository, addrRepo *MockParticipantAddressRepository, bankRepo *MockParticipantBankAccountRepository, famRepo *MockParticipantFamilyMemberRepository, empRepo *MockParticipantEmploymentRepository, penRepo *MockParticipantPensionRepository, benRepo *MockParticipantBeneficiaryRepository) {
 				txMgr.On("WithTransaction", mock.Anything, mock.Anything).Return(nil)
@@ -65,10 +65,10 @@ func TestUsecase_CreateParticipant(t *testing.T) {
 		{
 			name: "error - status history creation fails",
 			req: &participantdto.CreateParticipantRequest{
-				TenantID:      uuid.New(),
+				TenantID:  uuid.New(),
 				ProductID: uuid.New(),
-				UserID:        uuid.New(),
-				FullName:      "John Doe",
+				UserID:    uuid.New(),
+				FullName:  "John Doe",
 			},
 			setup: func(txMgr *MockTransactionManager, partRepo *MockParticipantRepository, histRepo *MockParticipantStatusHistoryRepository, identRepo *MockParticipantIdentityRepository, addrRepo *MockParticipantAddressRepository, bankRepo *MockParticipantBankAccountRepository, famRepo *MockParticipantFamilyMemberRepository, empRepo *MockParticipantEmploymentRepository, penRepo *MockParticipantPensionRepository, benRepo *MockParticipantBeneficiaryRepository) {
 				txMgr.On("WithTransaction", mock.Anything, mock.Anything).Return(nil)

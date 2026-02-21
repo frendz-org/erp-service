@@ -1,8 +1,8 @@
 package logger
 
 import (
+	"erp-service/config"
 	"fmt"
-	"iam-service/config"
 	"os"
 	"path/filepath"
 	"strings"

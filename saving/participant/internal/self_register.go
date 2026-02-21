@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"time"
 
-	"iam-service/entity"
-	"iam-service/masterdata/masterdatadto"
-	apperrors "iam-service/pkg/errors"
-	"iam-service/saving/participant/participantdto"
+	"erp-service/entity"
+	"erp-service/masterdata/masterdatadto"
+	apperrors "erp-service/pkg/errors"
+	"erp-service/saving/participant/participantdto"
 
 	"github.com/google/uuid"
 )
@@ -243,19 +243,19 @@ func (uc *usecase) createNewSelfRegisteredParticipant(
 		genderStr := string(*profile.Gender)
 
 		newParticipant := &entity.Participant{
-			TenantID:  tenantID,
-			ProductID: productID,
-			UserID:    &req.UserID,
-			FullName:      profile.FullName(),
-			DateOfBirth:   profile.DateOfBirth,
-			Gender:        &genderStr,
-			KTPNumber:     &req.IdentityNumber,
-			PhoneNumber:   &req.PhoneNumber,
-			Status:        entity.ParticipantStatusDraft,
-			CreatedBy:     req.UserID,
-			Version:       1,
-			CreatedAt:     now,
-			UpdatedAt:     now,
+			TenantID:    tenantID,
+			ProductID:   productID,
+			UserID:      &req.UserID,
+			FullName:    profile.FullName(),
+			DateOfBirth: profile.DateOfBirth,
+			Gender:      &genderStr,
+			KTPNumber:   &req.IdentityNumber,
+			PhoneNumber: &req.PhoneNumber,
+			Status:      entity.ParticipantStatusDraft,
+			CreatedBy:   req.UserID,
+			Version:     1,
+			CreatedAt:   now,
+			UpdatedAt:   now,
 		}
 		if err := uc.participantRepo.Create(txCtx, newParticipant); err != nil {
 

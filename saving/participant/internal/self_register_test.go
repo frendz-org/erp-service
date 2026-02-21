@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"iam-service/entity"
-	"iam-service/masterdata/masterdatadto"
-	apperrors "iam-service/pkg/errors"
-	"iam-service/saving/participant/participantdto"
+	"erp-service/entity"
+	"erp-service/masterdata/masterdatadto"
+	apperrors "erp-service/pkg/errors"
+	"erp-service/saving/participant/participantdto"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -139,7 +139,7 @@ func activeProduct(tenantID uuid.UUID) *entity.Product {
 func activeConfig(productID uuid.UUID) *entity.ProductRegistrationConfig {
 	return &entity.ProductRegistrationConfig{
 		ID:               uuid.New(),
-		ProductID:    productID,
+		ProductID:        productID,
 		RegistrationType: "PARTICIPANT",
 		IsActive:         true,
 	}
@@ -170,21 +170,21 @@ func buildSelfRegisterUsecase(
 	mdValidator *mockMasterdataValidator,
 ) *usecase {
 	return &usecase{
-		txManager:           txMgr,
-		participantRepo:     partRepo,
-		identityRepo:        &MockParticipantIdentityRepository{},
-		addressRepo:         &MockParticipantAddressRepository{},
-		bankAccountRepo:     &MockParticipantBankAccountRepository{},
-		familyMemberRepo:    &MockParticipantFamilyMemberRepository{},
-		employmentRepo:      &MockParticipantEmploymentRepository{},
-		pensionRepo:         pensionRepo,
-		beneficiaryRepo:     &MockParticipantBeneficiaryRepository{},
-		statusHistoryRepo:   statusHistoryRepo,
-		tenantRepo:          tenantRepo,
-		productRepo:         productRepo,
-		configRepo:          configRepo,
-		utrRepo:             utrRepo,
-		userProfileRepo:     profileRepo,
+		txManager:         txMgr,
+		participantRepo:   partRepo,
+		identityRepo:      &MockParticipantIdentityRepository{},
+		addressRepo:       &MockParticipantAddressRepository{},
+		bankAccountRepo:   &MockParticipantBankAccountRepository{},
+		familyMemberRepo:  &MockParticipantFamilyMemberRepository{},
+		employmentRepo:    &MockParticipantEmploymentRepository{},
+		pensionRepo:       pensionRepo,
+		beneficiaryRepo:   &MockParticipantBeneficiaryRepository{},
+		statusHistoryRepo: statusHistoryRepo,
+		tenantRepo:        tenantRepo,
+		productRepo:       productRepo,
+		configRepo:        configRepo,
+		utrRepo:           utrRepo,
+		userProfileRepo:   profileRepo,
 		masterdataUsecase: mdValidator,
 	}
 }
@@ -228,13 +228,13 @@ func TestSelfRegister_Success_NewParticipant(t *testing.T) {
 	utrRepo.On("Create", ctx, mock.AnythingOfType("*entity.UserTenantRegistration")).Return(nil)
 
 	partRepo.MockParticipantRepository.On("GetByID", ctx, mock.Anything).Return(&entity.Participant{
-		ID:            uuid.New(),
-		TenantID:      tenant.ID,
+		ID:        uuid.New(),
+		TenantID:  tenant.ID,
 		ProductID: product.ID,
-		UserID:        &req.UserID,
-		FullName:      profile.FullName(),
-		Status:        entity.ParticipantStatusDraft,
-		CreatedBy:     req.UserID,
+		UserID:    &req.UserID,
+		FullName:  profile.FullName(),
+		Status:    entity.ParticipantStatusDraft,
+		CreatedBy: req.UserID,
 	}, nil).Maybe()
 
 	uc := buildSelfRegisterUsecase(txMgr, partRepo, pensionRepo, statusHistoryRepo, tenantRepo, productRepo, configRepo, utrRepo, profileRepo, mdValidator)
@@ -305,13 +305,13 @@ func TestSelfRegister_Success_LinkExistingParticipant(t *testing.T) {
 	profile := completeProfile(req.UserID)
 
 	existingParticipant := &entity.Participant{
-		ID:            uuid.New(),
-		TenantID:      tenant.ID,
+		ID:        uuid.New(),
+		TenantID:  tenant.ID,
 		ProductID: product.ID,
-		UserID:        nil,
-		FullName:      "Existing Person",
-		Status:        entity.ParticipantStatusDraft,
-		CreatedBy:     uuid.New(),
+		UserID:    nil,
+		FullName:  "Existing Person",
+		Status:    entity.ParticipantStatusDraft,
+		CreatedBy: uuid.New(),
 	}
 	existingPension := &entity.ParticipantPension{
 		ID:            uuid.New(),
@@ -483,7 +483,7 @@ func TestSelfRegister_TenantInactive(t *testing.T) {
 
 	uc := &usecase{
 		masterdataUsecase: mdValidator,
-		tenantRepo:          tenantRepo,
+		tenantRepo:        tenantRepo,
 	}
 	resp, err := uc.SelfRegister(ctx, req)
 
@@ -508,8 +508,8 @@ func TestSelfRegister_ProductNotFound(t *testing.T) {
 
 	uc := &usecase{
 		masterdataUsecase: mdValidator,
-		tenantRepo:          tenantRepo,
-		productRepo:         productRepo,
+		tenantRepo:        tenantRepo,
+		productRepo:       productRepo,
 	}
 	resp, err := uc.SelfRegister(ctx, req)
 
@@ -538,9 +538,9 @@ func TestSelfRegister_ConfigNotFound(t *testing.T) {
 
 	uc := &usecase{
 		masterdataUsecase: mdValidator,
-		tenantRepo:          tenantRepo,
-		productRepo:         productRepo,
-		configRepo:          configRepo,
+		tenantRepo:        tenantRepo,
+		productRepo:       productRepo,
+		configRepo:        configRepo,
 	}
 	resp, err := uc.SelfRegister(ctx, req)
 
@@ -558,7 +558,7 @@ func TestSelfRegister_ConfigNotActive(t *testing.T) {
 	product := activeProduct(tenant.ID)
 	inactiveConfig := &entity.ProductRegistrationConfig{
 		ID:               uuid.New(),
-		ProductID:    product.ID,
+		ProductID:        product.ID,
 		RegistrationType: "PARTICIPANT",
 		IsActive:         false,
 	}
@@ -574,9 +574,9 @@ func TestSelfRegister_ConfigNotActive(t *testing.T) {
 
 	uc := &usecase{
 		masterdataUsecase: mdValidator,
-		tenantRepo:          tenantRepo,
-		productRepo:         productRepo,
-		configRepo:          configRepo,
+		tenantRepo:        tenantRepo,
+		productRepo:       productRepo,
+		configRepo:        configRepo,
 	}
 	resp, err := uc.SelfRegister(ctx, req)
 
@@ -615,10 +615,10 @@ func TestSelfRegister_IncompleteProfile_MissingGender(t *testing.T) {
 
 	uc := &usecase{
 		masterdataUsecase: mdValidator,
-		tenantRepo:          tenantRepo,
-		productRepo:         productRepo,
-		configRepo:          configRepo,
-		userProfileRepo:     profileRepo,
+		tenantRepo:        tenantRepo,
+		productRepo:       productRepo,
+		configRepo:        configRepo,
+		userProfileRepo:   profileRepo,
 	}
 	resp, err := uc.SelfRegister(ctx, req)
 
@@ -638,12 +638,12 @@ func TestSelfRegister_AlreadyLinked_DifferentUser(t *testing.T) {
 	profile := completeProfile(req.UserID)
 	existingUserID := uuid.New()
 	linkedParticipant := &entity.Participant{
-		ID:            uuid.New(),
-		TenantID:      tenant.ID,
+		ID:        uuid.New(),
+		TenantID:  tenant.ID,
 		ProductID: product.ID,
-		UserID:        &existingUserID,
-		FullName:      "Someone Else",
-		Status:        entity.ParticipantStatusApproved,
+		UserID:    &existingUserID,
+		FullName:  "Someone Else",
+		Status:    entity.ParticipantStatusApproved,
 	}
 	existingPension := &entity.ParticipantPension{
 		ID:            uuid.New(),
@@ -666,11 +666,11 @@ func TestSelfRegister_AlreadyLinked_DifferentUser(t *testing.T) {
 
 	uc := &usecase{
 		masterdataUsecase: mdValidator,
-		tenantRepo:          tenantRepo,
-		productRepo:         productRepo,
-		configRepo:          configRepo,
-		userProfileRepo:     profileRepo,
-		participantRepo:     partRepo,
+		tenantRepo:        tenantRepo,
+		productRepo:       productRepo,
+		configRepo:        configRepo,
+		userProfileRepo:   profileRepo,
+		participantRepo:   partRepo,
 	}
 	resp, err := uc.SelfRegister(ctx, req)
 
@@ -693,12 +693,12 @@ func TestSelfRegister_AlreadyLinked_SameUser(t *testing.T) {
 
 	sameUserID := req.UserID
 	linkedParticipant := &entity.Participant{
-		ID:            uuid.New(),
-		TenantID:      tenant.ID,
+		ID:        uuid.New(),
+		TenantID:  tenant.ID,
 		ProductID: product.ID,
-		UserID:        &sameUserID,
-		FullName:      "Same User",
-		Status:        entity.ParticipantStatusApproved,
+		UserID:    &sameUserID,
+		FullName:  "Same User",
+		Status:    entity.ParticipantStatusApproved,
 	}
 	existingPension := &entity.ParticipantPension{
 		ID:            uuid.New(),
@@ -721,11 +721,11 @@ func TestSelfRegister_AlreadyLinked_SameUser(t *testing.T) {
 
 	uc := &usecase{
 		masterdataUsecase: mdValidator,
-		tenantRepo:          tenantRepo,
-		productRepo:         productRepo,
-		configRepo:          configRepo,
-		userProfileRepo:     profileRepo,
-		participantRepo:     partRepo,
+		tenantRepo:        tenantRepo,
+		productRepo:       productRepo,
+		configRepo:        configRepo,
+		userProfileRepo:   profileRepo,
+		participantRepo:   partRepo,
 	}
 	resp, err := uc.SelfRegister(ctx, req)
 
@@ -765,12 +765,12 @@ func TestSelfRegister_AlreadyRegistered_UTRExists(t *testing.T) {
 
 	uc := &usecase{
 		masterdataUsecase: mdValidator,
-		tenantRepo:          tenantRepo,
-		productRepo:         productRepo,
-		configRepo:          configRepo,
-		userProfileRepo:     profileRepo,
-		participantRepo:     partRepo,
-		utrRepo:             utrRepo,
+		tenantRepo:        tenantRepo,
+		productRepo:       productRepo,
+		configRepo:        configRepo,
+		userProfileRepo:   profileRepo,
+		participantRepo:   partRepo,
+		utrRepo:           utrRepo,
 	}
 	resp, err := uc.SelfRegister(ctx, req)
 

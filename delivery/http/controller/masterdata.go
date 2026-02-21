@@ -1,12 +1,12 @@
 package controller
 
 import (
-	"iam-service/config"
-	"iam-service/delivery/http/dto/response"
-	"iam-service/delivery/http/presenter"
-	"iam-service/masterdata"
-	"iam-service/masterdata/masterdatadto"
-	"iam-service/pkg/errors"
+	"erp-service/config"
+	"erp-service/delivery/http/dto/response"
+	"erp-service/delivery/http/presenter"
+	"erp-service/masterdata"
+	"erp-service/masterdata/masterdatadto"
+	"erp-service/pkg/errors"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"

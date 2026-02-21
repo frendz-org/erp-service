@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"iam-service/entity"
-	"iam-service/saving/participant/participantdto"
-	"iam-service/pkg/errors"
+	"erp-service/entity"
+	"erp-service/pkg/errors"
+	"erp-service/saving/participant/participantdto"
 )
 
 func (uc *usecase) SubmitParticipant(ctx context.Context, req *participantdto.SubmitParticipantRequest) (*participantdto.ParticipantResponse, error) {

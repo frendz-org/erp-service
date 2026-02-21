@@ -1,8 +1,8 @@
 package presenter
 
 import (
-	"iam-service/delivery/http/dto/response"
-	"iam-service/iam/user/userdto"
+	"erp-service/delivery/http/dto/response"
+	"erp-service/iam/user/userdto"
 )
 
 func ToUserResponse(resp *userdto.UserDetailResponse) *response.UserResponse {

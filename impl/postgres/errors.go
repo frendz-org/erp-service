@@ -4,7 +4,7 @@ import (
 	stderrors "errors"
 	"strings"
 
-	"iam-service/pkg/errors"
+	"erp-service/pkg/errors"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"

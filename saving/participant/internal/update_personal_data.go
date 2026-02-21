@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"iam-service/saving/participant/participantdto"
+	"erp-service/saving/participant/participantdto"
 )
 
 func (uc *usecase) UpdatePersonalData(ctx context.Context, req *participantdto.UpdatePersonalDataRequest) (*participantdto.ParticipantResponse, error) {

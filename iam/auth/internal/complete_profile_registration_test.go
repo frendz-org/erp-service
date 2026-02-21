@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"iam-service/config"
-	"iam-service/entity"
-	"iam-service/iam/auth/authdto"
-	"iam-service/masterdata/masterdatadto"
-	pkgerrors "iam-service/pkg/errors"
+	"erp-service/config"
+	"erp-service/entity"
+	"erp-service/iam/auth/authdto"
+	"erp-service/masterdata/masterdatadto"
+	pkgerrors "erp-service/pkg/errors"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"

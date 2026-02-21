@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"iam-service/entity"
-	"iam-service/saving/participant/participantdto"
-	"iam-service/pkg/errors"
+	"erp-service/entity"
+	"erp-service/pkg/errors"
+	"erp-service/saving/participant/participantdto"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -32,7 +32,7 @@ func TestUsecase_SubmitParticipant(t *testing.T) {
 			req: &participantdto.SubmitParticipantRequest{
 				ParticipantID: uuid.New(),
 				TenantID:      tenantID,
-				ProductID: productID,
+				ProductID:     productID,
 				UserID:        userID,
 			},
 			setup: func(txMgr *MockTransactionManager, partRepo *MockParticipantRepository, histRepo *MockParticipantStatusHistoryRepository, identRepo *MockParticipantIdentityRepository, addrRepo *MockParticipantAddressRepository, bankRepo *MockParticipantBankAccountRepository, famRepo *MockParticipantFamilyMemberRepository, empRepo *MockParticipantEmploymentRepository, penRepo *MockParticipantPensionRepository, benRepo *MockParticipantBeneficiaryRepository) {
@@ -60,7 +60,7 @@ func TestUsecase_SubmitParticipant(t *testing.T) {
 			req: &participantdto.SubmitParticipantRequest{
 				ParticipantID: uuid.New(),
 				TenantID:      tenantID,
-				ProductID: productID,
+				ProductID:     productID,
 				UserID:        userID,
 			},
 			setup: func(txMgr *MockTransactionManager, partRepo *MockParticipantRepository, histRepo *MockParticipantStatusHistoryRepository, identRepo *MockParticipantIdentityRepository, addrRepo *MockParticipantAddressRepository, bankRepo *MockParticipantBankAccountRepository, famRepo *MockParticipantFamilyMemberRepository, empRepo *MockParticipantEmploymentRepository, penRepo *MockParticipantPensionRepository, benRepo *MockParticipantBeneficiaryRepository) {
@@ -84,7 +84,7 @@ func TestUsecase_SubmitParticipant(t *testing.T) {
 			req: &participantdto.SubmitParticipantRequest{
 				ParticipantID: uuid.New(),
 				TenantID:      tenantID,
-				ProductID: productID,
+				ProductID:     productID,
 				UserID:        userID,
 			},
 			setup: func(txMgr *MockTransactionManager, partRepo *MockParticipantRepository, histRepo *MockParticipantStatusHistoryRepository, identRepo *MockParticipantIdentityRepository, addrRepo *MockParticipantAddressRepository, bankRepo *MockParticipantBankAccountRepository, famRepo *MockParticipantFamilyMemberRepository, empRepo *MockParticipantEmploymentRepository, penRepo *MockParticipantPensionRepository, benRepo *MockParticipantBeneficiaryRepository) {
@@ -99,7 +99,7 @@ func TestUsecase_SubmitParticipant(t *testing.T) {
 			req: &participantdto.SubmitParticipantRequest{
 				ParticipantID: uuid.New(),
 				TenantID:      otherTenantID,
-				ProductID: productID,
+				ProductID:     productID,
 				UserID:        userID,
 			},
 			setup: func(txMgr *MockTransactionManager, partRepo *MockParticipantRepository, histRepo *MockParticipantStatusHistoryRepository, identRepo *MockParticipantIdentityRepository, addrRepo *MockParticipantAddressRepository, bankRepo *MockParticipantBankAccountRepository, famRepo *MockParticipantFamilyMemberRepository, empRepo *MockParticipantEmploymentRepository, penRepo *MockParticipantPensionRepository, benRepo *MockParticipantBeneficiaryRepository) {
@@ -115,7 +115,7 @@ func TestUsecase_SubmitParticipant(t *testing.T) {
 			req: &participantdto.SubmitParticipantRequest{
 				ParticipantID: uuid.New(),
 				TenantID:      tenantID,
-				ProductID: productID,
+				ProductID:     productID,
 				UserID:        userID,
 			},
 			setup: func(txMgr *MockTransactionManager, partRepo *MockParticipantRepository, histRepo *MockParticipantStatusHistoryRepository, identRepo *MockParticipantIdentityRepository, addrRepo *MockParticipantAddressRepository, bankRepo *MockParticipantBankAccountRepository, famRepo *MockParticipantFamilyMemberRepository, empRepo *MockParticipantEmploymentRepository, penRepo *MockParticipantPensionRepository, benRepo *MockParticipantBeneficiaryRepository) {
@@ -131,7 +131,7 @@ func TestUsecase_SubmitParticipant(t *testing.T) {
 			req: &participantdto.SubmitParticipantRequest{
 				ParticipantID: uuid.New(),
 				TenantID:      tenantID,
-				ProductID: productID,
+				ProductID:     productID,
 				UserID:        userID,
 			},
 			setup: func(txMgr *MockTransactionManager, partRepo *MockParticipantRepository, histRepo *MockParticipantStatusHistoryRepository, identRepo *MockParticipantIdentityRepository, addrRepo *MockParticipantAddressRepository, bankRepo *MockParticipantBankAccountRepository, famRepo *MockParticipantFamilyMemberRepository, empRepo *MockParticipantEmploymentRepository, penRepo *MockParticipantPensionRepository, benRepo *MockParticipantBeneficiaryRepository) {

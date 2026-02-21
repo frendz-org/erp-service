@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"iam-service/masterdata/masterdatadto"
-	"iam-service/pkg/errors"
+	"erp-service/masterdata/masterdatadto"
+	"erp-service/pkg/errors"
 
 	"github.com/google/uuid"
 )

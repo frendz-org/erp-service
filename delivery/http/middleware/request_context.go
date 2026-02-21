@@ -5,7 +5,7 @@ import (
 	"net"
 	"strings"
 
-	"iam-service/pkg/logger"
+	"erp-service/pkg/logger"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"

@@ -1,8 +1,8 @@
 package presenter
 
 import (
-	"iam-service/delivery/http/dto/response"
-	"iam-service/saving/participant/participantdto"
+	"erp-service/delivery/http/dto/response"
+	"erp-service/saving/participant/participantdto"
 )
 
 func MapSelfRegisterResponse(resp *participantdto.SelfRegisterResponse) *participantdto.SelfRegisterResponse {

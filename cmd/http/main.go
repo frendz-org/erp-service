@@ -8,8 +8,8 @@ import (
 	"syscall"
 	"time"
 
-	"iam-service/config"
-	iamhttp "iam-service/delivery/http"
+	"erp-service/config"
+	iamhttp "erp-service/delivery/http"
 )
 
 func main() {

@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"iam-service/config"
-	"iam-service/entity"
-	"iam-service/iam/auth/authdto"
-	"iam-service/pkg/errors"
+	"erp-service/config"
+	"erp-service/entity"
+	"erp-service/iam/auth/authdto"
+	"erp-service/pkg/errors"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -148,9 +148,9 @@ func TestResendRegistrationOTP(t *testing.T) {
 			tt.setupMocks(redis, emailSvc)
 
 			uc := &usecase{
-				Config:       &config.Config{},
-				InMemoryStore:        redis,
-				EmailService: emailSvc,
+				Config:        &config.Config{},
+				InMemoryStore: redis,
+				EmailService:  emailSvc,
 			}
 
 			ctx := context.Background()

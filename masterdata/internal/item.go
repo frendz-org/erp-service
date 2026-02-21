@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"iam-service/entity"
-	"iam-service/masterdata/contract"
-	"iam-service/masterdata/masterdatadto"
-	"iam-service/pkg/errors"
+	"erp-service/entity"
+	"erp-service/masterdata/contract"
+	"erp-service/masterdata/masterdatadto"
+	"erp-service/pkg/errors"
 
 	"github.com/google/uuid"
 )

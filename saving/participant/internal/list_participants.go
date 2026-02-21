@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"math"
 
-	"iam-service/saving/participant/contract"
-	"iam-service/saving/participant/participantdto"
+	"erp-service/saving/participant/contract"
+	"erp-service/saving/participant/participantdto"
 )
 
 func (uc *usecase) ListParticipants(ctx context.Context, req *participantdto.ListParticipantsRequest) (*participantdto.ListParticipantsResponse, error) {
@@ -14,11 +14,11 @@ func (uc *usecase) ListParticipants(ctx context.Context, req *participantdto.Lis
 		TenantID:  req.TenantID,
 		ProductID: req.ProductID,
 		Status:    req.Status,
-		Search:        req.Search,
-		Page:          req.Page,
-		PerPage:       req.PerPage,
-		SortBy:        req.SortBy,
-		SortOrder:     req.SortOrder,
+		Search:    req.Search,
+		Page:      req.Page,
+		PerPage:   req.PerPage,
+		SortBy:    req.SortBy,
+		SortOrder: req.SortOrder,
 	}
 
 	participants, total, err := uc.participantRepo.List(ctx, filter)

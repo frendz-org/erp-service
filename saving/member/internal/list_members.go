@@ -3,8 +3,8 @@ package internal
 import (
 	"context"
 
-	"iam-service/saving/member/contract"
-	"iam-service/saving/member/memberdto"
+	"erp-service/saving/member/contract"
+	"erp-service/saving/member/memberdto"
 )
 
 func (uc *usecase) ListMembers(ctx context.Context, req *memberdto.ListRequest) (*memberdto.ListResponse, error) {
@@ -12,11 +12,11 @@ func (uc *usecase) ListMembers(ctx context.Context, req *memberdto.ListRequest) 
 		TenantID:  req.TenantID,
 		ProductID: req.ProductID,
 		Status:    req.Status,
-		Search:        req.Search,
-		Page:          req.Page,
-		PerPage:       req.PerPage,
-		SortBy:        req.SortBy,
-		SortOrder:     req.SortOrder,
+		Search:    req.Search,
+		Page:      req.Page,
+		PerPage:   req.PerPage,
+		SortBy:    req.SortBy,
+		SortOrder: req.SortOrder,
 	}
 
 	rows, total, err := uc.utrRepo.ListByProductWithFilters(ctx, filter)

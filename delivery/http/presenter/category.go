@@ -1,8 +1,8 @@
 package presenter
 
 import (
-	"iam-service/delivery/http/dto/response"
-	"iam-service/masterdata/masterdatadto"
+	"erp-service/delivery/http/dto/response"
+	"erp-service/masterdata/masterdatadto"
 )
 
 func ToCategoryResponse(category *masterdatadto.CategoryResponse) *response.MasterdataCategoryResponse {

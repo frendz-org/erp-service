@@ -1,8 +1,8 @@
 package router
 
 import (
-	"iam-service/delivery/http/controller"
-	"iam-service/delivery/http/middleware"
+	"erp-service/delivery/http/controller"
+	"erp-service/delivery/http/middleware"
 
 	"github.com/gofiber/fiber/v2"
 )

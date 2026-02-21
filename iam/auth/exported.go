@@ -2,11 +2,11 @@ package auth
 
 import (
 	"context"
-	"iam-service/config"
-	"iam-service/iam/auth/authdto"
-	"iam-service/iam/auth/contract"
-	"iam-service/iam/auth/internal"
-	"iam-service/pkg/logger"
+	"erp-service/config"
+	"erp-service/iam/auth/authdto"
+	"erp-service/iam/auth/contract"
+	"erp-service/iam/auth/internal"
+	"erp-service/pkg/logger"
 
 	"github.com/google/uuid"
 )

@@ -3,7 +3,7 @@ package internal
 import (
 	"context"
 
-	"iam-service/masterdata/masterdatadto"
+	"erp-service/masterdata/masterdatadto"
 
 	"github.com/google/uuid"
 )

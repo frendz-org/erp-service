@@ -1,8 +1,8 @@
 package infrastructure
 
 import (
+	"erp-service/config"
 	"fmt"
-	"iam-service/config"
 
 	"go.uber.org/zap"
 	"gorm.io/driver/postgres"

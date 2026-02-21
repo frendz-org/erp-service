@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"iam-service/config"
+	"erp-service/config"
 
 	"github.com/hashicorp/vault/api"
 )

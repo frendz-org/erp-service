@@ -3,8 +3,8 @@ package internal
 import (
 	"context"
 
-	"iam-service/iam/user/userdto"
-	"iam-service/pkg/errors"
+	"erp-service/iam/user/userdto"
+	"erp-service/pkg/errors"
 
 	"github.com/google/uuid"
 )

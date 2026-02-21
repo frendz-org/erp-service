@@ -3,10 +3,10 @@ package internal
 import (
 	"context"
 
-	"iam-service/entity"
-	"iam-service/pkg/errors"
-	"iam-service/saving/member/contract"
-	"iam-service/saving/member/memberdto"
+	"erp-service/entity"
+	"erp-service/pkg/errors"
+	"erp-service/saving/member/contract"
+	"erp-service/saving/member/memberdto"
 
 	"github.com/google/uuid"
 )

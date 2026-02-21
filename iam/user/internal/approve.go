@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"iam-service/entity"
-	"iam-service/iam/user/userdto"
-	"iam-service/pkg/errors"
+	"erp-service/entity"
+	"erp-service/iam/user/userdto"
+	"erp-service/pkg/errors"
 
 	"github.com/google/uuid"
 )

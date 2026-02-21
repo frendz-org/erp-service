@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"time"
 
-	"iam-service/entity"
-	"iam-service/iam/auth/authdto"
-	"iam-service/pkg/errors"
-	jwtpkg "iam-service/pkg/jwt"
+	"erp-service/entity"
+	"erp-service/iam/auth/authdto"
+	"erp-service/pkg/errors"
+	jwtpkg "erp-service/pkg/jwt"
 
 	"github.com/google/uuid"
 )

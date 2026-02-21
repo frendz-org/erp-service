@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 
-	"iam-service/entity"
-	"iam-service/pkg/errors"
-	"iam-service/saving/member/memberdto"
+	"erp-service/entity"
+	"erp-service/pkg/errors"
+	"erp-service/saving/member/memberdto"
 )
 
 func (uc *usecase) RejectMember(ctx context.Context, req *memberdto.RejectRequest) (*memberdto.MemberDetailResponse, error) {

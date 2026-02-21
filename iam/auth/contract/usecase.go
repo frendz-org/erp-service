@@ -3,7 +3,7 @@ package contract
 import (
 	"context"
 
-	"iam-service/masterdata/masterdatadto"
+	"erp-service/masterdata/masterdatadto"
 )
 
 type MasterdataUsecase interface {

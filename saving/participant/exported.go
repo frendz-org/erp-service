@@ -1,9 +1,9 @@
 package participant
 
 import (
-	"iam-service/config"
-	"iam-service/saving/participant/contract"
-	"iam-service/saving/participant/internal"
+	"erp-service/config"
+	"erp-service/saving/participant/contract"
+	"erp-service/saving/participant/internal"
 )
 
 type Usecase = contract.Usecase

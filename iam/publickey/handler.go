@@ -1,7 +1,7 @@
 package publickey
 
 import (
-	"iam-service/config"
+	"erp-service/config"
 
 	"github.com/gofiber/fiber/v2"
 )

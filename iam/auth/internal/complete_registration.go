@@ -7,10 +7,10 @@ import (
 	"net/http"
 	"time"
 
-	"iam-service/entity"
-	"iam-service/iam/auth/authdto"
-	jwtpkg "iam-service/pkg/jwt"
-	"iam-service/pkg/errors"
+	"erp-service/entity"
+	"erp-service/iam/auth/authdto"
+	"erp-service/pkg/errors"
+	jwtpkg "erp-service/pkg/jwt"
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -97,10 +97,10 @@ func (uc *usecase) CompleteRegistration(
 		}
 
 		securityState := &entity.UserSecurityState{
-			UserID:        user.ID,
-			EmailVerified: true,
+			UserID:          user.ID,
+			EmailVerified:   true,
 			EmailVerifiedAt: &now,
-			UpdatedAt:     now,
+			UpdatedAt:       now,
 		}
 		if err := uc.UserSecurityStateRepo.Create(txCtx, securityState); err != nil {
 			return err

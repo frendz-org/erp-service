@@ -3,7 +3,7 @@ package contract
 import (
 	"context"
 
-	"iam-service/saving/member/memberdto"
+	"erp-service/saving/member/memberdto"
 )
 
 type Usecase interface {

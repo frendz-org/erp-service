@@ -1,10 +1,10 @@
 package internal
 
 import (
-	"iam-service/config"
-	"iam-service/entity"
-	"iam-service/iam/user/contract"
-	"iam-service/iam/user/userdto"
+	"erp-service/config"
+	"erp-service/entity"
+	"erp-service/iam/user/contract"
+	"erp-service/iam/user/userdto"
 )
 
 type usecase struct {

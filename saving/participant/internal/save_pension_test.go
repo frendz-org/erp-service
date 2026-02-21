@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"iam-service/entity"
-	"iam-service/saving/participant/participantdto"
-	"iam-service/pkg/errors"
+	"erp-service/entity"
+	"erp-service/pkg/errors"
+	"erp-service/saving/participant/participantdto"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -34,9 +34,9 @@ func TestUsecase_SavePension(t *testing.T) {
 		{
 			name: "success - creates new pension (no existing)",
 			req: &participantdto.SavePensionRequest{
-				ParticipantID:   participantID,
-				TenantID:        tenantID,
-				ProductID:   productID,
+				ParticipantID:     participantID,
+				TenantID:          tenantID,
+				ProductID:         productID,
 				ParticipantNumber: strPtr("PEN-001"),
 				PensionCategory:   strPtr("PARTICIPANT_CATEGORY_001"),
 				PensionStatus:     strPtr("PARTICIPANT_STATUS_001"),
@@ -59,9 +59,9 @@ func TestUsecase_SavePension(t *testing.T) {
 		{
 			name: "success - updates existing pension (found by participant ID)",
 			req: &participantdto.SavePensionRequest{
-				ParticipantID:   participantID,
-				TenantID:        tenantID,
-				ProductID:   productID,
+				ParticipantID:     participantID,
+				TenantID:          tenantID,
+				ProductID:         productID,
 				ParticipantNumber: strPtr("PEN-002"),
 				PensionStatus:     strPtr("PARTICIPANT_STATUS_002"),
 			},
@@ -83,10 +83,10 @@ func TestUsecase_SavePension(t *testing.T) {
 		{
 			name: "success - updates existing pension by ID",
 			req: &participantdto.SavePensionRequest{
-				ID:              &pensionID,
-				ParticipantID:   participantID,
-				TenantID:        tenantID,
-				ProductID:   productID,
+				ID:                &pensionID,
+				ParticipantID:     participantID,
+				TenantID:          tenantID,
+				ProductID:         productID,
 				ParticipantNumber: strPtr("PEN-003"),
 			},
 			setup: func(txMgr *MockTransactionManager, partRepo *MockParticipantRepository, penRepo *MockParticipantPensionRepository) {
@@ -107,9 +107,9 @@ func TestUsecase_SavePension(t *testing.T) {
 		{
 			name: "success - saves to REJECTED participant",
 			req: &participantdto.SavePensionRequest{
-				ParticipantID:   participantID,
-				TenantID:        tenantID,
-				ProductID:   productID,
+				ParticipantID:     participantID,
+				TenantID:          tenantID,
+				ProductID:         productID,
 				ParticipantNumber: strPtr("PEN-004"),
 			},
 			setup: func(txMgr *MockTransactionManager, partRepo *MockParticipantRepository, penRepo *MockParticipantPensionRepository) {
@@ -125,9 +125,9 @@ func TestUsecase_SavePension(t *testing.T) {
 		{
 			name: "error - participant not found",
 			req: &participantdto.SavePensionRequest{
-				ParticipantID:   participantID,
-				TenantID:        tenantID,
-				ProductID:   productID,
+				ParticipantID:     participantID,
+				TenantID:          tenantID,
+				ProductID:         productID,
 				ParticipantNumber: strPtr("PEN-005"),
 			},
 			setup: func(txMgr *MockTransactionManager, partRepo *MockParticipantRepository, penRepo *MockParticipantPensionRepository) {
@@ -140,9 +140,9 @@ func TestUsecase_SavePension(t *testing.T) {
 		{
 			name: "error - BOLA: wrong tenant",
 			req: &participantdto.SavePensionRequest{
-				ParticipantID:   participantID,
-				TenantID:        otherTenantID,
-				ProductID:   productID,
+				ParticipantID:     participantID,
+				TenantID:          otherTenantID,
+				ProductID:         productID,
 				ParticipantNumber: strPtr("PEN-006"),
 			},
 			setup: func(txMgr *MockTransactionManager, partRepo *MockParticipantRepository, penRepo *MockParticipantPensionRepository) {
@@ -157,9 +157,9 @@ func TestUsecase_SavePension(t *testing.T) {
 		{
 			name: "error - cannot save to PENDING_APPROVAL participant",
 			req: &participantdto.SavePensionRequest{
-				ParticipantID:   participantID,
-				TenantID:        tenantID,
-				ProductID:   productID,
+				ParticipantID:     participantID,
+				TenantID:          tenantID,
+				ProductID:         productID,
 				ParticipantNumber: strPtr("PEN-007"),
 			},
 			setup: func(txMgr *MockTransactionManager, partRepo *MockParticipantRepository, penRepo *MockParticipantPensionRepository) {
@@ -174,9 +174,9 @@ func TestUsecase_SavePension(t *testing.T) {
 		{
 			name: "error - cannot save to APPROVED participant",
 			req: &participantdto.SavePensionRequest{
-				ParticipantID:   participantID,
-				TenantID:        tenantID,
-				ProductID:   productID,
+				ParticipantID:     participantID,
+				TenantID:          tenantID,
+				ProductID:         productID,
 				ParticipantNumber: strPtr("PEN-008"),
 			},
 			setup: func(txMgr *MockTransactionManager, partRepo *MockParticipantRepository, penRepo *MockParticipantPensionRepository) {
@@ -191,10 +191,10 @@ func TestUsecase_SavePension(t *testing.T) {
 		{
 			name: "error - pension not found for update by ID",
 			req: &participantdto.SavePensionRequest{
-				ID:              &pensionID,
-				ParticipantID:   participantID,
-				TenantID:        tenantID,
-				ProductID:   productID,
+				ID:                &pensionID,
+				ParticipantID:     participantID,
+				TenantID:          tenantID,
+				ProductID:         productID,
 				ParticipantNumber: strPtr("PEN-009"),
 			},
 			setup: func(txMgr *MockTransactionManager, partRepo *MockParticipantRepository, penRepo *MockParticipantPensionRepository) {
@@ -210,10 +210,10 @@ func TestUsecase_SavePension(t *testing.T) {
 		{
 			name: "error - BOLA: pension belongs to different participant",
 			req: &participantdto.SavePensionRequest{
-				ID:              &pensionID,
-				ParticipantID:   participantID,
-				TenantID:        tenantID,
-				ProductID:   productID,
+				ID:                &pensionID,
+				ParticipantID:     participantID,
+				TenantID:          tenantID,
+				ProductID:         productID,
 				ParticipantNumber: strPtr("PEN-010"),
 			},
 			setup: func(txMgr *MockTransactionManager, partRepo *MockParticipantRepository, penRepo *MockParticipantPensionRepository) {

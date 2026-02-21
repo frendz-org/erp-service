@@ -2,8 +2,8 @@ package hashivault
 
 import (
 	"context"
+	"erp-service/pkg/errors"
 	"fmt"
-	"iam-service/pkg/errors"
 	"time"
 )
 

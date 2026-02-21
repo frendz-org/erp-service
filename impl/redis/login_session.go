@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"iam-service/entity"
-	"iam-service/pkg/errors"
+	"erp-service/entity"
+	"erp-service/pkg/errors"
 
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"

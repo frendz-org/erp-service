@@ -3,7 +3,7 @@ package postgres
 import (
 	"context"
 
-	"iam-service/entity"
+	"erp-service/entity"
 
 	"gorm.io/gorm"
 )

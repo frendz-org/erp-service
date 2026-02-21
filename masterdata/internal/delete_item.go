@@ -3,7 +3,7 @@ package internal
 import (
 	"context"
 
-	"iam-service/pkg/errors"
+	"erp-service/pkg/errors"
 
 	"github.com/google/uuid"
 )

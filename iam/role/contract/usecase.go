@@ -2,7 +2,7 @@ package contract
 
 import (
 	"context"
-	"iam-service/iam/role/roledto"
+	"erp-service/iam/role/roledto"
 )
 
 type Usecase interface {

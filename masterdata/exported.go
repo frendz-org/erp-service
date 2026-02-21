@@ -2,10 +2,10 @@ package masterdata
 
 import (
 	"context"
-	"iam-service/config"
-	"iam-service/masterdata/contract"
-	"iam-service/masterdata/internal"
-	"iam-service/masterdata/masterdatadto"
+	"erp-service/config"
+	"erp-service/masterdata/contract"
+	"erp-service/masterdata/internal"
+	"erp-service/masterdata/masterdatadto"
 
 	"github.com/google/uuid"
 )

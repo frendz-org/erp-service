@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	"iam-service/iam/auth/authdto"
-	"iam-service/pkg/errors"
+	"erp-service/iam/auth/authdto"
+	"erp-service/pkg/errors"
 
 	"golang.org/x/crypto/bcrypt"
 )

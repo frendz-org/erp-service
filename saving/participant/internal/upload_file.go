@@ -6,7 +6,7 @@ import (
 	"io"
 	"time"
 
-	"iam-service/saving/participant/participantdto"
+	"erp-service/saving/participant/participantdto"
 )
 
 func (uc *usecase) UploadFile(ctx context.Context, req *participantdto.UploadFileRequest, file io.Reader, fileSize int64, contentType, filename string) (*participantdto.FileUploadResponse, error) {

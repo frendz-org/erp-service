@@ -8,8 +8,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	jwtpkg "iam-service/pkg/jwt"
-	"iam-service/saving/participant/participantdto"
+	jwtpkg "erp-service/pkg/jwt"
+	"erp-service/saving/participant/participantdto"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"

@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"iam-service/entity"
-	"iam-service/iam/user/userdto"
-	"iam-service/pkg/errors"
+	"erp-service/entity"
+	"erp-service/iam/user/userdto"
+	"erp-service/pkg/errors"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -93,10 +93,10 @@ func (uc *usecase) Create(ctx context.Context, req *userdto.CreateRequest) (*use
 		}
 
 		securityState := &entity.UserSecurityState{
-			UserID:        user.ID,
-			EmailVerified: true,
+			UserID:          user.ID,
+			EmailVerified:   true,
 			EmailVerifiedAt: &now,
-			UpdatedAt:     now,
+			UpdatedAt:       now,
 		}
 		if err := uc.UserSecurityStateRepo.Create(txCtx, securityState); err != nil {
 			return err

@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"iam-service/iam/auth/authdto"
-	"iam-service/pkg/errors"
+	"erp-service/iam/auth/authdto"
+	"erp-service/pkg/errors"
 )
 
 func (uc *usecase) Logout(ctx context.Context, req *authdto.LogoutRequest) error {

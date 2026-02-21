@@ -5,8 +5,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 
-	"iam-service/config"
-	"iam-service/masterdata/contract"
+	"erp-service/config"
+	"erp-service/masterdata/contract"
 )
 
 type usecase struct {

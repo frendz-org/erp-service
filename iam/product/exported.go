@@ -1,8 +1,8 @@
 package product
 
 import (
-	"iam-service/iam/product/contract"
-	"iam-service/iam/product/internal"
+	"erp-service/iam/product/contract"
+	"erp-service/iam/product/internal"
 )
 
 type Usecase = contract.Usecase

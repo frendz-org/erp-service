@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"iam-service/entity"
-	"iam-service/iam/role/roledto"
-	"iam-service/pkg/errors"
+	"erp-service/entity"
+	"erp-service/iam/role/roledto"
+	"erp-service/pkg/errors"
 )
 
 func (uc *usecase) Create(ctx context.Context, req *roledto.CreateRequest) (*roledto.CreateResponse, error) {
@@ -37,12 +37,12 @@ func (uc *usecase) Create(ctx context.Context, req *roledto.CreateRequest) (*rol
 
 	now := time.Now()
 	role := &entity.Role{
-		ProductID: req.TenantID,
-		Code:      req.Code,
-		Name:          req.Name,
-		Description:   req.Description,
-		IsSystem:      false,
-		Status:        "ACTIVE",
+		ProductID:   req.TenantID,
+		Code:        req.Code,
+		Name:        req.Name,
+		Description: req.Description,
+		IsSystem:    false,
+		Status:      "ACTIVE",
 	}
 
 	err = uc.TxManager.WithTransaction(ctx, func(txCtx context.Context) error {

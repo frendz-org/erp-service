@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"iam-service/config"
-	"iam-service/entity"
-	"iam-service/iam/auth/authdto"
-	"iam-service/pkg/errors"
+	"erp-service/config"
+	"erp-service/entity"
+	"erp-service/iam/auth/authdto"
+	"erp-service/pkg/errors"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -305,7 +305,7 @@ func TestCompleteRegistration(t *testing.T) {
 			tt.req.RegistrationToken = token
 
 			uc := &usecase{
-				TxManager:             txManager,
+				TxManager: txManager,
 				Config: &config.Config{
 					JWT: config.JWTConfig{
 						AccessSecret:  jwtSecret,
@@ -317,7 +317,7 @@ func TestCompleteRegistration(t *testing.T) {
 						Audience:      []string{"iam-api"},
 					},
 				},
-				InMemoryStore:                 redis,
+				InMemoryStore:         redis,
 				UserRepo:              userRepo,
 				UserProfileRepo:       profileRepo,
 				UserAuthMethodRepo:    authMethodRepo,

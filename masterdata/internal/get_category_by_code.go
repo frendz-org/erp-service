@@ -3,8 +3,8 @@ package internal
 import (
 	"context"
 
-	"iam-service/masterdata/masterdatadto"
-	"iam-service/pkg/errors"
+	"erp-service/masterdata/masterdatadto"
+	"erp-service/pkg/errors"
 )
 
 func (uc *usecase) GetCategoryByCode(ctx context.Context, code string) (*masterdatadto.CategoryResponse, error) {

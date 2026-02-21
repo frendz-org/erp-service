@@ -7,9 +7,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"iam-service/config"
-	"iam-service/iam/auth/authdto"
-	"iam-service/pkg/errors"
+	"erp-service/config"
+	"erp-service/iam/auth/authdto"
+	"erp-service/pkg/errors"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"

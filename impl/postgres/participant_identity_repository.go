@@ -3,9 +3,9 @@ package postgres
 import (
 	"context"
 
-	"iam-service/entity"
-	"iam-service/saving/participant/contract"
-	"iam-service/pkg/errors"
+	"erp-service/entity"
+	"erp-service/pkg/errors"
+	"erp-service/saving/participant/contract"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"

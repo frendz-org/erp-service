@@ -3,8 +3,8 @@ package internal
 import (
 	"testing"
 
-	"iam-service/entity"
-	"iam-service/pkg/errors"
+	"erp-service/entity"
+	"erp-service/pkg/errors"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -18,41 +18,41 @@ func TestValidateParticipantOwnership(t *testing.T) {
 	otherProductID := uuid.New()
 
 	tests := []struct {
-		name          string
-		participant   *entity.Participant
-		tenantID      uuid.UUID
-		productID uuid.UUID
-		wantErr       bool
+		name        string
+		participant *entity.Participant
+		tenantID    uuid.UUID
+		productID   uuid.UUID
+		wantErr     bool
 	}{
 		{
 			name: "success - matching tenant and product",
 			participant: &entity.Participant{
-				TenantID:      tenantID,
+				TenantID:  tenantID,
 				ProductID: productID,
 			},
-			tenantID:      tenantID,
+			tenantID:  tenantID,
 			productID: productID,
-			wantErr:       false,
+			wantErr:   false,
 		},
 		{
 			name: "error - different tenant (BOLA)",
 			participant: &entity.Participant{
-				TenantID:      tenantID,
+				TenantID:  tenantID,
 				ProductID: productID,
 			},
-			tenantID:      otherTenantID,
+			tenantID:  otherTenantID,
 			productID: productID,
-			wantErr:       true,
+			wantErr:   true,
 		},
 		{
 			name: "error - different product (BOLA)",
 			participant: &entity.Participant{
-				TenantID:      tenantID,
+				TenantID:  tenantID,
 				ProductID: productID,
 			},
-			tenantID:      tenantID,
+			tenantID:  tenantID,
 			productID: otherProductID,
-			wantErr:       true,
+			wantErr:   true,
 		},
 	}
 
@@ -244,7 +244,7 @@ func TestGenerateObjectKey(t *testing.T) {
 	tests := []struct {
 		name          string
 		tenantID      uuid.UUID
-		productID uuid.UUID
+		productID     uuid.UUID
 		participantID uuid.UUID
 		fieldName     string
 		filename      string
@@ -254,7 +254,7 @@ func TestGenerateObjectKey(t *testing.T) {
 		{
 			name:          "normal upload",
 			tenantID:      tenantID,
-			productID: productID,
+			productID:     productID,
 			participantID: participantID,
 			fieldName:     "ktp_photo",
 			filename:      "ktp.jpg",
@@ -264,7 +264,7 @@ func TestGenerateObjectKey(t *testing.T) {
 		{
 			name:          "sanitizes malicious field name",
 			tenantID:      tenantID,
-			productID: productID,
+			productID:     productID,
 			participantID: participantID,
 			fieldName:     "../etc/passwd",
 			filename:      "file.jpg",
@@ -274,7 +274,7 @@ func TestGenerateObjectKey(t *testing.T) {
 		{
 			name:          "sanitizes malicious filename",
 			tenantID:      tenantID,
-			productID: productID,
+			productID:     productID,
 			participantID: participantID,
 			fieldName:     "ktp_photo",
 			filename:      "/etc/passwd",

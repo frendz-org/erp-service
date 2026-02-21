@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"iam-service/entity"
+	"erp-service/entity"
 
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"

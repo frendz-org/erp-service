@@ -5,8 +5,8 @@ import (
 	"io"
 	"time"
 
-	"iam-service/entity"
-	"iam-service/saving/participant/contract"
+	"erp-service/entity"
+	"erp-service/saving/participant/contract"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"

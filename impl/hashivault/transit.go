@@ -3,8 +3,8 @@ package hashivault
 import (
 	"context"
 	"encoding/base64"
+	"erp-service/pkg/errors"
 	"fmt"
-	"iam-service/pkg/errors"
 )
 
 type TransitKey struct {
