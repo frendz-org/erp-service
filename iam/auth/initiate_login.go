@@ -53,7 +53,7 @@ func (uc *usecase) InitiateLogin(
 		return dummyOTPResponse(email), nil
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(req.Password)); err != nil {
-		return dummyOTPResponse(email), nil
+		return nil, errors.New("INVALID_CREDENTIALS", "Invalid email or password.", http.StatusUnauthorized)
 	}
 
 	otp, otpHash, err := uc.generateOTP()
