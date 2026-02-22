@@ -103,22 +103,3 @@ func ToCompleteProfileRegistrationResponse(resp *auth.CompleteProfileRegistratio
 	}
 }
 
-func ToCompleteRegistrationResponse(resp *auth.CompleteRegistrationResponse) *response.CompleteRegistrationResponse {
-	if resp == nil {
-		return nil
-	}
-	return &response.CompleteRegistrationResponse{
-		UserID:  resp.UserID,
-		Email:   resp.Email,
-		Status:  resp.Status,
-		Message: resp.Message,
-		Profile: response.CompleteRegistrationProfile{
-			FirstName: resp.Profile.FirstName,
-			LastName:  resp.Profile.LastName,
-		},
-		AccessToken:  resp.AccessToken,
-		RefreshToken: resp.RefreshToken,
-		TokenType:    resp.TokenType,
-		ExpiresIn:    resp.ExpiresIn,
-	}
-}

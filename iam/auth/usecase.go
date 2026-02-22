@@ -16,7 +16,6 @@ type RegistrationFlow interface {
 	InitiateRegistration(ctx context.Context, req *InitiateRegistrationRequest) (*InitiateRegistrationResponse, error)
 	VerifyRegistrationOTP(ctx context.Context, req *VerifyRegistrationOTPRequest) (*VerifyRegistrationOTPResponse, error)
 	ResendRegistrationOTP(ctx context.Context, req *ResendRegistrationOTPRequest) (*ResendRegistrationOTPResponse, error)
-	CompleteRegistration(ctx context.Context, req *CompleteRegistrationRequest) (*CompleteRegistrationResponse, error)
 	SetPassword(ctx context.Context, req *SetPasswordRequest) (*SetPasswordResponse, error)
 	CompleteProfileRegistration(ctx context.Context, req *CompleteProfileRegistrationRequest) (*CompleteProfileRegistrationResponse, error)
 	GetRegistrationStatus(ctx context.Context, registrationID uuid.UUID, email string) (*RegistrationStatusResponse, error)

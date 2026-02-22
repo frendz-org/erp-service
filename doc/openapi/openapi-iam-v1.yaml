@@ -363,40 +363,6 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /api/v1/iam/registrations/{id}/complete:
-    post:
-      tags: [Registration]
-      summary: Complete registration (alternate flow)
-      description: |
-        Alternative completion endpoint that accepts password + basic profile in one step.
-        Requires the registration token in the Authorization header.
-      operationId: completeRegistration
-      security:
-        - BearerAuth: []
-      parameters:
-        - $ref: '#/components/parameters/RegistrationSessionID'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CompleteRegistrationRequest'
-      responses:
-        '201':
-          description: Registration completed — tokens returned
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CompleteProfileRegistrationResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '422':
-          $ref: '#/components/responses/UnprocessableEntity'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
   # ==========================================
   # LOGIN
   # ==========================================
@@ -3085,27 +3051,6 @@ components:
               type: integer
               description: Access token lifetime in seconds
               example: 3600
-
-    CompleteRegistrationRequest:
-      type: object
-      properties:
-        password:
-          type: string
-          format: password
-          minLength: 8
-          maxLength: 128
-        password_confirmation:
-          type: string
-          format: password
-        first_name:
-          type: string
-          example: "John"
-        last_name:
-          type: string
-          example: "Doe"
-        phone_number:
-          type: string
-          example: "+6281234567890"
 
     # ---- Login ----
     InitiateLoginRequest:

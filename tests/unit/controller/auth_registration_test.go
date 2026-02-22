@@ -65,14 +65,6 @@ func (m *MockAuthUsecase) ResendRegistrationOTP(ctx context.Context, req *auth.R
 	return args.Get(0).(*auth.ResendRegistrationOTPResponse), args.Error(1)
 }
 
-func (m *MockAuthUsecase) CompleteRegistration(ctx context.Context, req *auth.CompleteRegistrationRequest) (*auth.CompleteRegistrationResponse, error) {
-	args := m.Called(ctx, req)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*auth.CompleteRegistrationResponse), args.Error(1)
-}
-
 func (m *MockAuthUsecase) SetPassword(ctx context.Context, req *auth.SetPasswordRequest) (*auth.SetPasswordResponse, error) {
 	args := m.Called(ctx, req)
 	if args.Get(0) == nil {

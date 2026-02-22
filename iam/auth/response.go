@@ -109,19 +109,6 @@ type RegistrationUserProfile struct {
 	LastName  string `json:"last_name"`
 }
 
-type CompleteRegistrationResponse struct {
-	UserID  uuid.UUID               `json:"user_id"`
-	Email   string                  `json:"email"`
-	Status  string                  `json:"status"`
-	Message string                  `json:"message"`
-	Profile RegistrationUserProfile `json:"profile"`
-
-	AccessToken  *string `json:"access_token,omitempty"`
-	RefreshToken *string `json:"refresh_token,omitempty"`
-	TokenType    *string `json:"token_type,omitempty"`
-	ExpiresIn    *int    `json:"expires_in,omitempty"`
-}
-
 type RegistrationStatusResponse struct {
 	RegistrationID       string    `json:"registration_id"`
 	Email                string    `json:"email"`
