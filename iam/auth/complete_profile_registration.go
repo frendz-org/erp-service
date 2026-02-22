@@ -126,7 +126,7 @@ func (uc *usecase) CompleteProfileRegistration(
 	_ = uc.InMemoryStore.DeleteRegistrationSession(ctx, req.RegistrationID)
 	_ = uc.InMemoryStore.UnlockRegistrationEmail(ctx, session.Email)
 
-	accessToken, refreshToken, expiresIn, err := uc.generateAuthTokensForRegistration(ctx, user.ID, session.Email)
+	accessToken, refreshToken, expiresIn, err := uc.generateAuthTokensForRegistration(ctx, user.ID, session.Email, req.IPAddress, req.UserAgent)
 	if err != nil {
 		return nil, errors.ErrInternal("failed to generate auth tokens").WithError(err)
 	}

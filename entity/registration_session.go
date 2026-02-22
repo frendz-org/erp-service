@@ -114,10 +114,6 @@ func (s *RegistrationSession) RemainingResends() int {
 	return remaining
 }
 
-func (s *RegistrationSession) CanComplete() bool {
-	return (s.IsVerified() || s.IsPasswordSet()) && !s.IsExpired()
-}
-
 func (s *RegistrationSession) CanSetPassword() bool {
 	return (s.Status == RegistrationSessionStatusVerified || s.Status == RegistrationSessionStatusPasswordSet) && !s.IsExpired()
 }

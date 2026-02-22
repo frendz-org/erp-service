@@ -25,7 +25,6 @@ func SetupAuthRoutes(api fiber.Router, cfg *config.Config, authController *contr
 	registrations.Get("/:id/status", authController.GetRegistrationStatus)
 	registrations.Post("/:id/set-password", authController.SetPassword)
 	registrations.Post("/:id/complete-profile", authController.CompleteProfileRegistration)
-	registrations.Post("/:id/complete", authController.CompleteRegistration)
 
 	login := api.Group("/login")
 	login.Post("", authController.InitiateLogin)
