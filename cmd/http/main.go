@@ -2,14 +2,20 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"iam-service/config"
-	iamhttp "iam-service/delivery/http"
+	"erp-service/config"
+	erphttp "erp-service/delivery/http"
+
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 func main() {
@@ -18,7 +24,14 @@ func main() {
 		log.Fatalf("failed to load config: %v", err)
 	}
 
-	server := iamhttp.NewServer(cfg)
+	if err := runMigrations(cfg); err != nil {
+		log.Fatalf("failed to run migrations: %v", err)
+	}
+
+	server := erphttp.NewServer(cfg)
+
+	workerCtx, workerCancel := context.WithCancel(context.Background())
+	server.StartWorker(workerCtx)
 
 	go func() {
 		if err := server.Start(); err != nil {
@@ -35,6 +48,9 @@ func main() {
 	log.Println("shutting down server...")
 	log.Printf("Serever is starting on port %s", os.DevNull)
 
+	workerCancel()
+	server.StopWorker()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -43,4 +59,30 @@ func main() {
 	}
 
 	log.Println("server stopped")
+}
+
+func runMigrations(cfg *config.Config) error {
+	pg := cfg.Infra.Postgres.Platform
+	dsn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
+		url.QueryEscape(pg.User),
+		url.QueryEscape(pg.Password),
+		pg.Host,
+		pg.Port,
+		pg.Database,
+		pg.SSLMode,
+	)
+
+	m, err := migrate.New("file://migration", dsn)
+	if err != nil {
+		return fmt.Errorf("create migrator: %w", err)
+	}
+	defer m.Close()
+
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		return fmt.Errorf("run migrations: %w", err)
+	}
+
+	version, dirty, _ := m.Version()
+	log.Printf("migrations applied with version: %d, dirty: %v", version, dirty)
+	return nil
 }

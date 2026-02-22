@@ -3,9 +3,9 @@ package postgres
 import (
 	"context"
 
-	"iam-service/entity"
-	"iam-service/saving/participant/contract"
-	"iam-service/pkg/errors"
+	"erp-service/entity"
+	"erp-service/pkg/errors"
+	"erp-service/saving/participant"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -15,7 +15,7 @@ type participantAddressRepository struct {
 	baseRepository
 }
 
-func NewParticipantAddressRepository(db *gorm.DB) contract.ParticipantAddressRepository {
+func NewParticipantAddressRepository(db *gorm.DB) participant.ParticipantAddressRepository {
 	return &participantAddressRepository{
 		baseRepository: baseRepository{db: db},
 	}
@@ -68,6 +68,16 @@ func (r *participantAddressRepository) Update(ctx context.Context, address *enti
 func (r *participantAddressRepository) SoftDelete(ctx context.Context, id uuid.UUID) error {
 	err := r.getDB(ctx).Model(&entity.ParticipantAddress{}).
 		Where("id = ? AND deleted_at IS NULL", id).
+		Update("deleted_at", gorm.Expr("NOW()")).Error
+	if err != nil {
+		return translateError(err, "participant address")
+	}
+	return nil
+}
+
+func (r *participantAddressRepository) SoftDeleteAllByParticipantID(ctx context.Context, participantID uuid.UUID) error {
+	err := r.getDB(ctx).Model(&entity.ParticipantAddress{}).
+		Where("participant_id = ? AND deleted_at IS NULL", participantID).
 		Update("deleted_at", gorm.Expr("NOW()")).Error
 	if err != nil {
 		return translateError(err, "participant address")

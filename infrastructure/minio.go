@@ -3,7 +3,7 @@ package infrastructure
 import (
 	"fmt"
 
-	"iam-service/config"
+	"erp-service/config"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"

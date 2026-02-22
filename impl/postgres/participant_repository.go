@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"iam-service/entity"
-	apperrors "iam-service/pkg/errors"
-	"iam-service/saving/participant/contract"
+	"erp-service/entity"
+	apperrors "erp-service/pkg/errors"
+	"erp-service/saving/participant"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -34,7 +34,7 @@ type participantRepository struct {
 	baseRepository
 }
 
-func NewParticipantRepository(db *gorm.DB) contract.ParticipantRepository {
+func NewParticipantRepository(db *gorm.DB) participant.ParticipantRepository {
 	return &participantRepository{
 		baseRepository: baseRepository{db: db},
 	}
@@ -98,6 +98,28 @@ func (r *participantRepository) GetByID(ctx context.Context, id uuid.UUID) (*ent
 	return &participant, nil
 }
 
+func (r *participantRepository) GetByKTPNumber(ctx context.Context, tenantID, productID uuid.UUID, ktpNumber string) (*entity.Participant, error) {
+	var participant entity.Participant
+	err := r.getDB(ctx).
+		Where("tenant_id = ? AND product_id = ? AND ktp_number = ? AND deleted_at IS NULL", tenantID, productID, ktpNumber).
+		First(&participant).Error
+	if err != nil {
+		return nil, translateError(err, "participant")
+	}
+	return &participant, nil
+}
+
+func (r *participantRepository) GetByEmployeeNumber(ctx context.Context, tenantID, productID uuid.UUID, employeeNumber string) (*entity.Participant, error) {
+	var participant entity.Participant
+	err := r.getDB(ctx).
+		Where("tenant_id = ? AND product_id = ? AND employee_number = ? AND deleted_at IS NULL", tenantID, productID, employeeNumber).
+		First(&participant).Error
+	if err != nil {
+		return nil, translateError(err, "participant")
+	}
+	return &participant, nil
+}
+
 func (r *participantRepository) Update(ctx context.Context, participant *entity.Participant) error {
 	oldVersion := participant.Version
 	participant.Version = oldVersion + 1
@@ -124,7 +146,7 @@ func (r *participantRepository) SoftDelete(ctx context.Context, id uuid.UUID) er
 	return nil
 }
 
-func (r *participantRepository) List(ctx context.Context, filter *contract.ParticipantFilter) ([]*entity.Participant, int64, error) {
+func (r *participantRepository) List(ctx context.Context, filter *participant.ParticipantFilter) ([]*entity.Participant, int64, error) {
 	var participants []*entity.Participant
 	var total int64
 

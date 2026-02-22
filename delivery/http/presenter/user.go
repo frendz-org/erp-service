@@ -1,11 +1,11 @@
 package presenter
 
 import (
-	"iam-service/delivery/http/dto/response"
-	"iam-service/iam/user/userdto"
+	"erp-service/delivery/http/dto/response"
+	"erp-service/iam/user"
 )
 
-func ToUserResponse(resp *userdto.UserDetailResponse) *response.UserResponse {
+func ToUserResponse(resp *user.UserDetailResponse) *response.UserResponse {
 	if resp == nil {
 		return nil
 	}
@@ -33,7 +33,7 @@ func ToUserResponse(resp *userdto.UserDetailResponse) *response.UserResponse {
 	}
 }
 
-func ToUserListItemResponse(item *userdto.UserListItem) *response.UserListItemResponse {
+func ToUserListItemResponse(item *user.UserListItem) *response.UserListItemResponse {
 	if item == nil {
 		return nil
 	}
@@ -48,7 +48,7 @@ func ToUserListItemResponse(item *userdto.UserListItem) *response.UserListItemRe
 	}
 }
 
-func ToUserListResponse(items []userdto.UserListItem) []*response.UserListItemResponse {
+func ToUserListResponse(items []user.UserListItem) []*response.UserListItemResponse {
 	if items == nil {
 		return nil
 	}
@@ -59,7 +59,7 @@ func ToUserListResponse(items []userdto.UserListItem) []*response.UserListItemRe
 	return result
 }
 
-func ToCreateUserResponse(resp *userdto.CreateResponse) *response.CreateUserResponse {
+func ToCreateUserResponse(resp *user.CreateResponse) *response.CreateUserResponse {
 	if resp == nil {
 		return nil
 	}
@@ -71,7 +71,7 @@ func ToCreateUserResponse(resp *userdto.CreateResponse) *response.CreateUserResp
 	}
 }
 
-func ToUpdateUserResponse(resp *userdto.UpdateResponse) *response.UpdateUserResponse {
+func ToUpdateUserResponse(resp *user.UpdateResponse) *response.UpdateUserResponse {
 	if resp == nil {
 		return nil
 	}
@@ -102,7 +102,7 @@ func ToUpdateUserResponse(resp *userdto.UpdateResponse) *response.UpdateUserResp
 	}
 }
 
-func ToApproveUserResponse(resp *userdto.ApproveResponse) *response.ApproveUserResponse {
+func ToApproveUserResponse(resp *user.ApproveResponse) *response.ApproveUserResponse {
 	if resp == nil {
 		return nil
 	}
@@ -112,7 +112,7 @@ func ToApproveUserResponse(resp *userdto.ApproveResponse) *response.ApproveUserR
 	}
 }
 
-func ToRejectUserResponse(resp *userdto.RejectResponse) *response.RejectUserResponse {
+func ToRejectUserResponse(resp *user.RejectResponse) *response.RejectUserResponse {
 	if resp == nil {
 		return nil
 	}
@@ -122,7 +122,7 @@ func ToRejectUserResponse(resp *userdto.RejectResponse) *response.RejectUserResp
 	}
 }
 
-func ToUnlockUserResponse(resp *userdto.UnlockResponse) *response.UnlockUserResponse {
+func ToUnlockUserResponse(resp *user.UnlockResponse) *response.UnlockUserResponse {
 	if resp == nil {
 		return nil
 	}
@@ -132,7 +132,7 @@ func ToUnlockUserResponse(resp *userdto.UnlockResponse) *response.UnlockUserResp
 	}
 }
 
-func ToResetUserPINResponse(resp *userdto.ResetPINResponse) *response.ResetUserPINResponse {
+func ToResetUserPINResponse(resp *user.ResetPINResponse) *response.ResetUserPINResponse {
 	if resp == nil {
 		return nil
 	}

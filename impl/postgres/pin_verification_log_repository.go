@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"iam-service/entity"
-	"iam-service/iam/user/contract"
+	"erp-service/entity"
+	"erp-service/iam/user"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -15,7 +15,7 @@ type pinVerificationLogRepository struct {
 	baseRepository
 }
 
-func NewPINVerificationLogRepository(db *gorm.DB) contract.PINVerificationLogRepository {
+func NewPINVerificationLogRepository(db *gorm.DB) user.PINVerificationLogRepository {
 	return &pinVerificationLogRepository{
 		baseRepository: baseRepository{db: db},
 	}

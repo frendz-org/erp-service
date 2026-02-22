@@ -3,8 +3,8 @@ package router
 import (
 	"time"
 
-	"iam-service/delivery/http/controller"
-	"iam-service/delivery/http/middleware"
+	"erp-service/delivery/http/controller"
+	"erp-service/delivery/http/middleware"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
@@ -53,19 +53,19 @@ func SetupParticipantRoutes(api fiber.Router, ctrl *controller.ParticipantContro
 	participants.Put("/:id/identities", creatorMW, ctrl.SaveIdentity)
 	participants.Delete("/:id/identities/:identityId", creatorMW, ctrl.DeleteIdentity)
 
-	participants.Put("/:id/addresses", creatorMW, ctrl.SaveAddress)
+	participants.Put("/:id/addresses", creatorMW, ctrl.SaveAddresses)
 	participants.Delete("/:id/addresses/:addressId", creatorMW, ctrl.DeleteAddress)
 
 	participants.Put("/:id/bank-accounts", creatorMW, ctrl.SaveBankAccount)
 	participants.Delete("/:id/bank-accounts/:accountId", creatorMW, ctrl.DeleteBankAccount)
 
-	participants.Put("/:id/family-members", creatorMW, ctrl.SaveFamilyMember)
+	participants.Put("/:id/family-members", creatorMW, ctrl.SaveFamilyMembers)
 	participants.Delete("/:id/family-members/:memberId", creatorMW, ctrl.DeleteFamilyMember)
 
 	participants.Put("/:id/employment", creatorMW, ctrl.SaveEmployment)
 	participants.Put("/:id/pension", creatorMW, ctrl.SavePension)
 
-	participants.Put("/:id/beneficiaries", creatorMW, ctrl.SaveBeneficiary)
+	participants.Put("/:id/beneficiaries", creatorMW, ctrl.SaveBeneficiaries)
 	participants.Delete("/:id/beneficiaries/:beneficiaryId", creatorMW, ctrl.DeleteBeneficiary)
 
 	participants.Post("/:id/files", creatorMW, ctrl.UploadFile)

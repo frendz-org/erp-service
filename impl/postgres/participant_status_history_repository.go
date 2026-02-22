@@ -3,8 +3,8 @@ package postgres
 import (
 	"context"
 
-	"iam-service/entity"
-	"iam-service/saving/participant/contract"
+	"erp-service/entity"
+	"erp-service/saving/participant"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -14,7 +14,7 @@ type participantStatusHistoryRepository struct {
 	baseRepository
 }
 
-func NewParticipantStatusHistoryRepository(db *gorm.DB) contract.ParticipantStatusHistoryRepository {
+func NewParticipantStatusHistoryRepository(db *gorm.DB) participant.ParticipantStatusHistoryRepository {
 	return &participantStatusHistoryRepository{
 		baseRepository: baseRepository{db: db},
 	}

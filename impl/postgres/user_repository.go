@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"iam-service/entity"
-	"iam-service/iam/user/contract"
-	"iam-service/pkg/errors"
+	"erp-service/entity"
+	"erp-service/iam/user"
+	"erp-service/pkg/errors"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -84,7 +84,7 @@ func (r *userRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (r *userRepository) List(ctx context.Context, filter *contract.UserListFilter) ([]*entity.User, int64, error) {
+func (r *userRepository) List(ctx context.Context, filter *user.UserListFilter) ([]*entity.User, int64, error) {
 	var users []*entity.User
 	var total int64
 

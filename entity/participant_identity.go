@@ -16,6 +16,7 @@ type ParticipantIdentity struct {
 	IssueDate         *time.Time   `json:"issue_date,omitempty" gorm:"column:issue_date" db:"issue_date"`
 	ExpiryDate        *time.Time   `json:"expiry_date,omitempty" gorm:"column:expiry_date" db:"expiry_date"`
 	PhotoFilePath     *string      `json:"photo_file_path,omitempty" gorm:"column:photo_file_path" db:"photo_file_path"`
+	PhotoFileID       *uuid.UUID   `json:"photo_file_id,omitempty" gorm:"column:photo_file_id" db:"photo_file_id"`
 	Version           int          `json:"version" gorm:"column:version;not null;default:1" db:"version"`
 	CreatedAt         time.Time    `json:"created_at" gorm:"column:created_at" db:"created_at"`
 	UpdatedAt         time.Time    `json:"updated_at" gorm:"column:updated_at" db:"updated_at"`

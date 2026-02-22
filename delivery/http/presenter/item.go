@@ -1,11 +1,11 @@
 package presenter
 
 import (
-	"iam-service/delivery/http/dto/response"
-	"iam-service/masterdata/masterdatadto"
+	"erp-service/delivery/http/dto/response"
+	"erp-service/masterdata"
 )
 
-func ToItemResponse(item *masterdatadto.ItemResponse) *response.MasterdataItemResponse {
+func ToItemResponse(item *masterdata.ItemResponse) *response.MasterdataItemResponse {
 	if item == nil {
 		return nil
 	}
@@ -22,7 +22,7 @@ func ToItemResponse(item *masterdatadto.ItemResponse) *response.MasterdataItemRe
 	}
 }
 
-func ToItemListResponse(items []*masterdatadto.ItemResponse) []*response.MasterdataItemResponse {
+func ToItemListResponse(items []*masterdata.ItemResponse) []*response.MasterdataItemResponse {
 	if items == nil {
 		return nil
 	}
@@ -33,7 +33,7 @@ func ToItemListResponse(items []*masterdatadto.ItemResponse) []*response.Masterd
 	return result
 }
 
-func ToItemTreeResponse(items []*masterdatadto.ItemResponse) []*response.MasterdataItemTreeResponse {
+func ToItemTreeResponse(items []*masterdata.ItemResponse) []*response.MasterdataItemTreeResponse {
 	if items == nil {
 		return nil
 	}
@@ -72,7 +72,7 @@ func ToItemTreeResponse(items []*masterdatadto.ItemResponse) []*response.Masterd
 	return roots
 }
 
-func ToValidateCodeResponse(resp *masterdatadto.ValidateCodeResponse) *response.ValidateCodeResponse {
+func ToValidateCodeResponse(resp *masterdata.ValidateCodeResponse) *response.ValidateCodeResponse {
 	if resp == nil {
 		return nil
 	}
@@ -82,7 +82,7 @@ func ToValidateCodeResponse(resp *masterdatadto.ValidateCodeResponse) *response.
 	}
 }
 
-func ToValidateCodesResponse(resp *masterdatadto.ValidateCodesResponse) *response.ValidateCodesResponse {
+func ToValidateCodesResponse(resp *masterdata.ValidateCodesResponse) *response.ValidateCodesResponse {
 	if resp == nil {
 		return nil
 	}

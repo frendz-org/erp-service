@@ -10,14 +10,12 @@ import (
 	"testing"
 	"time"
 
-	"iam-service/config"
-	"iam-service/delivery/http/controller"
-	"iam-service/delivery/http/dto/response"
-	"iam-service/entity"
-	"iam-service/masterdata"
-	"iam-service/masterdata/contract"
-	"iam-service/masterdata/masterdatadto"
-	"iam-service/pkg/errors"
+	"erp-service/config"
+	"erp-service/delivery/http/controller"
+	"erp-service/delivery/http/dto/response"
+	"erp-service/entity"
+	"erp-service/masterdata"
+	"erp-service/pkg/errors"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -30,7 +28,7 @@ type MockCategoryRepository struct {
 	mock.Mock
 }
 
-func (m *MockCategoryRepository) List(ctx context.Context, filter *contract.CategoryFilter) ([]*entity.MasterdataCategory, int64, error) {
+func (m *MockCategoryRepository) List(ctx context.Context, filter *masterdata.CategoryFilter) ([]*entity.MasterdataCategory, int64, error) {
 	args := m.Called(ctx, filter)
 	if args.Get(0) == nil {
 		return nil, args.Get(1).(int64), args.Error(2)
@@ -86,7 +84,7 @@ type MockItemRepository struct {
 	mock.Mock
 }
 
-func (m *MockItemRepository) List(ctx context.Context, filter *contract.ItemFilter) ([]*entity.MasterdataItem, int64, error) {
+func (m *MockItemRepository) List(ctx context.Context, filter *masterdata.ItemFilter) ([]*entity.MasterdataItem, int64, error) {
 	args := m.Called(ctx, filter)
 	if args.Get(0) == nil {
 		return nil, args.Get(1).(int64), args.Error(2)
@@ -171,54 +169,54 @@ type MockMasterdataCache struct {
 	mock.Mock
 }
 
-func (m *MockMasterdataCache) GetCategoryByID(ctx context.Context, id uuid.UUID) (*masterdatadto.CategoryResponse, error) {
+func (m *MockMasterdataCache) GetCategoryByID(ctx context.Context, id uuid.UUID) (*masterdata.CategoryResponse, error) {
 	args := m.Called(ctx, id)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*masterdatadto.CategoryResponse), args.Error(1)
+	return args.Get(0).(*masterdata.CategoryResponse), args.Error(1)
 }
 
-func (m *MockMasterdataCache) SetCategoryByID(ctx context.Context, id uuid.UUID, category *masterdatadto.CategoryResponse, ttl time.Duration) error {
+func (m *MockMasterdataCache) SetCategoryByID(ctx context.Context, id uuid.UUID, category *masterdata.CategoryResponse, ttl time.Duration) error {
 	args := m.Called(ctx, id, category, ttl)
 	return args.Error(0)
 }
 
-func (m *MockMasterdataCache) GetCategoryByCode(ctx context.Context, code string) (*masterdatadto.CategoryResponse, error) {
+func (m *MockMasterdataCache) GetCategoryByCode(ctx context.Context, code string) (*masterdata.CategoryResponse, error) {
 	args := m.Called(ctx, code)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*masterdatadto.CategoryResponse), args.Error(1)
+	return args.Get(0).(*masterdata.CategoryResponse), args.Error(1)
 }
 
-func (m *MockMasterdataCache) SetCategoryByCode(ctx context.Context, code string, category *masterdatadto.CategoryResponse, ttl time.Duration) error {
+func (m *MockMasterdataCache) SetCategoryByCode(ctx context.Context, code string, category *masterdata.CategoryResponse, ttl time.Duration) error {
 	args := m.Called(ctx, code, category, ttl)
 	return args.Error(0)
 }
 
-func (m *MockMasterdataCache) GetCategoriesList(ctx context.Context, filterHash string) (*masterdatadto.ListCategoriesResponse, error) {
+func (m *MockMasterdataCache) GetCategoriesList(ctx context.Context, filterHash string) (*masterdata.ListCategoriesResponse, error) {
 	args := m.Called(ctx, filterHash)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*masterdatadto.ListCategoriesResponse), args.Error(1)
+	return args.Get(0).(*masterdata.ListCategoriesResponse), args.Error(1)
 }
 
-func (m *MockMasterdataCache) SetCategoriesList(ctx context.Context, filterHash string, response *masterdatadto.ListCategoriesResponse, ttl time.Duration) error {
+func (m *MockMasterdataCache) SetCategoriesList(ctx context.Context, filterHash string, response *masterdata.ListCategoriesResponse, ttl time.Duration) error {
 	args := m.Called(ctx, filterHash, response, ttl)
 	return args.Error(0)
 }
 
-func (m *MockMasterdataCache) GetCategoryChildren(ctx context.Context, parentID uuid.UUID) ([]*masterdatadto.CategoryResponse, error) {
+func (m *MockMasterdataCache) GetCategoryChildren(ctx context.Context, parentID uuid.UUID) ([]*masterdata.CategoryResponse, error) {
 	args := m.Called(ctx, parentID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]*masterdatadto.CategoryResponse), args.Error(1)
+	return args.Get(0).([]*masterdata.CategoryResponse), args.Error(1)
 }
 
-func (m *MockMasterdataCache) SetCategoryChildren(ctx context.Context, parentID uuid.UUID, categories []*masterdatadto.CategoryResponse, ttl time.Duration) error {
+func (m *MockMasterdataCache) SetCategoryChildren(ctx context.Context, parentID uuid.UUID, categories []*masterdata.CategoryResponse, ttl time.Duration) error {
 	args := m.Called(ctx, parentID, categories, ttl)
 	return args.Error(0)
 }
@@ -228,80 +226,80 @@ func (m *MockMasterdataCache) InvalidateCategories(ctx context.Context) error {
 	return args.Error(0)
 }
 
-func (m *MockMasterdataCache) GetItemByID(ctx context.Context, id uuid.UUID) (*masterdatadto.ItemResponse, error) {
+func (m *MockMasterdataCache) GetItemByID(ctx context.Context, id uuid.UUID) (*masterdata.ItemResponse, error) {
 	args := m.Called(ctx, id)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*masterdatadto.ItemResponse), args.Error(1)
+	return args.Get(0).(*masterdata.ItemResponse), args.Error(1)
 }
 
-func (m *MockMasterdataCache) SetItemByID(ctx context.Context, id uuid.UUID, item *masterdatadto.ItemResponse, ttl time.Duration) error {
+func (m *MockMasterdataCache) SetItemByID(ctx context.Context, id uuid.UUID, item *masterdata.ItemResponse, ttl time.Duration) error {
 	args := m.Called(ctx, id, item, ttl)
 	return args.Error(0)
 }
 
-func (m *MockMasterdataCache) GetItemByCode(ctx context.Context, categoryID uuid.UUID, tenantID *uuid.UUID, code string) (*masterdatadto.ItemResponse, error) {
+func (m *MockMasterdataCache) GetItemByCode(ctx context.Context, categoryID uuid.UUID, tenantID *uuid.UUID, code string) (*masterdata.ItemResponse, error) {
 	args := m.Called(ctx, categoryID, tenantID, code)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*masterdatadto.ItemResponse), args.Error(1)
+	return args.Get(0).(*masterdata.ItemResponse), args.Error(1)
 }
 
-func (m *MockMasterdataCache) SetItemByCode(ctx context.Context, categoryID uuid.UUID, tenantID *uuid.UUID, code string, item *masterdatadto.ItemResponse, ttl time.Duration) error {
+func (m *MockMasterdataCache) SetItemByCode(ctx context.Context, categoryID uuid.UUID, tenantID *uuid.UUID, code string, item *masterdata.ItemResponse, ttl time.Duration) error {
 	args := m.Called(ctx, categoryID, tenantID, code, item, ttl)
 	return args.Error(0)
 }
 
-func (m *MockMasterdataCache) GetItemsList(ctx context.Context, filterHash string) (*masterdatadto.ListItemsResponse, error) {
+func (m *MockMasterdataCache) GetItemsList(ctx context.Context, filterHash string) (*masterdata.ListItemsResponse, error) {
 	args := m.Called(ctx, filterHash)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*masterdatadto.ListItemsResponse), args.Error(1)
+	return args.Get(0).(*masterdata.ListItemsResponse), args.Error(1)
 }
 
-func (m *MockMasterdataCache) SetItemsList(ctx context.Context, filterHash string, response *masterdatadto.ListItemsResponse, ttl time.Duration) error {
+func (m *MockMasterdataCache) SetItemsList(ctx context.Context, filterHash string, response *masterdata.ListItemsResponse, ttl time.Duration) error {
 	args := m.Called(ctx, filterHash, response, ttl)
 	return args.Error(0)
 }
 
-func (m *MockMasterdataCache) GetItemChildren(ctx context.Context, parentID uuid.UUID) ([]*masterdatadto.ItemResponse, error) {
+func (m *MockMasterdataCache) GetItemChildren(ctx context.Context, parentID uuid.UUID) ([]*masterdata.ItemResponse, error) {
 	args := m.Called(ctx, parentID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]*masterdatadto.ItemResponse), args.Error(1)
+	return args.Get(0).([]*masterdata.ItemResponse), args.Error(1)
 }
 
-func (m *MockMasterdataCache) SetItemChildren(ctx context.Context, parentID uuid.UUID, items []*masterdatadto.ItemResponse, ttl time.Duration) error {
+func (m *MockMasterdataCache) SetItemChildren(ctx context.Context, parentID uuid.UUID, items []*masterdata.ItemResponse, ttl time.Duration) error {
 	args := m.Called(ctx, parentID, items, ttl)
 	return args.Error(0)
 }
 
-func (m *MockMasterdataCache) GetItemTree(ctx context.Context, categoryCode string, tenantID *uuid.UUID) ([]*masterdatadto.ItemResponse, error) {
+func (m *MockMasterdataCache) GetItemTree(ctx context.Context, categoryCode string, tenantID *uuid.UUID) ([]*masterdata.ItemResponse, error) {
 	args := m.Called(ctx, categoryCode, tenantID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]*masterdatadto.ItemResponse), args.Error(1)
+	return args.Get(0).([]*masterdata.ItemResponse), args.Error(1)
 }
 
-func (m *MockMasterdataCache) SetItemTree(ctx context.Context, categoryCode string, tenantID *uuid.UUID, items []*masterdatadto.ItemResponse, ttl time.Duration) error {
+func (m *MockMasterdataCache) SetItemTree(ctx context.Context, categoryCode string, tenantID *uuid.UUID, items []*masterdata.ItemResponse, ttl time.Duration) error {
 	args := m.Called(ctx, categoryCode, tenantID, items, ttl)
 	return args.Error(0)
 }
 
-func (m *MockMasterdataCache) GetItemDefault(ctx context.Context, categoryID uuid.UUID, tenantID *uuid.UUID) (*masterdatadto.ItemResponse, error) {
+func (m *MockMasterdataCache) GetItemDefault(ctx context.Context, categoryID uuid.UUID, tenantID *uuid.UUID) (*masterdata.ItemResponse, error) {
 	args := m.Called(ctx, categoryID, tenantID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*masterdatadto.ItemResponse), args.Error(1)
+	return args.Get(0).(*masterdata.ItemResponse), args.Error(1)
 }
 
-func (m *MockMasterdataCache) SetItemDefault(ctx context.Context, categoryID uuid.UUID, tenantID *uuid.UUID, item *masterdatadto.ItemResponse, ttl time.Duration) error {
+func (m *MockMasterdataCache) SetItemDefault(ctx context.Context, categoryID uuid.UUID, tenantID *uuid.UUID, item *masterdata.ItemResponse, ttl time.Duration) error {
 	args := m.Called(ctx, categoryID, tenantID, item, ttl)
 	return args.Error(0)
 }
@@ -396,7 +394,7 @@ func TestIntegration_CategoryCRUD(t *testing.T) {
 		tc.categoryRepo.On("Create", mock.Anything, mock.AnythingOfType("*entity.MasterdataCategory")).Return(nil).Once()
 		tc.cache.On("InvalidateCategories", mock.Anything).Return(nil).Once()
 
-		createReq := masterdatadto.CreateCategoryRequest{
+		createReq := masterdata.CreateCategoryRequest{
 			Code: "GENDER",
 			Name: "Gender",
 		}
@@ -417,7 +415,7 @@ func TestIntegration_CategoryCRUD(t *testing.T) {
 	t.Run("Create category with duplicate code fails", func(t *testing.T) {
 		tc.categoryRepo.On("ExistsByCode", mock.Anything, "GENDER").Return(true, nil).Once()
 
-		createReq := masterdatadto.CreateCategoryRequest{
+		createReq := masterdata.CreateCategoryRequest{
 			Code: "GENDER",
 			Name: "Gender Duplicate",
 		}
@@ -468,7 +466,7 @@ func TestIntegration_CategoryCRUD(t *testing.T) {
 		tc.cache.On("InvalidateCategories", mock.Anything).Return(nil).Once()
 
 		newName := "Gender Type"
-		updateReq := masterdatadto.UpdateCategoryRequest{
+		updateReq := masterdata.UpdateCategoryRequest{
 			Name:    &newName,
 			Version: 1,
 		}
@@ -494,7 +492,7 @@ func TestIntegration_CategoryCRUD(t *testing.T) {
 		tc.categoryRepo.On("GetByID", mock.Anything, categoryID).Return(category, nil).Once()
 
 		newName := "Gender Type"
-		updateReq := masterdatadto.UpdateCategoryRequest{
+		updateReq := masterdata.UpdateCategoryRequest{
 			Name:    &newName,
 			Version: 1,
 		}
@@ -577,7 +575,7 @@ func TestIntegration_CategoryList_Pagination(t *testing.T) {
 		}
 
 		tc.cache.On("GetCategoriesList", mock.Anything, mock.AnythingOfType("string")).Return(nil, stderrors.New("cache miss")).Once()
-		tc.categoryRepo.On("List", mock.Anything, mock.MatchedBy(func(f *contract.CategoryFilter) bool {
+		tc.categoryRepo.On("List", mock.Anything, mock.MatchedBy(func(f *masterdata.CategoryFilter) bool {
 			return f.Page == 2 && f.PerPage == 5
 		})).Return(categories, int64(6), nil).Once()
 		tc.cache.On("SetCategoriesList", mock.Anything, mock.AnythingOfType("string"), mock.Anything, mock.Anything).Return(nil).Once()
@@ -601,7 +599,7 @@ func TestIntegration_CategoryList_Pagination(t *testing.T) {
 		}
 
 		tc.cache.On("GetCategoriesList", mock.Anything, mock.AnythingOfType("string")).Return(nil, stderrors.New("cache miss")).Once()
-		tc.categoryRepo.On("List", mock.Anything, mock.MatchedBy(func(f *contract.CategoryFilter) bool {
+		tc.categoryRepo.On("List", mock.Anything, mock.MatchedBy(func(f *masterdata.CategoryFilter) bool {
 			return f.Status == "ACTIVE"
 		})).Return(categories, int64(1), nil).Once()
 		tc.cache.On("SetCategoriesList", mock.Anything, mock.AnythingOfType("string"), mock.Anything, mock.Anything).Return(nil).Once()
@@ -631,7 +629,7 @@ func TestIntegration_ItemCRUD(t *testing.T) {
 		tc.itemRepo.On("Create", mock.Anything, mock.AnythingOfType("*entity.MasterdataItem")).Return(nil).Once()
 		tc.cache.On("InvalidateItems", mock.Anything).Return(nil).Once()
 
-		createReq := masterdatadto.CreateItemRequest{
+		createReq := masterdata.CreateItemRequest{
 			CategoryID: categoryID,
 			Code:       "MALE",
 			Name:       "Male",
@@ -706,7 +704,7 @@ func TestIntegration_ItemCRUD(t *testing.T) {
 		tc.cache.On("InvalidateItems", mock.Anything).Return(nil).Once()
 
 		newName := "Male Gender"
-		updateReq := masterdatadto.UpdateItemRequest{
+		updateReq := masterdata.UpdateItemRequest{
 			Name:    &newName,
 			Version: 1,
 		}
@@ -862,7 +860,7 @@ func TestIntegration_ValidateCode(t *testing.T) {
 	t.Run("Validate existing code returns valid", func(t *testing.T) {
 		tc.itemRepo.On("ValidateCode", mock.Anything, "GENDER", "MALE", (*uuid.UUID)(nil)).Return(true, nil).Once()
 
-		validateReq := masterdatadto.ValidateCodeRequest{
+		validateReq := masterdata.ValidateCodeRequest{
 			CategoryCode: "GENDER",
 			ItemCode:     "MALE",
 		}
@@ -883,7 +881,7 @@ func TestIntegration_ValidateCode(t *testing.T) {
 	t.Run("Validate non-existing code returns invalid", func(t *testing.T) {
 		tc.itemRepo.On("ValidateCode", mock.Anything, "GENDER", "UNKNOWN", (*uuid.UUID)(nil)).Return(false, nil).Once()
 
-		validateReq := masterdatadto.ValidateCodeRequest{
+		validateReq := masterdata.ValidateCodeRequest{
 			CategoryCode: "GENDER",
 			ItemCode:     "UNKNOWN",
 		}
@@ -906,8 +904,8 @@ func TestIntegration_ValidateCodes_Batch(t *testing.T) {
 		tc.itemRepo.On("ValidateCode", mock.Anything, "GENDER", "FEMALE", (*uuid.UUID)(nil)).Return(true, nil).Once()
 		tc.itemRepo.On("ValidateCode", mock.Anything, "COUNTRY", "ID", (*uuid.UUID)(nil)).Return(true, nil).Once()
 
-		validateReq := masterdatadto.ValidateCodesRequest{
-			Validations: []masterdatadto.ValidationItem{
+		validateReq := masterdata.ValidateCodesRequest{
+			Validations: []masterdata.ValidationItem{
 				{CategoryCode: "GENDER", ItemCode: "MALE"},
 				{CategoryCode: "GENDER", ItemCode: "FEMALE"},
 				{CategoryCode: "COUNTRY", ItemCode: "ID"},
@@ -931,8 +929,8 @@ func TestIntegration_ValidateCodes_Batch(t *testing.T) {
 		tc.itemRepo.On("ValidateCode", mock.Anything, "GENDER", "MALE", (*uuid.UUID)(nil)).Return(true, nil).Once()
 		tc.itemRepo.On("ValidateCode", mock.Anything, "GENDER", "INVALID", (*uuid.UUID)(nil)).Return(false, nil).Once()
 
-		validateReq := masterdatadto.ValidateCodesRequest{
-			Validations: []masterdatadto.ValidationItem{
+		validateReq := masterdata.ValidateCodesRequest{
+			Validations: []masterdata.ValidationItem{
 				{CategoryCode: "GENDER", ItemCode: "MALE"},
 				{CategoryCode: "GENDER", ItemCode: "INVALID"},
 			},
@@ -983,7 +981,7 @@ func TestIntegration_ErrorHandling(t *testing.T) {
 
 	t.Run("Validation error returns 400 with error code", func(t *testing.T) {
 
-		createReq := masterdatadto.CreateCategoryRequest{}
+		createReq := masterdata.CreateCategoryRequest{}
 		body, _ := json.Marshal(createReq)
 
 		req := httptest.NewRequest(http.MethodPost, "/api/v1/masterdata/categories", bytes.NewReader(body))

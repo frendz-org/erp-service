@@ -3,9 +3,9 @@ package postgres
 import (
 	"context"
 
-	"iam-service/entity"
-	"iam-service/saving/participant/contract"
-	"iam-service/pkg/errors"
+	"erp-service/entity"
+	"erp-service/pkg/errors"
+	"erp-service/saving/participant"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -15,7 +15,7 @@ type participantIdentityRepository struct {
 	baseRepository
 }
 
-func NewParticipantIdentityRepository(db *gorm.DB) contract.ParticipantIdentityRepository {
+func NewParticipantIdentityRepository(db *gorm.DB) participant.ParticipantIdentityRepository {
 	return &participantIdentityRepository{
 		baseRepository: baseRepository{db: db},
 	}

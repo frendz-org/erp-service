@@ -1,16 +1,16 @@
 package middleware
 
 import (
-	"iam-service/config"
-	"iam-service/iam/auth/contract"
-	"iam-service/pkg/errors"
-	jwtpkg "iam-service/pkg/jwt"
+	"erp-service/config"
+	"erp-service/iam/auth"
+	"erp-service/pkg/errors"
+	jwtpkg "erp-service/pkg/jwt"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-func JWTAuth(cfg *config.Config, blacklistStore ...contract.TokenBlacklistStore) fiber.Handler {
+func JWTAuth(cfg *config.Config, blacklistStore ...auth.TokenBlacklistStore) fiber.Handler {
 	tokenConfig := &jwtpkg.TokenConfig{
 		AccessSecret:  cfg.JWT.AccessSecret,
 		RefreshSecret: cfg.JWT.RefreshSecret,
@@ -19,7 +19,7 @@ func JWTAuth(cfg *config.Config, blacklistStore ...contract.TokenBlacklistStore)
 		Issuer:        cfg.JWT.Issuer,
 	}
 
-	var store contract.TokenBlacklistStore
+	var store auth.TokenBlacklistStore
 	if len(blacklistStore) > 0 {
 		store = blacklistStore[0]
 	}

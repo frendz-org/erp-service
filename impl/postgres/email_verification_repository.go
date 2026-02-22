@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"iam-service/entity"
-	"iam-service/iam/user/contract"
+	"erp-service/entity"
+	"erp-service/iam/user"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -15,7 +15,7 @@ type emailVerificationRepository struct {
 	baseRepository
 }
 
-func NewEmailVerificationRepository(db *gorm.DB) contract.EmailVerificationRepository {
+func NewEmailVerificationRepository(db *gorm.DB) user.EmailVerificationRepository {
 	return &emailVerificationRepository{
 		baseRepository: baseRepository{db: db},
 	}

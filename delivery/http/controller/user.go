@@ -1,12 +1,11 @@
 package controller
 
 import (
-	"iam-service/config"
-	"iam-service/delivery/http/dto/response"
-	"iam-service/delivery/http/presenter"
-	"iam-service/iam/user"
-	"iam-service/iam/user/userdto"
-	"iam-service/pkg/errors"
+	"erp-service/config"
+	"erp-service/delivery/http/dto/response"
+	"erp-service/delivery/http/presenter"
+	"erp-service/iam/user"
+	"erp-service/pkg/errors"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -50,7 +49,7 @@ func NewUserController(cfg *config.Config, userUsecase user.Usecase) *UserContro
 }
 
 func (uc *UserController) Create(c *fiber.Ctx) error {
-	var req userdto.CreateRequest
+	var req user.CreateRequest
 	if err := c.BodyParser(&req); err != nil {
 		return errors.ErrBadRequest("Invalid request body")
 	}
@@ -93,7 +92,7 @@ func (uc *UserController) UpdateMe(c *fiber.Ctx) error {
 		return err
 	}
 
-	var req userdto.UpdateMeRequest
+	var req user.UpdateMeRequest
 	if err := c.BodyParser(&req); err != nil {
 		return errors.ErrBadRequest("Invalid request body")
 	}
@@ -119,7 +118,7 @@ func (uc *UserController) List(c *fiber.Ctx) error {
 		return err
 	}
 
-	var req userdto.ListRequest
+	var req user.ListRequest
 	if err := c.QueryParser(&req); err != nil {
 		return errors.ErrBadRequest("Invalid query parameters")
 	}
@@ -177,7 +176,7 @@ func (uc *UserController) Update(c *fiber.Ctx) error {
 		return errors.ErrBadRequest("Invalid user ID")
 	}
 
-	var req userdto.UpdateRequest
+	var req user.UpdateRequest
 	if err := c.BodyParser(&req); err != nil {
 		return errors.ErrBadRequest("Invalid request body")
 	}
@@ -254,7 +253,7 @@ func (uc *UserController) Reject(c *fiber.Ctx) error {
 		return err
 	}
 
-	var req userdto.RejectRequest
+	var req user.RejectRequest
 	if err := c.BodyParser(&req); err != nil {
 		return errors.ErrBadRequest("Invalid request body")
 	}

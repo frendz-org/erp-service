@@ -1,11 +1,11 @@
 package presenter
 
 import (
-	"iam-service/delivery/http/dto/response"
-	"iam-service/iam/auth/authdto"
+	"erp-service/delivery/http/dto/response"
+	"erp-service/iam/auth"
 )
 
-func ToUnifiedLoginResponse(resp *authdto.UnifiedLoginResponse) *response.UnifiedLoginResponse {
+func ToUnifiedLoginResponse(resp *auth.UnifiedLoginResponse) *response.UnifiedLoginResponse {
 	if resp == nil {
 		return nil
 	}
@@ -31,7 +31,7 @@ func ToUnifiedLoginResponse(resp *authdto.UnifiedLoginResponse) *response.Unifie
 	return result
 }
 
-func ToVerifyLoginOTPResponse(resp *authdto.VerifyLoginOTPResponse) *response.VerifyLoginOTPResponse {
+func ToVerifyLoginOTPResponse(resp *auth.VerifyLoginOTPResponse) *response.VerifyLoginOTPResponse {
 	if resp == nil {
 		return nil
 	}
@@ -44,7 +44,7 @@ func ToVerifyLoginOTPResponse(resp *authdto.VerifyLoginOTPResponse) *response.Ve
 	}
 }
 
-func ToResendLoginOTPResponse2(resp *authdto.ResendLoginOTPResponse) *response.ResendLoginOTPResponse {
+func ToResendLoginOTPResponse2(resp *auth.ResendLoginOTPResponse) *response.ResendLoginOTPResponse {
 	if resp == nil {
 		return nil
 	}
@@ -58,7 +58,7 @@ func ToResendLoginOTPResponse2(resp *authdto.ResendLoginOTPResponse) *response.R
 	}
 }
 
-func ToLoginStatusResponse(resp *authdto.LoginStatusResponse) *response.LoginStatusResponse {
+func ToLoginStatusResponse(resp *auth.LoginStatusResponse) *response.LoginStatusResponse {
 	if resp == nil {
 		return nil
 	}
@@ -73,7 +73,7 @@ func ToLoginStatusResponse(resp *authdto.LoginStatusResponse) *response.LoginSta
 	}
 }
 
-func ToRefreshTokenResponse(resp *authdto.RefreshTokenResponse) *response.RefreshTokenResponse {
+func ToRefreshTokenResponse(resp *auth.RefreshTokenResponse) *response.RefreshTokenResponse {
 	if resp == nil {
 		return nil
 	}
@@ -86,7 +86,7 @@ func ToRefreshTokenResponse(resp *authdto.RefreshTokenResponse) *response.Refres
 	}
 }
 
-func toLoginUserResponse(user *authdto.LoginUserResponse) *response.LoginUserResponse {
+func toLoginUserResponse(user *auth.LoginUserResponse) *response.LoginUserResponse {
 	if user == nil {
 		return nil
 	}

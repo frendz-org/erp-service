@@ -3,28 +3,29 @@ package rest
 import (
 	"context"
 	"encoding/json"
+	"erp-service/config"
+	"erp-service/delivery/http/controller"
+	"erp-service/delivery/http/dto/response"
+	"erp-service/delivery/http/middleware"
+	"erp-service/delivery/http/router"
+	"erp-service/delivery/worker"
+	"erp-service/iam/auth"
+	"erp-service/files"
+	"erp-service/iam/product"
+	"erp-service/iam/role"
+	"erp-service/iam/user"
+	"erp-service/impl/mailer"
+	implminio "erp-service/impl/minio"
+	"erp-service/impl/postgres"
+	implredis "erp-service/impl/redis"
+	"erp-service/infrastructure"
+	"erp-service/masterdata"
+	apperrors "erp-service/pkg/errors"
+	"erp-service/pkg/logger"
+	"erp-service/saving/member"
+	"erp-service/saving/participant"
 	"errors"
 	"fmt"
-	"iam-service/config"
-	"iam-service/delivery/http/controller"
-	"iam-service/delivery/http/dto/response"
-	"iam-service/delivery/http/middleware"
-	"iam-service/delivery/http/router"
-	"iam-service/health"
-	"iam-service/iam/auth"
-	"iam-service/iam/product"
-	"iam-service/iam/role"
-	"iam-service/iam/user"
-	"iam-service/impl/mailer"
-	implminio "iam-service/impl/minio"
-	"iam-service/impl/postgres"
-	implredis "iam-service/impl/redis"
-	"iam-service/infrastructure"
-	"iam-service/masterdata"
-	apperrors "iam-service/pkg/errors"
-	"iam-service/pkg/logger"
-	"iam-service/saving/member"
-	"iam-service/saving/participant"
 	"log"
 	"time"
 
@@ -34,9 +35,11 @@ import (
 )
 
 type Server struct {
-	app    *fiber.App
-	config *config.Config
-	logger *zap.Logger
+	app          *fiber.App
+	config       *config.Config
+	logger       *zap.Logger
+	fileWorker   *worker.Worker
+	workerCancel context.CancelFunc
 }
 
 func NewServer(cfg *config.Config) *Server {
@@ -46,10 +49,10 @@ func NewServer(cfg *config.Config) *Server {
 	})
 
 	app := fiber.New(fiber.Config{
-		JSONEncoder:  json.Marshal,
-		JSONDecoder:  json.Unmarshal,
-		AppName:      cfg.App.Name,
-		BodyLimit:    256 * 1024,
+		JSONEncoder: json.Marshal,
+		JSONDecoder: json.Unmarshal,
+		AppName:     cfg.App.Name,
+		BodyLimit:    6 * 1024 * 1024,
 		ReadTimeout:  cfg.Server.ReadTimeout,
 		WriteTimeout: cfg.Server.WriteTimeout,
 		IdleTimeout:  cfg.Server.IdleTimeout,
@@ -98,6 +101,7 @@ func NewServer(cfg *config.Config) *Server {
 	participantPensionRepo := postgres.NewParticipantPensionRepository(postgresDB)
 	participantBeneficiaryRepo := postgres.NewParticipantBeneficiaryRepository(postgresDB)
 	participantStatusHistoryRepo := postgres.NewParticipantStatusHistoryRepository(postgresDB)
+	fileRepo := postgres.NewFileRepository(postgresDB)
 
 	minioClient, err := infrastructure.NewMinIOClient(cfg)
 	if err != nil {
@@ -106,8 +110,6 @@ func NewServer(cfg *config.Config) *Server {
 	fileStorage := implminio.NewFileStorage(minioClient)
 
 	emailService := mailer.NewEmailService(&cfg.Email)
-
-	healthUsecase := health.NewUsecase()
 
 	masterdataUsecase := masterdata.NewUsecase(
 		cfg,
@@ -168,6 +170,7 @@ func NewServer(cfg *config.Config) *Server {
 	)
 	participantUsecase := participant.NewUsecase(
 		cfg,
+		zapLogger,
 		txManager,
 		participantRepo,
 		participantIdentityRepo,
@@ -179,6 +182,7 @@ func NewServer(cfg *config.Config) *Server {
 		participantBeneficiaryRepo,
 		participantStatusHistoryRepo,
 		fileStorage,
+		fileRepo,
 		tenantRepo,
 		productRepo,
 		productRegConfigRepo,
@@ -187,7 +191,7 @@ func NewServer(cfg *config.Config) *Server {
 		masterdataUsecase,
 	)
 
-	healthController := controller.NewHealthController(cfg, healthUsecase)
+	healthController := controller.NewHealthController(cfg)
 	authController := controller.NewRegistrationController(cfg, authUsecase)
 	roleController := controller.NewRoleController(cfg, roleUsecase)
 	userController := controller.NewUserController(cfg, userUsecase)
@@ -195,10 +199,14 @@ func NewServer(cfg *config.Config) *Server {
 	memberController := controller.NewMemberController(memberUsecase)
 	participantController := controller.NewParticipantController(participantUsecase)
 
+	fileCleanupUC := files.NewUsecase(fileRepo, fileStorage, txManager, zapLogger, files.DefaultConfig())
+	fileWorker := worker.NewWorker(fileCleanupUC, zapLogger)
+
 	server := &Server{
-		app:    app,
-		config: cfg,
-		logger: zapLogger,
+		app:        app,
+		config:     cfg,
+		logger:     zapLogger,
+		fileWorker: fileWorker,
 	}
 
 	mw := middleware.New(cfg, zapLogger)
@@ -222,6 +230,7 @@ func NewServer(cfg *config.Config) *Server {
 	v1 := api.Group("/v1")
 
 	router.SetupHealthRoutes(v1, healthController)
+	router.SetupDocsRoutes(v1)
 	router.SetupMasterdataRoutes(v1, cfg, masterdataController, inMemoryStore)
 
 	iam := v1.Group("/iam")
@@ -253,6 +262,19 @@ func (s *Server) Start() error {
 
 func (s *Server) Shutdown(ctx context.Context) error {
 	return s.app.ShutdownWithContext(ctx)
+}
+
+func (s *Server) StartWorker(ctx context.Context) {
+	workerCtx, cancel := context.WithCancel(ctx)
+	s.workerCancel = cancel
+	s.fileWorker.Start(workerCtx)
+}
+
+func (s *Server) StopWorker() {
+	if s.workerCancel != nil {
+		s.workerCancel()
+	}
+	s.fileWorker.Stop()
 }
 
 func createErrorHandler(cfg *config.Config, zapLogger *zap.Logger) fiber.ErrorHandler {

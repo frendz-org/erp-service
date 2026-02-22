@@ -3,9 +3,9 @@ package postgres
 import (
 	"context"
 
-	"iam-service/entity"
-	"iam-service/saving/participant/contract"
-	"iam-service/pkg/errors"
+	"erp-service/entity"
+	"erp-service/pkg/errors"
+	"erp-service/saving/participant"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -15,7 +15,7 @@ type participantFamilyMemberRepository struct {
 	baseRepository
 }
 
-func NewParticipantFamilyMemberRepository(db *gorm.DB) contract.ParticipantFamilyMemberRepository {
+func NewParticipantFamilyMemberRepository(db *gorm.DB) participant.ParticipantFamilyMemberRepository {
 	return &participantFamilyMemberRepository{
 		baseRepository: baseRepository{db: db},
 	}
@@ -68,6 +68,16 @@ func (r *participantFamilyMemberRepository) Update(ctx context.Context, member *
 func (r *participantFamilyMemberRepository) SoftDelete(ctx context.Context, id uuid.UUID) error {
 	err := r.getDB(ctx).Model(&entity.ParticipantFamilyMember{}).
 		Where("id = ? AND deleted_at IS NULL", id).
+		Update("deleted_at", gorm.Expr("NOW()")).Error
+	if err != nil {
+		return translateError(err, "participant family member")
+	}
+	return nil
+}
+
+func (r *participantFamilyMemberRepository) SoftDeleteAllByParticipantID(ctx context.Context, participantID uuid.UUID) error {
+	err := r.getDB(ctx).Model(&entity.ParticipantFamilyMember{}).
+		Where("participant_id = ? AND deleted_at IS NULL", participantID).
 		Update("deleted_at", gorm.Expr("NOW()")).Error
 	if err != nil {
 		return translateError(err, "participant family member")

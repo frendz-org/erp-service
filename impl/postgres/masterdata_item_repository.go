@@ -4,8 +4,8 @@ import (
 	"context"
 	"strings"
 
-	"iam-service/entity"
-	"iam-service/masterdata/contract"
+	"erp-service/entity"
+	"erp-service/masterdata"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -15,13 +15,13 @@ type masterdataItemRepository struct {
 	baseRepository
 }
 
-func NewMasterdataItemRepository(db *gorm.DB) contract.ItemRepository {
+func NewMasterdataItemRepository(db *gorm.DB) masterdata.ItemRepository {
 	return &masterdataItemRepository{
 		baseRepository: baseRepository{db: db},
 	}
 }
 
-func (r *masterdataItemRepository) List(ctx context.Context, filter *contract.ItemFilter) ([]*entity.MasterdataItem, int64, error) {
+func (r *masterdataItemRepository) List(ctx context.Context, filter *masterdata.ItemFilter) ([]*entity.MasterdataItem, int64, error) {
 	var items []*entity.MasterdataItem
 	var total int64
 

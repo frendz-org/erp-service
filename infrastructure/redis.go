@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"iam-service/config"
+	"erp-service/config"
 
 	"github.com/redis/go-redis/v9"
 )

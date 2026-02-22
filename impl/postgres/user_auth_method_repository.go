@@ -3,8 +3,8 @@ package postgres
 import (
 	"context"
 
-	"iam-service/entity"
-	"iam-service/iam/auth/contract"
+	"erp-service/entity"
+	"erp-service/iam/auth"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -14,7 +14,7 @@ type userAuthMethodRepository struct {
 	baseRepository
 }
 
-func NewUserAuthMethodRepository(db *gorm.DB) contract.UserAuthMethodRepository {
+func NewUserAuthMethodRepository(db *gorm.DB) auth.UserAuthMethodRepository {
 	return &userAuthMethodRepository{
 		baseRepository: baseRepository{db: db},
 	}

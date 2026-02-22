@@ -3,8 +3,8 @@ package hashivault
 import (
 	"context"
 	"encoding/json"
+	"erp-service/pkg/errors"
 	"fmt"
-	"iam-service/pkg/errors"
 )
 
 type SecretData struct {

@@ -93,6 +93,9 @@ const (
 	CodeEmployeeExists   = "ERR_EMPLOYEE_EXISTS"
 	CodeInvalidNIK       = "ERR_INVALID_NIK"
 
+	CodeParticipantDraftExists      = "PARTICIPANT_DRAFT_EXISTS"
+	CodeParticipantAlreadyRegistered = "PARTICIPANT_ALREADY_REGISTERED"
+
 	CodeContributionNotFound    = "ERR_CONTRIBUTION_NOT_FOUND"
 	CodeContributionInvalid     = "ERR_CONTRIBUTION_INVALID"
 	CodeContributionDuplicate   = "ERR_CONTRIBUTION_DUPLICATE"
@@ -304,6 +307,18 @@ func ErrEmployeeNotFound() *AppError {
 
 func ErrEmployeeExists() *AppError {
 	return newWithCaller(CodeEmployeeExists, "Employee with this NIK already exists", http.StatusConflict, KindDuplicate, 2)
+}
+
+func ErrParticipantDraftExists(participantID interface{}) *AppError {
+	err := newWithCaller(CodeParticipantDraftExists, "A draft registration already exists for this participant", http.StatusConflict, KindDuplicate, 2)
+	err.Details = map[string]interface{}{
+		"participant_id": participantID,
+	}
+	return err
+}
+
+func ErrParticipantAlreadyRegistered() *AppError {
+	return newWithCaller(CodeParticipantAlreadyRegistered, "This participant is already registered", http.StatusConflict, KindDuplicate, 2)
 }
 
 func ErrContributionNotFound() *AppError {

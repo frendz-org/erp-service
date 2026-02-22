@@ -4,9 +4,9 @@ import (
 	"net"
 	"strings"
 
-	"iam-service/iam/product"
-	"iam-service/pkg/errors"
-	jwtpkg "iam-service/pkg/jwt"
+	"erp-service/iam/product"
+	"erp-service/pkg/errors"
+	jwtpkg "erp-service/pkg/jwt"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"

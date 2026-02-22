@@ -3,11 +3,10 @@ package controller
 import (
 	"strconv"
 
-	"iam-service/delivery/http/middleware"
-	"iam-service/delivery/http/presenter"
-	"iam-service/pkg/errors"
-	"iam-service/saving/member"
-	"iam-service/saving/member/memberdto"
+	"erp-service/delivery/http/middleware"
+	"erp-service/delivery/http/presenter"
+	"erp-service/pkg/errors"
+	"erp-service/saving/member"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -52,10 +51,10 @@ func (ctrl *MemberController) Register(c *fiber.Ctx) error {
 		})
 	}
 
-	req := &memberdto.RegisterRequest{
-		TenantID:      tenantID,
+	req := &member.RegisterRequest{
+		TenantID:  tenantID,
 		ProductID: productID,
-		UserID:        userClaims.UserID,
+		UserID:    userClaims.UserID,
 	}
 
 	result, err := ctrl.usecase.RegisterMember(c.UserContext(), req)
@@ -101,14 +100,14 @@ func (ctrl *MemberController) List(c *fiber.Ctx) error {
 		perPage = 10
 	}
 
-	req := &memberdto.ListRequest{
-		TenantID:      tenantID,
+	req := &member.ListRequest{
+		TenantID:  tenantID,
 		ProductID: productID,
-		Search:        c.Query("search"),
-		Page:          page,
-		PerPage:       perPage,
-		SortBy:        c.Query("sort_by", "created_at"),
-		SortOrder:     c.Query("sort_order", "desc"),
+		Search:    c.Query("search"),
+		Page:      page,
+		PerPage:   perPage,
+		SortBy:    c.Query("sort_by", "created_at"),
+		SortOrder: c.Query("sort_order", "desc"),
 	}
 
 	if status := c.Query("status"); status != "" {
@@ -157,9 +156,9 @@ func (ctrl *MemberController) Get(c *fiber.Ctx) error {
 		})
 	}
 
-	req := &memberdto.GetMemberRequest{
-		MemberID:      memberID,
-		TenantID:      tenantID,
+	req := &member.GetMemberRequest{
+		MemberID:  memberID,
+		TenantID:  tenantID,
 		ProductID: productID,
 	}
 
@@ -228,12 +227,12 @@ func (ctrl *MemberController) Approve(c *fiber.Ctx) error {
 		return errors.ErrValidationWithFields(convertValidationErrors(err.(validator.ValidationErrors)))
 	}
 
-	req := &memberdto.ApproveRequest{
-		MemberID:      memberID,
-		TenantID:      tenantID,
-		ProductID: productID,
-		ApproverID:    userClaims.UserID,
-		RoleCode:      body.RoleCode,
+	req := &member.ApproveRequest{
+		MemberID:   memberID,
+		TenantID:   tenantID,
+		ProductID:  productID,
+		ApproverID: userClaims.UserID,
+		RoleCode:   body.RoleCode,
 	}
 
 	result, err := ctrl.usecase.ApproveMember(c.UserContext(), req)
@@ -301,12 +300,12 @@ func (ctrl *MemberController) Reject(c *fiber.Ctx) error {
 		return errors.ErrValidationWithFields(convertValidationErrors(err.(validator.ValidationErrors)))
 	}
 
-	req := &memberdto.RejectRequest{
-		MemberID:      memberID,
-		TenantID:      tenantID,
-		ProductID: productID,
-		ApproverID:    userClaims.UserID,
-		Reason:        body.Reason,
+	req := &member.RejectRequest{
+		MemberID:   memberID,
+		TenantID:   tenantID,
+		ProductID:  productID,
+		ApproverID: userClaims.UserID,
+		Reason:     body.Reason,
 	}
 
 	result, err := ctrl.usecase.RejectMember(c.UserContext(), req)
@@ -374,12 +373,12 @@ func (ctrl *MemberController) ChangeRole(c *fiber.Ctx) error {
 		return errors.ErrValidationWithFields(convertValidationErrors(err.(validator.ValidationErrors)))
 	}
 
-	req := &memberdto.ChangeRoleRequest{
-		MemberID:      memberID,
-		TenantID:      tenantID,
+	req := &member.ChangeRoleRequest{
+		MemberID:  memberID,
+		TenantID:  tenantID,
 		ProductID: productID,
-		ActorID:       userClaims.UserID,
-		RoleCode:      body.RoleCode,
+		ActorID:   userClaims.UserID,
+		RoleCode:  body.RoleCode,
 	}
 
 	result, err := ctrl.usecase.ChangeRole(c.UserContext(), req)
@@ -433,11 +432,11 @@ func (ctrl *MemberController) Deactivate(c *fiber.Ctx) error {
 		})
 	}
 
-	req := &memberdto.DeactivateRequest{
-		MemberID:      memberID,
-		TenantID:      tenantID,
+	req := &member.DeactivateRequest{
+		MemberID:  memberID,
+		TenantID:  tenantID,
 		ProductID: productID,
-		ActorID:       userClaims.UserID,
+		ActorID:   userClaims.UserID,
 	}
 
 	result, err := ctrl.usecase.DeactivateMember(c.UserContext(), req)

@@ -1,0 +1,94 @@
+package participant
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"erp-service/entity"
+	"erp-service/pkg/errors"
+)
+
+func (uc *usecase) SaveIdentity(ctx context.Context, req *SaveIdentityRequest) (*IdentityResponse, error) {
+	var result *IdentityResponse
+
+	err := uc.txManager.WithTransaction(ctx, func(txCtx context.Context) error {
+		participant, err := uc.participantRepo.GetByID(txCtx, req.ParticipantID)
+		if err != nil {
+			return fmt.Errorf("get participant: %w", err)
+		}
+
+		if err := ValidateParticipantOwnership(participant, req.TenantID, req.ProductID); err != nil {
+			return err
+		}
+
+		if err := ValidateEditableState(participant); err != nil {
+			return err
+		}
+
+		if req.PhotoFileID != nil {
+			file, err := uc.fileRepo.GetByID(txCtx, *req.PhotoFileID)
+			if err != nil {
+				return fmt.Errorf("get photo file: %w", err)
+			}
+			if file.TenantID != req.TenantID || file.ProductID != req.ProductID {
+				return errors.ErrForbidden("photo_file_id does not belong to this tenant/product")
+			}
+			if err := uc.fileRepo.SetPermanent(txCtx, *req.PhotoFileID); err != nil {
+				return fmt.Errorf("set photo file permanent: %w", err)
+			}
+		}
+
+		var identity *entity.ParticipantIdentity
+
+		if req.ID != nil {
+			identity, err = uc.identityRepo.GetByID(txCtx, *req.ID)
+			if err != nil {
+				return fmt.Errorf("get identity: %w", err)
+			}
+
+			if identity.ParticipantID != req.ParticipantID {
+				return errors.ErrForbidden("identity does not belong to this participant")
+			}
+
+			identity.IdentityType = req.IdentityType
+			identity.IdentityNumber = req.IdentityNumber
+			identity.IdentityAuthority = req.IdentityAuthority
+			identity.IssueDate = req.IssueDate
+			identity.ExpiryDate = req.ExpiryDate
+			identity.PhotoFileID = req.PhotoFileID
+
+			if err := uc.identityRepo.Update(txCtx, identity); err != nil {
+				return fmt.Errorf("update identity: %w", err)
+			}
+		} else {
+			now := time.Now()
+			identity = &entity.ParticipantIdentity{
+				ParticipantID:     req.ParticipantID,
+				IdentityType:      req.IdentityType,
+				IdentityNumber:    req.IdentityNumber,
+				IdentityAuthority: req.IdentityAuthority,
+				IssueDate:         req.IssueDate,
+				ExpiryDate:        req.ExpiryDate,
+				PhotoFileID:       req.PhotoFileID,
+				Version:           1,
+				CreatedAt:         now,
+				UpdatedAt:         now,
+			}
+
+			if err := uc.identityRepo.Create(txCtx, identity); err != nil {
+				return fmt.Errorf("create identity: %w", err)
+			}
+		}
+
+		resp := mapIdentityToResponse(identity)
+		result = &resp
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}

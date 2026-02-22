@@ -34,6 +34,8 @@ type Participant struct {
 	EmployeeNumber *string `json:"employee_number,omitempty" gorm:"column:employee_number" db:"employee_number"`
 	PhoneNumber    *string `json:"phone_number,omitempty" gorm:"column:phone_number" db:"phone_number"`
 
+	StepsCompleted map[string]bool `json:"steps_completed,omitempty" gorm:"column:steps_completed;type:jsonb;serializer:json" db:"steps_completed"`
+
 	Status          ParticipantStatus `json:"status" gorm:"column:status;not null;default:DRAFT" db:"status"`
 	CreatedBy       uuid.UUID         `json:"created_by" gorm:"column:created_by;not null" db:"created_by"`
 	SubmittedBy     *uuid.UUID        `json:"submitted_by,omitempty" gorm:"column:submitted_by" db:"submitted_by"`

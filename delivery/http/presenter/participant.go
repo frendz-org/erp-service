@@ -1,15 +1,15 @@
 package presenter
 
 import (
-	"iam-service/delivery/http/dto/response"
-	"iam-service/saving/participant/participantdto"
+	"erp-service/delivery/http/dto/response"
+	"erp-service/saving/participant"
 )
 
-func MapSelfRegisterResponse(resp *participantdto.SelfRegisterResponse) *participantdto.SelfRegisterResponse {
+func MapSelfRegisterResponse(resp *participant.SelfRegisterResponse) *participant.SelfRegisterResponse {
 	return resp
 }
 
-func MapEmploymentResponse(dto *participantdto.EmploymentResponse) response.EmploymentResponse {
+func MapEmploymentResponse(dto *participant.EmploymentResponse) response.EmploymentResponse {
 	return response.EmploymentResponse{
 		ID:                 dto.ID,
 		PersonnelNumber:    dto.PersonnelNumber,
@@ -34,7 +34,7 @@ func MapEmploymentResponse(dto *participantdto.EmploymentResponse) response.Empl
 	}
 }
 
-func MapPensionResponse(dto *participantdto.PensionResponse) response.PensionResponse {
+func MapPensionResponse(dto *participant.PensionResponse) response.PensionResponse {
 	return response.PensionResponse{
 		ID:                      dto.ID,
 		ParticipantNumber:       dto.ParticipantNumber,
@@ -49,7 +49,7 @@ func MapPensionResponse(dto *participantdto.PensionResponse) response.PensionRes
 	}
 }
 
-func MapParticipantResponse(dto *participantdto.ParticipantResponse) response.ParticipantResponse {
+func MapParticipantResponse(dto *participant.ParticipantResponse) response.ParticipantResponse {
 	identities := make([]response.IdentityResponse, 0, len(dto.Identities))
 	for _, id := range dto.Identities {
 		identities = append(identities, response.IdentityResponse{
@@ -60,6 +60,7 @@ func MapParticipantResponse(dto *participantdto.ParticipantResponse) response.Pa
 			IssueDate:         id.IssueDate,
 			ExpiryDate:        id.ExpiryDate,
 			PhotoFilePath:     id.PhotoFilePath,
+			PhotoFileID:       id.PhotoFileID,
 			Version:           id.Version,
 			CreatedAt:         id.CreatedAt,
 			UpdatedAt:         id.UpdatedAt,
@@ -113,6 +114,7 @@ func MapParticipantResponse(dto *participantdto.ParticipantResponse) response.Pa
 			RelationshipType:      fm.RelationshipType,
 			IsDependent:           fm.IsDependent,
 			SupportingDocFilePath: fm.SupportingDocFilePath,
+			SupportingDocFileID:   fm.SupportingDocFileID,
 			Version:               fm.Version,
 			CreatedAt:             fm.CreatedAt,
 			UpdatedAt:             fm.UpdatedAt,
@@ -167,8 +169,11 @@ func MapParticipantResponse(dto *participantdto.ParticipantResponse) response.Pa
 			ID:                      ben.ID,
 			FamilyMemberID:          ben.FamilyMemberID,
 			IdentityPhotoFilePath:   ben.IdentityPhotoFilePath,
+			IdentityPhotoFileID:     ben.IdentityPhotoFileID,
 			FamilyCardPhotoFilePath: ben.FamilyCardPhotoFilePath,
+			FamilyCardPhotoFileID:   ben.FamilyCardPhotoFileID,
 			BankBookPhotoFilePath:   ben.BankBookPhotoFilePath,
+			BankBookPhotoFileID:     ben.BankBookPhotoFileID,
 			AccountNumber:           ben.AccountNumber,
 			Version:                 ben.Version,
 			CreatedAt:               ben.CreatedAt,
@@ -192,6 +197,15 @@ func MapParticipantResponse(dto *participantdto.ParticipantResponse) response.Pa
 		EmployeeNumber:  dto.EmployeeNumber,
 		PhoneNumber:     dto.PhoneNumber,
 		Status:          dto.Status,
+		StepsCompleted: response.StepsCompleted{
+			PersonalData:  dto.StepsCompleted.PersonalData,
+			Address:       dto.StepsCompleted.Address,
+			BankAccount:   dto.StepsCompleted.BankAccount,
+			FamilyMembers: dto.StepsCompleted.FamilyMembers,
+			Employment:    dto.StepsCompleted.Employment,
+			Beneficiaries: dto.StepsCompleted.Beneficiaries,
+			Pension:       dto.StepsCompleted.Pension,
+		},
 		CreatedBy:       dto.CreatedBy,
 		SubmittedBy:     dto.SubmittedBy,
 		SubmittedAt:     dto.SubmittedAt,

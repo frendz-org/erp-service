@@ -1,15 +1,15 @@
 package router
 
 import (
-	"iam-service/config"
-	"iam-service/delivery/http/controller"
-	"iam-service/delivery/http/middleware"
-	"iam-service/iam/auth/contract"
+	"erp-service/config"
+	"erp-service/delivery/http/controller"
+	"erp-service/delivery/http/middleware"
+	"erp-service/iam/auth"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-func SetupMasterdataRoutes(api fiber.Router, cfg *config.Config, mc *controller.MasterdataController, blacklistStore ...contract.TokenBlacklistStore) {
+func SetupMasterdataRoutes(api fiber.Router, cfg *config.Config, mc *controller.MasterdataController, blacklistStore ...auth.TokenBlacklistStore) {
 	masterdata := api.Group("/masterdata")
 
 	publicRoutes := masterdata.Group("")

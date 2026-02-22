@@ -3,8 +3,8 @@ package postgres
 import (
 	"context"
 
-	"iam-service/entity"
-	membercontract "iam-service/saving/member/contract"
+	"erp-service/entity"
+	membercontract "erp-service/saving/member"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"

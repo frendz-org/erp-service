@@ -3,7 +3,7 @@ package redis
 import (
 	"context"
 	"encoding/json"
-	"iam-service/pkg/errors"
+	"erp-service/pkg/errors"
 
 	goredis "github.com/redis/go-redis/v9"
 )

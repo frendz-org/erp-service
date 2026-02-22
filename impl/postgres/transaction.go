@@ -7,16 +7,15 @@ import (
 	"gorm.io/gorm"
 )
 
-type GormTransactionManager struct {
+type TransactionManager struct {
 	db *gorm.DB
 }
 
-func NewTransactionManager(db *gorm.DB) *GormTransactionManager {
-	return &GormTransactionManager{db: db}
+func NewTransactionManager(db *gorm.DB) *TransactionManager {
+	return &TransactionManager{db: db}
 }
 
-func (m *GormTransactionManager) WithTransaction(ctx context.Context, fn func(ctx context.Context) error) error {
-
+func (m *TransactionManager) WithTransaction(ctx context.Context, fn func(ctx context.Context) error) error {
 	if existingTx, ok := getTx(ctx); ok {
 
 		return existingTx.Transaction(func(nestedTx *gorm.DB) error {

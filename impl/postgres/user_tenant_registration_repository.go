@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"iam-service/entity"
-	apperrors "iam-service/pkg/errors"
-	membercontract "iam-service/saving/member/contract"
+	"erp-service/entity"
+	apperrors "erp-service/pkg/errors"
+	membercontract "erp-service/saving/member"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"

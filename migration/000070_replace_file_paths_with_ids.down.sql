@@ -1,0 +1,11 @@
+DROP INDEX IF EXISTS idx_participant_beneficiaries_bank_book_photo_file_id;
+DROP INDEX IF EXISTS idx_participant_beneficiaries_family_card_photo_file_id;
+DROP INDEX IF EXISTS idx_participant_beneficiaries_identity_photo_file_id;
+DROP INDEX IF EXISTS idx_participant_family_members_supporting_doc_file_id;
+DROP INDEX IF EXISTS idx_participant_identities_photo_file_id;
+
+ALTER TABLE participant_identities DROP COLUMN IF EXISTS photo_file_id;
+ALTER TABLE participant_family_members DROP COLUMN IF EXISTS supporting_doc_file_id;
+ALTER TABLE participant_beneficiaries DROP COLUMN IF EXISTS identity_photo_file_id;
+ALTER TABLE participant_beneficiaries DROP COLUMN IF EXISTS family_card_photo_file_id;
+ALTER TABLE participant_beneficiaries DROP COLUMN IF EXISTS bank_book_photo_file_id;

@@ -1,10 +1,10 @@
 package controller
 
 import (
-	"iam-service/delivery/http/dto/response"
-	"iam-service/delivery/http/presenter"
-	"iam-service/iam/auth/authdto"
-	"iam-service/pkg/errors"
+	"erp-service/delivery/http/dto/response"
+	"erp-service/delivery/http/presenter"
+	"erp-service/iam/auth"
+	"erp-service/pkg/errors"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -12,7 +12,7 @@ import (
 )
 
 func (rc *AuthController) RefreshToken(c *fiber.Ctx) error {
-	var req authdto.RefreshTokenRequest
+	var req auth.RefreshTokenRequest
 	if err := c.BodyParser(&req); err != nil {
 		return errors.ErrBadRequest("Invalid request body")
 	}
@@ -36,7 +36,7 @@ func (rc *AuthController) RefreshToken(c *fiber.Ctx) error {
 }
 
 func (rc *AuthController) InitiateLogin(c *fiber.Ctx) error {
-	var req authdto.InitiateLoginRequest
+	var req auth.InitiateLoginRequest
 	if err := c.BodyParser(&req); err != nil {
 		return errors.ErrBadRequest("Invalid request body")
 	}
@@ -65,7 +65,7 @@ func (rc *AuthController) VerifyLoginOTP(c *fiber.Ctx) error {
 		return errors.ErrBadRequest("Invalid login session ID format")
 	}
 
-	var req authdto.VerifyLoginOTPRequest
+	var req auth.VerifyLoginOTPRequest
 	if err := c.BodyParser(&req); err != nil {
 		return errors.ErrBadRequest("Invalid request body")
 	}
@@ -95,7 +95,7 @@ func (rc *AuthController) ResendLoginOTP(c *fiber.Ctx) error {
 		return errors.ErrBadRequest("Invalid login session ID format")
 	}
 
-	var req authdto.ResendLoginOTPRequest
+	var req auth.ResendLoginOTPRequest
 	if err := c.BodyParser(&req); err != nil {
 		return errors.ErrBadRequest("Invalid request body")
 	}
@@ -128,7 +128,7 @@ func (rc *AuthController) GetLoginStatus(c *fiber.Ctx) error {
 		return errors.ErrBadRequest("email query parameter is required")
 	}
 
-	resp, err := rc.authUsecase.GetLoginStatus(c.Context(), &authdto.GetLoginStatusRequest{
+	resp, err := rc.authUsecase.GetLoginStatus(c.Context(), &auth.GetLoginStatusRequest{
 		LoginSessionID: loginSessionID,
 		Email:          email,
 	})
