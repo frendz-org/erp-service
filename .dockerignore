@@ -1,0 +1,12 @@
+.git
+.env
+.env.*
+!.env.example
+tmp/
+*.md
+.air.toml
+.golangci.yml
+doc/postman/
+tests/
+**/*_test.go
+coverage.out
