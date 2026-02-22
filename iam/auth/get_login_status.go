@@ -24,7 +24,7 @@ func (uc *usecase) GetLoginStatus(
 	return &LoginStatusResponse{
 		Status:            string(session.Status),
 		LoginSessionID:    req.LoginSessionID,
-		Email:             maskEmail(session.Email),
+		Email:             MaskEmail(session.Email),
 		AttemptsRemaining: session.RemainingAttempts(),
 		ResendsRemaining:  session.RemainingResends(),
 		ExpiresAt:         session.ExpiresAt,

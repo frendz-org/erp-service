@@ -5,7 +5,7 @@ import (
 
 	"erp-service/entity"
 	"erp-service/pkg/errors"
-	"erp-service/saving/participant/contract"
+	"erp-service/saving/participant"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -15,7 +15,7 @@ type participantBankAccountRepository struct {
 	baseRepository
 }
 
-func NewParticipantBankAccountRepository(db *gorm.DB) contract.ParticipantBankAccountRepository {
+func NewParticipantBankAccountRepository(db *gorm.DB) participant.ParticipantBankAccountRepository {
 	return &participantBankAccountRepository{
 		baseRepository: baseRepository{db: db},
 	}

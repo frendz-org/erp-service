@@ -7,7 +7,7 @@ import (
 
 	"erp-service/entity"
 	apperrors "erp-service/pkg/errors"
-	"erp-service/saving/participant/contract"
+	"erp-service/saving/participant"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -34,7 +34,7 @@ type participantRepository struct {
 	baseRepository
 }
 
-func NewParticipantRepository(db *gorm.DB) contract.ParticipantRepository {
+func NewParticipantRepository(db *gorm.DB) participant.ParticipantRepository {
 	return &participantRepository{
 		baseRepository: baseRepository{db: db},
 	}
@@ -146,7 +146,7 @@ func (r *participantRepository) SoftDelete(ctx context.Context, id uuid.UUID) er
 	return nil
 }
 
-func (r *participantRepository) List(ctx context.Context, filter *contract.ParticipantFilter) ([]*entity.Participant, int64, error) {
+func (r *participantRepository) List(ctx context.Context, filter *participant.ParticipantFilter) ([]*entity.Participant, int64, error) {
 	var participants []*entity.Participant
 	var total int64
 

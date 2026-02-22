@@ -15,12 +15,12 @@ type usecase struct {
 	cache        MasterdataCache
 }
 
-func newUsecase(
+func NewUsecase(
 	cfg *config.Config,
 	categoryRepo CategoryRepository,
 	itemRepo ItemRepository,
 	cache MasterdataCache,
-) *usecase {
+) Usecase {
 	return &usecase{
 		config:       cfg,
 		categoryRepo: categoryRepo,

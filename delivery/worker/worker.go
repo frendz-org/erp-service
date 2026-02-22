@@ -5,44 +5,31 @@ import (
 	"sync"
 	"time"
 
-	"erp-service/entity"
-	"erp-service/saving/participant/contract"
+	"erp-service/files"
 
 	"go.uber.org/zap"
 )
 
-const (
-	defaultCleanupInterval = 5 * time.Minute
-	defaultBatchSize       = 50
-)
+const defaultCleanupInterval = 5 * time.Minute
 
 type Worker struct {
-	fileRepo    contract.FileRepository
-	fileStorage contract.FileStorageAdapter
-	txManager   contract.TransactionManager
-	logger      *zap.Logger
-	interval    time.Duration
-	batchSize   int
-	done        chan struct{}
-	startOnce   sync.Once
+	uc        files.Usecase
+	logger    *zap.Logger
+	interval  time.Duration
+	done      chan struct{}
+	startOnce sync.Once
 }
 
-func NewWorker(
-	fileRepo contract.FileRepository,
-	fileStorage contract.FileStorageAdapter,
-	txManager contract.TransactionManager,
-	log *zap.Logger,
-) *Worker {
+func NewWorker(uc files.Usecase, logger *zap.Logger) *Worker {
 	return &Worker{
-		fileRepo:    fileRepo,
-		fileStorage: fileStorage,
-		txManager:   txManager,
-		logger:      log,
-		interval:    defaultCleanupInterval,
-		batchSize:   defaultBatchSize,
-		done:        make(chan struct{}),
+		uc:       uc,
+		logger:   logger,
+		interval: defaultCleanupInterval,
+		done:     make(chan struct{}),
 	}
 }
+
+func (w *Worker) SetInterval(d time.Duration) { w.interval = d }
 
 func (w *Worker) Start(ctx context.Context) {
 	w.startOnce.Do(func() {
@@ -60,7 +47,7 @@ func (w *Worker) Start(ctx context.Context) {
 					if ctx.Err() != nil {
 						return
 					}
-					w.runCleanupBatch(ctx)
+					w.runOnce(ctx)
 				}
 			}
 		}()
@@ -71,49 +58,16 @@ func (w *Worker) Stop() {
 	<-w.done
 }
 
-func (w *Worker) runCleanupBatch(ctx context.Context) {
-
-	var files []*entity.File
-	err := w.txManager.WithTransaction(ctx, func(txCtx context.Context) error {
-		var listErr error
-		files, listErr = w.fileRepo.ListExpiredForUpdate(txCtx, w.batchSize)
-		return listErr
-	})
+func (w *Worker) runOnce(ctx context.Context) {
+	result, err := w.uc.CleanupBatch(ctx)
 	if err != nil {
-		w.logger.Error("failed to list expired files", zap.Error(err))
+		w.logger.Error("cleanup batch failed", zap.Error(err))
 		return
 	}
-
-	for _, file := range files {
-		w.processOneFile(ctx, file)
-	}
-}
-
-func (w *Worker) processOneFile(ctx context.Context, file *entity.File) {
-
-	if err := w.fileStorage.DeleteFile(ctx, file.Bucket, file.StorageKey); err != nil {
-		w.logger.Warn("failed to delete from storage",
-			zap.String("file_id", file.ID.String()),
-			zap.Error(err),
-		)
-
-		if incrErr := w.txManager.WithTransaction(ctx, func(txCtx context.Context) error {
-			return w.fileRepo.IncrementFailedAttempts(txCtx, file.ID)
-		}); incrErr != nil {
-			w.logger.Error("failed to increment failed attempts",
-				zap.String("file_id", file.ID.String()),
-				zap.Error(incrErr),
-			)
-		}
-		return
-	}
-
-	if err := w.txManager.WithTransaction(ctx, func(txCtx context.Context) error {
-		return w.fileRepo.SoftDelete(txCtx, file.ID)
-	}); err != nil {
-		w.logger.Error("failed to soft-delete file",
-			zap.String("file_id", file.ID.String()),
-			zap.Error(err),
+	if result.Processed > 0 || result.Failed > 0 {
+		w.logger.Info("cleanup batch completed",
+			zap.Int("processed", result.Processed),
+			zap.Int("failed", result.Failed),
 		)
 	}
 }

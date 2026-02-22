@@ -3,8 +3,6 @@ package masterdata
 import (
 	"context"
 
-	"erp-service/config"
-
 	"github.com/google/uuid"
 )
 
@@ -36,13 +34,4 @@ type ItemUseCase interface {
 type Usecase interface {
 	CategoryUseCase
 	ItemUseCase
-}
-
-func NewUsecase(
-	cfg *config.Config,
-	categoryRepo CategoryRepository,
-	itemRepo ItemRepository,
-	cache MasterdataCache,
-) Usecase {
-	return newUsecase(cfg, categoryRepo, itemRepo, cache)
 }

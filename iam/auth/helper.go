@@ -114,7 +114,7 @@ func hashToken(token string) string {
 	return hex.EncodeToString(hash[:])
 }
 
-func maskEmail(email string) string {
+func MaskEmail(email string) string {
 	parts := strings.Split(email, "@")
 	if len(parts) != 2 {
 		return "***"

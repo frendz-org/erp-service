@@ -18,6 +18,7 @@ type File struct {
 	ContentType          string         `gorm:"column:content_type;not null"`
 	SizeBytes            int64          `gorm:"column:size_bytes;not null;default:0"`
 	ExpiresAt            *time.Time     `gorm:"column:expires_at"`
+	ClaimedAt            *time.Time     `gorm:"column:claimed_at"`
 	FailedDeleteAttempts int            `gorm:"column:failed_delete_attempts;not null;default:0"`
 	Version              int            `gorm:"column:version;not null;default:1"`
 	CreatedAt            time.Time      `gorm:"column:created_at"`

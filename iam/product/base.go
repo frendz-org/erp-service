@@ -5,7 +5,7 @@ type usecase struct {
 	cache Cache
 }
 
-func newUsecase(repo ProductRepository, cache Cache) *usecase {
+func NewUsecase(repo ProductRepository, cache Cache) Usecase {
 	return &usecase{
 		repo:  repo,
 		cache: cache,

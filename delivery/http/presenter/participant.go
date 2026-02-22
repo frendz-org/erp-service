@@ -2,14 +2,14 @@ package presenter
 
 import (
 	"erp-service/delivery/http/dto/response"
-	"erp-service/saving/participant/participantdto"
+	"erp-service/saving/participant"
 )
 
-func MapSelfRegisterResponse(resp *participantdto.SelfRegisterResponse) *participantdto.SelfRegisterResponse {
+func MapSelfRegisterResponse(resp *participant.SelfRegisterResponse) *participant.SelfRegisterResponse {
 	return resp
 }
 
-func MapEmploymentResponse(dto *participantdto.EmploymentResponse) response.EmploymentResponse {
+func MapEmploymentResponse(dto *participant.EmploymentResponse) response.EmploymentResponse {
 	return response.EmploymentResponse{
 		ID:                 dto.ID,
 		PersonnelNumber:    dto.PersonnelNumber,
@@ -34,7 +34,7 @@ func MapEmploymentResponse(dto *participantdto.EmploymentResponse) response.Empl
 	}
 }
 
-func MapPensionResponse(dto *participantdto.PensionResponse) response.PensionResponse {
+func MapPensionResponse(dto *participant.PensionResponse) response.PensionResponse {
 	return response.PensionResponse{
 		ID:                      dto.ID,
 		ParticipantNumber:       dto.ParticipantNumber,
@@ -49,7 +49,7 @@ func MapPensionResponse(dto *participantdto.PensionResponse) response.PensionRes
 	}
 }
 
-func MapParticipantResponse(dto *participantdto.ParticipantResponse) response.ParticipantResponse {
+func MapParticipantResponse(dto *participant.ParticipantResponse) response.ParticipantResponse {
 	identities := make([]response.IdentityResponse, 0, len(dto.Identities))
 	for _, id := range dto.Identities {
 		identities = append(identities, response.IdentityResponse{

@@ -6,7 +6,7 @@ import (
 	"io"
 	"time"
 
-	"erp-service/saving/participant/contract"
+	"erp-service/saving/participant"
 
 	"github.com/minio/minio-go/v7"
 )
@@ -15,7 +15,7 @@ type fileStorage struct {
 	client *minio.Client
 }
 
-func NewFileStorage(client *minio.Client) contract.FileStorageAdapter {
+func NewFileStorage(client *minio.Client) participant.FileStorageAdapter {
 	return &fileStorage{
 		client: client,
 	}

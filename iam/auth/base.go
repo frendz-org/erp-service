@@ -27,7 +27,7 @@ type usecase struct {
 	MasterdataUsecase     MasterdataUsecase
 }
 
-func newUsecase(
+func NewUsecase(
 	txManager TransactionManager,
 	cfg *config.Config,
 	userRepo UserRepository,
@@ -47,7 +47,7 @@ func newUsecase(
 	productsByTenantRepo ProductsByTenantRepository,
 	auditLogger logger.AuditLogger,
 	masterdataUsecase MasterdataUsecase,
-) *usecase {
+) Usecase {
 	return &usecase{
 		TxManager:             txManager,
 		Config:                cfg,

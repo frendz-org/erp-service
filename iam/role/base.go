@@ -10,13 +10,13 @@ type usecase struct {
 	RolePermissionRepo RolePermissionRepository
 }
 
-func newUsecase(
+func NewUsecase(
 	txManager TransactionManager,
 	cfg *config.Config,
 	tenantRepo TenantRepository,
 	roleRepo RoleRepository,
 	rolePermissionRepo RolePermissionRepository,
-) *usecase {
+) Usecase {
 	return &usecase{
 		TxManager:          txManager,
 		Config:             cfg,

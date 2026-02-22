@@ -81,7 +81,7 @@ func (uc *usecase) InitiateLogin(
 
 	return NewOTPRequiredResponse(
 		session.ID,
-		maskEmail(email),
+		MaskEmail(email),
 		session.ExpiresAt,
 		session.OTPExpiresAt,
 		LoginOTPMaxAttempts,
@@ -98,7 +98,7 @@ func dummyOTPResponse(email string) *UnifiedLoginResponse {
 	fakeID := uuid.New()
 	return NewOTPRequiredResponse(
 		fakeID,
-		maskEmail(email),
+		MaskEmail(email),
 		sessionExpires,
 		otpExpires,
 		attempts,

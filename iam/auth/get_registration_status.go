@@ -23,7 +23,7 @@ func (uc *usecase) GetRegistrationStatus(
 		return nil, errors.ErrNotFound("Registration session not found")
 	}
 
-	maskedEmail := maskEmail(session.Email)
+	maskedEmail := MaskEmail(session.Email)
 
 	return &RegistrationStatusResponse{
 		RegistrationID:       registrationID.String(),

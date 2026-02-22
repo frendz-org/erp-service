@@ -192,10 +192,10 @@ func splitFullName(fullName string) (firstName, lastName string) {
 }
 
 func calculateAge(birthDate time.Time) int {
-	return calculateAgeAt(birthDate, time.Now())
+	return CalculateAgeAt(birthDate, time.Now())
 }
 
-func calculateAgeAt(birthDate, now time.Time) int {
+func CalculateAgeAt(birthDate, now time.Time) int {
 	age := now.Year() - birthDate.Year()
 	birthdayThisYear := time.Date(now.Year(), birthDate.Month(), birthDate.Day(), 0, 0, 0, 0, now.Location())
 	if now.Before(birthdayThisYear) {

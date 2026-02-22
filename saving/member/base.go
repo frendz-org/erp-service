@@ -14,7 +14,7 @@ type usecase struct {
 	userRepo    UserRepository
 }
 
-func newUsecase(
+func NewUsecase(
 	cfg *config.Config,
 	txManager TransactionManager,
 	utrRepo UserTenantRegistrationRepository,

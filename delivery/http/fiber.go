@@ -10,6 +10,7 @@ import (
 	"erp-service/delivery/http/router"
 	"erp-service/delivery/worker"
 	"erp-service/iam/auth"
+	"erp-service/files"
 	"erp-service/iam/product"
 	"erp-service/iam/role"
 	"erp-service/iam/user"
@@ -198,7 +199,8 @@ func NewServer(cfg *config.Config) *Server {
 	memberController := controller.NewMemberController(memberUsecase)
 	participantController := controller.NewParticipantController(participantUsecase)
 
-	fileWorker := worker.NewWorker(fileRepo, fileStorage, txManager, zapLogger)
+	fileCleanupUC := files.NewUsecase(fileRepo, fileStorage, txManager, zapLogger, files.DefaultConfig())
+	fileWorker := worker.NewWorker(fileCleanupUC, zapLogger)
 
 	server := &Server{
 		app:        app,
@@ -228,6 +230,7 @@ func NewServer(cfg *config.Config) *Server {
 	v1 := api.Group("/v1")
 
 	router.SetupHealthRoutes(v1, healthController)
+	router.SetupDocsRoutes(v1)
 	router.SetupMasterdataRoutes(v1, cfg, masterdataController, inMemoryStore)
 
 	iam := v1.Group("/iam")
@@ -259,11 +262,13 @@ func (s *Server) Start() error {
 
 func (s *Server) Shutdown(ctx context.Context) error {
 	return s.app.ShutdownWithContext(ctx)
+}
 
 func (s *Server) StartWorker(ctx context.Context) {
 	workerCtx, cancel := context.WithCancel(ctx)
 	s.workerCancel = cancel
 	s.fileWorker.Start(workerCtx)
+}
 
 func (s *Server) StopWorker() {
 	if s.workerCancel != nil {

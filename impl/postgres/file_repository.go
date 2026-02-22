@@ -6,7 +6,7 @@ import (
 
 	"erp-service/entity"
 	apperrors "erp-service/pkg/errors"
-	"erp-service/saving/participant/contract"
+	"erp-service/saving/participant"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -16,7 +16,7 @@ type fileRepository struct {
 	baseRepository
 }
 
-func NewFileRepository(db *gorm.DB) contract.FileRepository {
+func NewFileRepository(db *gorm.DB) participant.FileRepository {
 	return &fileRepository{
 		baseRepository: baseRepository{db: db},
 	}
@@ -84,21 +84,37 @@ func (r *fileRepository) ListExpired(ctx context.Context, limit int) ([]*entity.
 	return files, nil
 }
 
-func (r *fileRepository) ListExpiredForUpdate(ctx context.Context, limit int) ([]*entity.File, error) {
+func (r *fileRepository) ClaimExpired(ctx context.Context, limit int) ([]*entity.File, error) {
 	var files []*entity.File
 	err := r.getDB(ctx).Raw(`
-		SELECT * FROM files
-		WHERE expires_at <= NOW()
-		  AND deleted_at IS NULL
-		  AND failed_delete_attempts < 5
-		ORDER BY expires_at ASC
-		LIMIT ?
-		FOR UPDATE SKIP LOCKED
+		UPDATE files
+		SET claimed_at = NOW(), updated_at = NOW()
+		WHERE id IN (
+			SELECT id FROM files
+			WHERE expires_at <= NOW()
+			  AND deleted_at IS NULL
+			  AND claimed_at IS NULL
+			  AND failed_delete_attempts < 5
+			ORDER BY expires_at ASC
+			LIMIT ?
+			FOR UPDATE SKIP LOCKED
+		)
+		RETURNING *
 	`, limit).Scan(&files).Error
 	if err != nil {
 		return nil, translateError(err, "file")
 	}
 	return files, nil
+}
+
+func (r *fileRepository) ReleaseStaleClaimsOlderThan(ctx context.Context, age time.Duration) error {
+	cutoff := time.Now().Add(-age)
+	return r.getDB(ctx).Model(&entity.File{}).
+		Where("claimed_at < ? AND deleted_at IS NULL", cutoff).
+		Updates(map[string]interface{}{
+			"claimed_at": nil,
+			"updated_at": time.Now(),
+		}).Error
 }
 
 func (r *fileRepository) IncrementFailedAttempts(ctx context.Context, id uuid.UUID) error {
