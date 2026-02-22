@@ -373,8 +373,8 @@ paths:
       tags: [Login]
       summary: Initiate login
       description: |
-        Starts the OTP-based passwordless login flow. Sends an OTP to the user's email.
-        Rate limited to 10 req/min.
+        Starts the password + OTP two-factor login flow. Verifies the user's password
+        first, then sends an OTP to the user's email. Rate limited to 10 req/min.
       operationId: initiateLogin
       security: []
       requestBody:
@@ -385,6 +385,7 @@ paths:
               $ref: '#/components/schemas/InitiateLoginRequest'
             example:
               email: user@example.com
+              password: MySecureP@ss1
       responses:
         '200':
           description: Login initiated — OTP sent to email
@@ -3066,12 +3067,17 @@ components:
     # ---- Login ----
     InitiateLoginRequest:
       type: object
-      required: [email]
+      required: [email, password]
       properties:
         email:
           type: string
           format: email
           example: user@example.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          example: MySecureP@ss1
 
     InitiateLoginResponse:
       type: object

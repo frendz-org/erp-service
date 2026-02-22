@@ -10,6 +10,7 @@ import (
 	"erp-service/pkg/errors"
 
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func (uc *usecase) InitiateLogin(
@@ -40,6 +41,18 @@ func (uc *usecase) InitiateLogin(
 	}
 
 	if !user.IsActive() {
+		return dummyOTPResponse(email), nil
+	}
+
+	authMethod, err := uc.UserAuthMethodRepo.GetByUserID(ctx, user.ID)
+	if err != nil || authMethod == nil {
+		return dummyOTPResponse(email), nil
+	}
+	passwordHash := authMethod.GetPasswordHash()
+	if passwordHash == "" {
+		return dummyOTPResponse(email), nil
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(req.Password)); err != nil {
 		return dummyOTPResponse(email), nil
 	}
 
