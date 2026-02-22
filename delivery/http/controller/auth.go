@@ -270,6 +270,8 @@ func (rc *AuthController) CompleteProfileRegistration(c *fiber.Ctx) error {
 
 	req.RegistrationID = registrationID
 	req.RegistrationToken = registrationToken
+	req.IPAddress = getClientIP(c).String()
+	req.UserAgent = getUserAgent(c)
 
 	resp, err := rc.authUsecase.CompleteProfileRegistration(c.Context(), &req)
 	if err != nil {
@@ -282,43 +284,3 @@ func (rc *AuthController) CompleteProfileRegistration(c *fiber.Ctx) error {
 	))
 }
 
-func (rc *AuthController) CompleteRegistration(c *fiber.Ctx) error {
-	registrationID, err := uuid.Parse(c.Params("id"))
-	if err != nil {
-		return errors.ErrBadRequest("Invalid registration ID format")
-	}
-
-	authHeader := c.Get("Authorization")
-	if authHeader == "" {
-		return errors.ErrUnauthorized("Authorization header is required")
-	}
-
-	registrationToken := strings.TrimPrefix(authHeader, "Bearer ")
-	if registrationToken == authHeader {
-		return errors.ErrUnauthorized("Invalid authorization format. Use: Bearer <token>")
-	}
-
-	var req auth.CompleteRegistrationRequest
-	if err := c.BodyParser(&req); err != nil {
-		return errors.ErrBadRequest("Invalid request body")
-	}
-
-	if err := rc.validate.Struct(&req); err != nil {
-		return errors.ErrValidationWithFields(convertValidationErrors(err.(validator.ValidationErrors)))
-	}
-
-	req.RegistrationID = registrationID
-	req.RegistrationToken = registrationToken
-	req.IPAddress = getClientIP(c).String()
-	req.UserAgent = getUserAgent(c)
-
-	resp, err := rc.authUsecase.CompleteRegistration(c.Context(), &req)
-	if err != nil {
-		return err
-	}
-
-	return c.Status(fiber.StatusCreated).JSON(response.SuccessResponse(
-		resp.Message,
-		presenter.ToCompleteRegistrationResponse(resp),
-	))
-}
