@@ -26,14 +26,50 @@ func SetupDocsRoutes(api fiber.Router) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ERP Service API</title>
     <style>%s</style>
+    <style>
+        .tenant-input-container {
+            max-width: 1460px;
+            margin: 0 auto;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: sans-serif;
+            font-size: 14px;
+        }
+        .tenant-input-container label {
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .tenant-input-container input {
+            padding: 6px 10px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            width: 320px;
+            font-size: 14px;
+        }
+    </style>
 </head>
 <body>
+    <div class="tenant-input-container">
+        <label for="tenant-id-input">X-Tenant-ID:</label>
+        <input type="text" id="tenant-id-input" placeholder="Enter tenant UUID (auto-injected into requests)">
+    </div>
     <div id="swagger-ui"></div>
     <script>%s</script>
     <script>
         SwaggerUIBundle({
             url: "/api/v1/docs/openapi.yaml",
             dom_id: "#swagger-ui",
+            persistAuthorization: true,
+            requestInterceptor: function(req) {
+                var input = document.getElementById('tenant-id-input');
+                var tenantId = input ? input.value : '';
+                if (tenantId) {
+                    req.headers['X-Tenant-ID'] = tenantId;
+                }
+                return req;
+            }
         });
     </script>
 </body>
