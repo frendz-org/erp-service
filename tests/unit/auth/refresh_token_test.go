@@ -26,8 +26,8 @@ func newTestJWTConfig() *config.JWTConfig {
 		RefreshSecret: "test-refresh-secret-must-be-32chars",
 		AccessExpiry:  15 * time.Minute,
 		RefreshExpiry: 7 * 24 * time.Hour,
-		Issuer:        "iam-service",
-		Audience:      []string{"iam-service"},
+		Issuer:        "erp-service",
+		Audience:      []string{"erp-service"},
 	}
 }
 

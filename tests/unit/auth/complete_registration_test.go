@@ -311,8 +311,8 @@ func TestCompleteRegistration(t *testing.T) {
 					SigningMethod: "HS256",
 					AccessExpiry:  3600 * time.Second,
 					RefreshExpiry: 86400 * time.Second,
-					Issuer:        "iam-service",
-					Audience:      []string{"iam-api"},
+					Issuer:        "erp-service",
+					Audience:      []string{"erp-api"},
 				},
 			}
 

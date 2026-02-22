@@ -127,7 +127,7 @@ func bindEnvVariables() {
 }
 
 func setDefaults() {
-	viper.SetDefault("app.name", "iam-service")
+	viper.SetDefault("app.name", "erp-service")
 	viper.SetDefault("app.environment", "development")
 	viper.SetDefault("app.version", "1.0.0")
 
@@ -140,7 +140,7 @@ func setDefaults() {
 
 	viper.SetDefault("infra.postgres.platform.host", "localhost")
 	viper.SetDefault("infra.postgres.platform.port", 5432)
-	viper.SetDefault("infra.postgres.platform.database", "iam_db")
+	viper.SetDefault("infra.postgres.platform.database", "erp_db")
 	viper.SetDefault("infra.postgres.platform.ssl_mode", "require")
 	viper.SetDefault("infra.postgres.platform.max_open_conns", 25)
 	viper.SetDefault("infra.postgres.platform.max_idle_conns", 10)
@@ -165,7 +165,7 @@ func setDefaults() {
 
 	viper.SetDefault("infra.minio.endpoint", "localhost:9000")
 	viper.SetDefault("infra.minio.use_ssl", false)
-	viper.SetDefault("infra.minio.bucket", "iam-storage")
+	viper.SetDefault("infra.minio.bucket", "erp-storage")
 	viper.SetDefault("infra.minio.region", "us-east-1")
 
 	viper.SetDefault("infra.vault.address", "http://localhost:8200")
@@ -173,7 +173,7 @@ func setDefaults() {
 	viper.SetDefault("jwt.signing_method", "HS256")
 	viper.SetDefault("jwt.access_expiry", 15*time.Minute)
 	viper.SetDefault("jwt.refresh_expiry", 30*24*time.Hour)
-	viper.SetDefault("jwt.issuer", "iam-service")
+	viper.SetDefault("jwt.issuer", "erp-service")
 	viper.SetDefault("jwt.audience", []string{"backoffice", "main-app"})
 	viper.SetDefault("jwt.pin_token_expiry", 10*time.Minute)
 	viper.SetDefault("jwt.registration_expiry", 10*time.Minute)
