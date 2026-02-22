@@ -1,8 +1,10 @@
-package auth
+package auth_test
 
 import (
 	"testing"
 	"time"
+
+	"erp-service/iam/auth"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -82,9 +84,9 @@ func TestCalculateAge(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := calculateAgeAt(tt.birthDate, tt.now)
+			got := auth.CalculateAgeAt(tt.birthDate, tt.now)
 			assert.Equal(t, tt.wantAge, got,
-				"calculateAgeAt(%v, %v) = %d, want %d",
+				"CalculateAgeAt(%v, %v) = %d, want %d",
 				tt.birthDate.Format("2006-01-02"),
 				tt.now.Format("2006-01-02"),
 				got,

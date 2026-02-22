@@ -1,8 +1,10 @@
-package entity
+package entity_test
 
 import (
 	"testing"
 	"time"
+
+	"erp-service/entity"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -10,68 +12,68 @@ import (
 )
 
 func TestMasterdataCategory_TableName(t *testing.T) {
-	cat := MasterdataCategory{}
+	cat := entity.MasterdataCategory{}
 	assert.Equal(t, "masterdata_categories", cat.TableName())
 }
 
 func TestMasterdataCategory_Validate(t *testing.T) {
 	tests := []struct {
 		name    string
-		cat     *MasterdataCategory
+		cat     *entity.MasterdataCategory
 		wantErr bool
 		errMsg  string
 	}{
 		{
 			name: "valid flat category",
-			cat: &MasterdataCategory{
+			cat: &entity.MasterdataCategory{
 				Code:   "GENDER",
 				Name:   "Gender",
-				Status: MasterdataCategoryStatusActive,
+				Status: entity.MasterdataCategoryStatusActive,
 			},
 			wantErr: false,
 		},
 		{
 			name: "valid hierarchical category",
-			cat: &MasterdataCategory{
+			cat: &entity.MasterdataCategory{
 				ID:               uuid.New(),
 				Code:             "PROVINCE",
 				Name:             "Province",
 				ParentCategoryID: func() *uuid.UUID { id := uuid.New(); return &id }(),
-				Status:           MasterdataCategoryStatusActive,
+				Status:           entity.MasterdataCategoryStatusActive,
 			},
 			wantErr: false,
 		},
 		{
 			name: "missing code",
-			cat: &MasterdataCategory{
+			cat: &entity.MasterdataCategory{
 				Name:   "Gender",
-				Status: MasterdataCategoryStatusActive,
+				Status: entity.MasterdataCategoryStatusActive,
 			},
 			wantErr: true,
 			errMsg:  "code is required",
 		},
 		{
 			name: "code too long",
-			cat: &MasterdataCategory{
+			cat: &entity.MasterdataCategory{
 				Code:   "THIS_CODE_IS_WAY_TOO_LONG_AND_EXCEEDS_THE_FIFTY_CHARACTER_LIMIT_SET_BY_DATABASE",
 				Name:   "Test",
-				Status: MasterdataCategoryStatusActive,
+				Status: entity.MasterdataCategoryStatusActive,
 			},
 			wantErr: true,
 			errMsg:  "code must not exceed 50 characters",
 		},
 		{
 			name: "missing name",
-			cat: &MasterdataCategory{
+			cat: &entity.MasterdataCategory{
 				Code:   "GENDER",
-				Status: MasterdataCategoryStatusActive,
+				Status: entity.MasterdataCategoryStatusActive,
 			},
 			wantErr: true,
 			errMsg:  "name is required",
 		},
 		{
 			name: "name too long",
-			cat: &MasterdataCategory{
+			cat: &entity.MasterdataCategory{
 				Code: "TEST",
 				Name: func() string {
 					s := ""
@@ -80,14 +82,14 @@ func TestMasterdataCategory_Validate(t *testing.T) {
 					}
 					return s
 				}(),
-				Status: MasterdataCategoryStatusActive,
+				Status: entity.MasterdataCategoryStatusActive,
 			},
 			wantErr: true,
 			errMsg:  "name must not exceed 255 characters",
 		},
 		{
 			name: "invalid status",
-			cat: &MasterdataCategory{
+			cat: &entity.MasterdataCategory{
 				Code:   "GENDER",
 				Name:   "Gender",
 				Status: "INVALID",
@@ -97,14 +99,14 @@ func TestMasterdataCategory_Validate(t *testing.T) {
 		},
 		{
 			name: "self-referencing parent",
-			cat: func() *MasterdataCategory {
+			cat: func() *entity.MasterdataCategory {
 				id := uuid.New()
-				return &MasterdataCategory{
+				return &entity.MasterdataCategory{
 					ID:               id,
 					Code:             "SELF",
 					Name:             "Self Reference",
 					ParentCategoryID: &id,
-					Status:           MasterdataCategoryStatusActive,
+					Status:           entity.MasterdataCategoryStatusActive,
 				}
 			}(),
 			wantErr: true,
@@ -112,10 +114,10 @@ func TestMasterdataCategory_Validate(t *testing.T) {
 		},
 		{
 			name: "valid inactive category",
-			cat: &MasterdataCategory{
+			cat: &entity.MasterdataCategory{
 				Code:   "OLD_CATEGORY",
 				Name:   "Old Category",
-				Status: MasterdataCategoryStatusInactive,
+				Status: entity.MasterdataCategoryStatusInactive,
 			},
 			wantErr: false,
 		},
@@ -135,44 +137,44 @@ func TestMasterdataCategory_Validate(t *testing.T) {
 }
 
 func TestMasterdataCategory_Deactivate(t *testing.T) {
-	cat := &MasterdataCategory{
+	cat := &entity.MasterdataCategory{
 		Code:   "GENDER",
 		Name:   "Gender",
-		Status: MasterdataCategoryStatusActive,
+		Status: entity.MasterdataCategoryStatusActive,
 	}
 
 	cat.Deactivate()
 
-	assert.Equal(t, MasterdataCategoryStatusInactive, cat.Status)
+	assert.Equal(t, entity.MasterdataCategoryStatusInactive, cat.Status)
 	assert.False(t, cat.UpdatedAt.IsZero())
 }
 
 func TestMasterdataCategory_Activate(t *testing.T) {
-	cat := &MasterdataCategory{
+	cat := &entity.MasterdataCategory{
 		Code:   "GENDER",
 		Name:   "Gender",
-		Status: MasterdataCategoryStatusInactive,
+		Status: entity.MasterdataCategoryStatusInactive,
 	}
 
 	cat.Activate()
 
-	assert.Equal(t, MasterdataCategoryStatusActive, cat.Status)
+	assert.Equal(t, entity.MasterdataCategoryStatusActive, cat.Status)
 	assert.False(t, cat.UpdatedAt.IsZero())
 }
 
 func TestMasterdataCategory_IsActive(t *testing.T) {
 	tests := []struct {
 		name   string
-		status MasterdataCategoryStatus
+		status entity.MasterdataCategoryStatus
 		want   bool
 	}{
-		{"active", MasterdataCategoryStatusActive, true},
-		{"inactive", MasterdataCategoryStatusInactive, false},
+		{"active", entity.MasterdataCategoryStatusActive, true},
+		{"inactive", entity.MasterdataCategoryStatusInactive, false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cat := &MasterdataCategory{Status: tt.status}
+			cat := &entity.MasterdataCategory{Status: tt.status}
 			assert.Equal(t, tt.want, cat.IsActive())
 		})
 	}
@@ -198,7 +200,7 @@ func TestMasterdataCategory_IsHierarchical(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cat := &MasterdataCategory{ParentCategoryID: tt.parentCategoryID}
+			cat := &entity.MasterdataCategory{ParentCategoryID: tt.parentCategoryID}
 			assert.Equal(t, tt.want, cat.IsHierarchical())
 			assert.Equal(t, !tt.want, cat.IsFlat())
 		})
@@ -206,7 +208,7 @@ func TestMasterdataCategory_IsHierarchical(t *testing.T) {
 }
 
 func TestMasterdataCategory_IncrementVersion(t *testing.T) {
-	cat := &MasterdataCategory{
+	cat := &entity.MasterdataCategory{
 		Code:    "GENDER",
 		Name:    "Gender",
 		Version: 1,
@@ -220,8 +222,8 @@ func TestMasterdataCategory_IncrementVersion(t *testing.T) {
 }
 
 func TestMasterdataCategory_StatusConstants(t *testing.T) {
-	assert.Equal(t, MasterdataCategoryStatus("ACTIVE"), MasterdataCategoryStatusActive)
-	assert.Equal(t, MasterdataCategoryStatus("INACTIVE"), MasterdataCategoryStatusInactive)
+	assert.Equal(t, entity.MasterdataCategoryStatus("ACTIVE"), entity.MasterdataCategoryStatusActive)
+	assert.Equal(t, entity.MasterdataCategoryStatus("INACTIVE"), entity.MasterdataCategoryStatusInactive)
 }
 
 func TestMasterdataCategory_JSONTags(t *testing.T) {
@@ -229,7 +231,7 @@ func TestMasterdataCategory_JSONTags(t *testing.T) {
 	description := "Test description"
 	parentID := uuid.New()
 
-	cat := MasterdataCategory{
+	cat := entity.MasterdataCategory{
 		ID:                 uuid.New(),
 		Code:               "TEST",
 		Name:               "Test Category",
@@ -238,9 +240,9 @@ func TestMasterdataCategory_JSONTags(t *testing.T) {
 		IsSystem:           true,
 		IsTenantExtensible: false,
 		SortOrder:          1,
-		Status:             MasterdataCategoryStatusActive,
+		Status:             entity.MasterdataCategoryStatusActive,
 		Version:            1,
-		Timestamps: Timestamps{
+		Timestamps: entity.Timestamps{
 			CreatedAt: now,
 			UpdatedAt: now,
 		},

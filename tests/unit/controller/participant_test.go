@@ -1,4 +1,4 @@
-package controller
+package controller_test
 
 import (
 	"bytes"
@@ -7,8 +7,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"erp-service/delivery/http/controller"
 	jwtpkg "erp-service/pkg/jwt"
-	"erp-service/saving/participant/participantdto"
+	"erp-service/saving/participant"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -21,194 +22,194 @@ type MockParticipantUsecase struct {
 	mock.Mock
 }
 
-func (m *MockParticipantUsecase) CreateParticipant(ctx context.Context, req *participantdto.CreateParticipantRequest) (*participantdto.ParticipantResponse, error) {
+func (m *MockParticipantUsecase) CreateParticipant(ctx context.Context, req *participant.CreateParticipantRequest) (*participant.ParticipantResponse, error) {
 	args := m.Called(ctx, req)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*participantdto.ParticipantResponse), args.Error(1)
+	return args.Get(0).(*participant.ParticipantResponse), args.Error(1)
 }
 
-func (m *MockParticipantUsecase) UpdatePersonalData(ctx context.Context, req *participantdto.UpdatePersonalDataRequest) (*participantdto.ParticipantResponse, error) {
+func (m *MockParticipantUsecase) UpdatePersonalData(ctx context.Context, req *participant.UpdatePersonalDataRequest) (*participant.ParticipantResponse, error) {
 	args := m.Called(ctx, req)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*participantdto.ParticipantResponse), args.Error(1)
+	return args.Get(0).(*participant.ParticipantResponse), args.Error(1)
 }
 
-func (m *MockParticipantUsecase) GetParticipant(ctx context.Context, req *participantdto.GetParticipantRequest) (*participantdto.ParticipantResponse, error) {
+func (m *MockParticipantUsecase) GetParticipant(ctx context.Context, req *participant.GetParticipantRequest) (*participant.ParticipantResponse, error) {
 	args := m.Called(ctx, req)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*participantdto.ParticipantResponse), args.Error(1)
+	return args.Get(0).(*participant.ParticipantResponse), args.Error(1)
 }
 
-func (m *MockParticipantUsecase) ListParticipants(ctx context.Context, req *participantdto.ListParticipantsRequest) (*participantdto.ListParticipantsResponse, error) {
+func (m *MockParticipantUsecase) ListParticipants(ctx context.Context, req *participant.ListParticipantsRequest) (*participant.ListParticipantsResponse, error) {
 	args := m.Called(ctx, req)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*participantdto.ListParticipantsResponse), args.Error(1)
+	return args.Get(0).(*participant.ListParticipantsResponse), args.Error(1)
 }
 
-func (m *MockParticipantUsecase) DeleteParticipant(ctx context.Context, req *participantdto.DeleteParticipantRequest) error {
+func (m *MockParticipantUsecase) DeleteParticipant(ctx context.Context, req *participant.DeleteParticipantRequest) error {
 	args := m.Called(ctx, req)
 	return args.Error(0)
 }
 
-func (m *MockParticipantUsecase) SaveIdentity(ctx context.Context, req *participantdto.SaveIdentityRequest) (*participantdto.IdentityResponse, error) {
+func (m *MockParticipantUsecase) SaveIdentity(ctx context.Context, req *participant.SaveIdentityRequest) (*participant.IdentityResponse, error) {
 	args := m.Called(ctx, req)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*participantdto.IdentityResponse), args.Error(1)
+	return args.Get(0).(*participant.IdentityResponse), args.Error(1)
 }
 
-func (m *MockParticipantUsecase) DeleteIdentity(ctx context.Context, req *participantdto.DeleteChildEntityRequest) error {
+func (m *MockParticipantUsecase) DeleteIdentity(ctx context.Context, req *participant.DeleteChildEntityRequest) error {
 	args := m.Called(ctx, req)
 	return args.Error(0)
 }
 
-func (m *MockParticipantUsecase) SaveAddress(ctx context.Context, req *participantdto.SaveAddressRequest) (*participantdto.AddressResponse, error) {
+func (m *MockParticipantUsecase) SaveAddress(ctx context.Context, req *participant.SaveAddressRequest) (*participant.AddressResponse, error) {
 	args := m.Called(ctx, req)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*participantdto.AddressResponse), args.Error(1)
+	return args.Get(0).(*participant.AddressResponse), args.Error(1)
 }
 
-func (m *MockParticipantUsecase) DeleteAddress(ctx context.Context, req *participantdto.DeleteChildEntityRequest) error {
+func (m *MockParticipantUsecase) DeleteAddress(ctx context.Context, req *participant.DeleteChildEntityRequest) error {
 	args := m.Called(ctx, req)
 	return args.Error(0)
 }
 
-func (m *MockParticipantUsecase) SaveBankAccount(ctx context.Context, req *participantdto.SaveBankAccountRequest) (*participantdto.BankAccountResponse, error) {
+func (m *MockParticipantUsecase) SaveBankAccount(ctx context.Context, req *participant.SaveBankAccountRequest) (*participant.BankAccountResponse, error) {
 	args := m.Called(ctx, req)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*participantdto.BankAccountResponse), args.Error(1)
+	return args.Get(0).(*participant.BankAccountResponse), args.Error(1)
 }
 
-func (m *MockParticipantUsecase) DeleteBankAccount(ctx context.Context, req *participantdto.DeleteChildEntityRequest) error {
+func (m *MockParticipantUsecase) DeleteBankAccount(ctx context.Context, req *participant.DeleteChildEntityRequest) error {
 	args := m.Called(ctx, req)
 	return args.Error(0)
 }
 
-func (m *MockParticipantUsecase) SaveFamilyMember(ctx context.Context, req *participantdto.SaveFamilyMemberRequest) (*participantdto.FamilyMemberResponse, error) {
+func (m *MockParticipantUsecase) SaveFamilyMember(ctx context.Context, req *participant.SaveFamilyMemberRequest) (*participant.FamilyMemberResponse, error) {
 	args := m.Called(ctx, req)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*participantdto.FamilyMemberResponse), args.Error(1)
+	return args.Get(0).(*participant.FamilyMemberResponse), args.Error(1)
 }
 
-func (m *MockParticipantUsecase) DeleteFamilyMember(ctx context.Context, req *participantdto.DeleteChildEntityRequest) error {
+func (m *MockParticipantUsecase) DeleteFamilyMember(ctx context.Context, req *participant.DeleteChildEntityRequest) error {
 	args := m.Called(ctx, req)
 	return args.Error(0)
 }
 
-func (m *MockParticipantUsecase) SaveEmployment(ctx context.Context, req *participantdto.SaveEmploymentRequest) (*participantdto.EmploymentResponse, error) {
+func (m *MockParticipantUsecase) SaveEmployment(ctx context.Context, req *participant.SaveEmploymentRequest) (*participant.EmploymentResponse, error) {
 	args := m.Called(ctx, req)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*participantdto.EmploymentResponse), args.Error(1)
+	return args.Get(0).(*participant.EmploymentResponse), args.Error(1)
 }
 
-func (m *MockParticipantUsecase) SavePension(ctx context.Context, req *participantdto.SavePensionRequest) (*participantdto.PensionResponse, error) {
+func (m *MockParticipantUsecase) SavePension(ctx context.Context, req *participant.SavePensionRequest) (*participant.PensionResponse, error) {
 	args := m.Called(ctx, req)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*participantdto.PensionResponse), args.Error(1)
+	return args.Get(0).(*participant.PensionResponse), args.Error(1)
 }
 
-func (m *MockParticipantUsecase) SaveBeneficiary(ctx context.Context, req *participantdto.SaveBeneficiaryRequest) (*participantdto.BeneficiaryResponse, error) {
+func (m *MockParticipantUsecase) SaveBeneficiary(ctx context.Context, req *participant.SaveBeneficiaryRequest) (*participant.BeneficiaryResponse, error) {
 	args := m.Called(ctx, req)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*participantdto.BeneficiaryResponse), args.Error(1)
+	return args.Get(0).(*participant.BeneficiaryResponse), args.Error(1)
 }
 
-func (m *MockParticipantUsecase) DeleteBeneficiary(ctx context.Context, req *participantdto.DeleteChildEntityRequest) error {
+func (m *MockParticipantUsecase) DeleteBeneficiary(ctx context.Context, req *participant.DeleteChildEntityRequest) error {
 	args := m.Called(ctx, req)
 	return args.Error(0)
 }
 
-func (m *MockParticipantUsecase) SaveAddresses(ctx context.Context, req *participantdto.SaveAddressesRequest) ([]participantdto.AddressResponse, error) {
+func (m *MockParticipantUsecase) SaveAddresses(ctx context.Context, req *participant.SaveAddressesRequest) ([]participant.AddressResponse, error) {
 	args := m.Called(ctx, req)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]participantdto.AddressResponse), args.Error(1)
+	return args.Get(0).([]participant.AddressResponse), args.Error(1)
 }
 
-func (m *MockParticipantUsecase) SaveFamilyMembers(ctx context.Context, req *participantdto.SaveFamilyMembersRequest) ([]participantdto.FamilyMemberResponse, error) {
+func (m *MockParticipantUsecase) SaveFamilyMembers(ctx context.Context, req *participant.SaveFamilyMembersRequest) ([]participant.FamilyMemberResponse, error) {
 	args := m.Called(ctx, req)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]participantdto.FamilyMemberResponse), args.Error(1)
+	return args.Get(0).([]participant.FamilyMemberResponse), args.Error(1)
 }
 
-func (m *MockParticipantUsecase) SaveBeneficiaries(ctx context.Context, req *participantdto.SaveBeneficiariesRequest) ([]participantdto.BeneficiaryResponse, error) {
+func (m *MockParticipantUsecase) SaveBeneficiaries(ctx context.Context, req *participant.SaveBeneficiariesRequest) ([]participant.BeneficiaryResponse, error) {
 	args := m.Called(ctx, req)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]participantdto.BeneficiaryResponse), args.Error(1)
+	return args.Get(0).([]participant.BeneficiaryResponse), args.Error(1)
 }
 
-func (m *MockParticipantUsecase) UploadFile(ctx context.Context, req *participantdto.UploadFileRequest) (*participantdto.FileUploadResponse, error) {
+func (m *MockParticipantUsecase) UploadFile(ctx context.Context, req *participant.UploadFileRequest) (*participant.FileUploadResponse, error) {
 	args := m.Called(ctx, req)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*participantdto.FileUploadResponse), args.Error(1)
+	return args.Get(0).(*participant.FileUploadResponse), args.Error(1)
 }
 
-func (m *MockParticipantUsecase) SubmitParticipant(ctx context.Context, req *participantdto.SubmitParticipantRequest) (*participantdto.ParticipantResponse, error) {
+func (m *MockParticipantUsecase) SubmitParticipant(ctx context.Context, req *participant.SubmitParticipantRequest) (*participant.ParticipantResponse, error) {
 	args := m.Called(ctx, req)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*participantdto.ParticipantResponse), args.Error(1)
+	return args.Get(0).(*participant.ParticipantResponse), args.Error(1)
 }
 
-func (m *MockParticipantUsecase) ApproveParticipant(ctx context.Context, req *participantdto.ApproveParticipantRequest) (*participantdto.ParticipantResponse, error) {
+func (m *MockParticipantUsecase) ApproveParticipant(ctx context.Context, req *participant.ApproveParticipantRequest) (*participant.ParticipantResponse, error) {
 	args := m.Called(ctx, req)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*participantdto.ParticipantResponse), args.Error(1)
+	return args.Get(0).(*participant.ParticipantResponse), args.Error(1)
 }
 
-func (m *MockParticipantUsecase) RejectParticipant(ctx context.Context, req *participantdto.RejectParticipantRequest) (*participantdto.ParticipantResponse, error) {
+func (m *MockParticipantUsecase) RejectParticipant(ctx context.Context, req *participant.RejectParticipantRequest) (*participant.ParticipantResponse, error) {
 	args := m.Called(ctx, req)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*participantdto.ParticipantResponse), args.Error(1)
+	return args.Get(0).(*participant.ParticipantResponse), args.Error(1)
 }
 
-func (m *MockParticipantUsecase) GetStatusHistory(ctx context.Context, req *participantdto.GetParticipantRequest) ([]participantdto.StatusHistoryResponse, error) {
+func (m *MockParticipantUsecase) GetStatusHistory(ctx context.Context, req *participant.GetParticipantRequest) ([]participant.StatusHistoryResponse, error) {
 	args := m.Called(ctx, req)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]participantdto.StatusHistoryResponse), args.Error(1)
+	return args.Get(0).([]participant.StatusHistoryResponse), args.Error(1)
 }
 
-func (m *MockParticipantUsecase) SelfRegister(ctx context.Context, req *participantdto.SelfRegisterRequest) (*participantdto.SelfRegisterResponse, error) {
+func (m *MockParticipantUsecase) SelfRegister(ctx context.Context, req *participant.SelfRegisterRequest) (*participant.SelfRegisterResponse, error) {
 	args := m.Called(ctx, req)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*participantdto.SelfRegisterResponse), args.Error(1)
+	return args.Get(0).(*participant.SelfRegisterResponse), args.Error(1)
 }
 
 func setupParticipantApp(uc *MockParticipantUsecase, userID uuid.UUID) *fiber.App {
@@ -221,7 +222,7 @@ func setupParticipantApp(uc *MockParticipantUsecase, userID uuid.UUID) *fiber.Ap
 		},
 	})
 
-	ctrl := NewParticipantController(uc)
+	ctrl := controller.NewParticipantController(uc)
 
 	app.Post("/self-register", func(c *fiber.Ctx) error {
 		c.Locals("user_claims", &jwtpkg.JWTClaims{
@@ -281,16 +282,16 @@ func TestSelfRegisterController_HR002_PresenterUsed(t *testing.T) {
 	mockUC := new(MockParticipantUsecase)
 	app := setupParticipantApp(mockUC, userID)
 
-	expectedResp := &participantdto.SelfRegisterResponse{
+	expectedResp := &participant.SelfRegisterResponse{
 		IsLinked:           false,
 		RegistrationStatus: "PENDING_APPROVAL",
-		Data: &participantdto.SelfRegisterParticipantData{
+		Data: &participant.SelfRegisterParticipantData{
 			ParticipantNumber: "ABC12345",
 			Status:            "DRAFT",
 		},
 	}
 
-	mockUC.On("SelfRegister", mock.Anything, mock.AnythingOfType("*participantdto.SelfRegisterRequest")).
+	mockUC.On("SelfRegister", mock.Anything, mock.AnythingOfType("*participant.SelfRegisterRequest")).
 		Return(expectedResp, nil)
 
 	body := map[string]any{
@@ -325,16 +326,16 @@ func TestSelfRegisterController_HR002_IsLinked_Returns200(t *testing.T) {
 	mockUC := new(MockParticipantUsecase)
 	app := setupParticipantApp(mockUC, userID)
 
-	expectedResp := &participantdto.SelfRegisterResponse{
+	expectedResp := &participant.SelfRegisterResponse{
 		IsLinked:           true,
 		RegistrationStatus: "PENDING_APPROVAL",
-		Data: &participantdto.SelfRegisterParticipantData{
+		Data: &participant.SelfRegisterParticipantData{
 			ParticipantNumber: "ABC12345",
 			Status:            "DRAFT",
 		},
 	}
 
-	mockUC.On("SelfRegister", mock.Anything, mock.AnythingOfType("*participantdto.SelfRegisterRequest")).
+	mockUC.On("SelfRegister", mock.Anything, mock.AnythingOfType("*participant.SelfRegisterRequest")).
 		Return(expectedResp, nil)
 
 	body := map[string]any{

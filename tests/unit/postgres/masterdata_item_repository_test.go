@@ -1,4 +1,4 @@
-package postgres
+package postgres_test
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"erp-service/entity"
+	implpg "erp-service/impl/postgres"
 	"erp-service/masterdata"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -18,7 +19,7 @@ import (
 
 func TestMasterdataItemRepository_GetByID(t *testing.T) {
 	gormDB, mock := setupMockDB(t)
-	repo := NewMasterdataItemRepository(gormDB)
+	repo := implpg.NewMasterdataItemRepository(gormDB)
 	ctx := context.Background()
 
 	itemID := uuid.New()
@@ -67,7 +68,7 @@ func TestMasterdataItemRepository_GetByID(t *testing.T) {
 
 func TestMasterdataItemRepository_GetByCode(t *testing.T) {
 	gormDB, mock := setupMockDB(t)
-	repo := NewMasterdataItemRepository(gormDB)
+	repo := implpg.NewMasterdataItemRepository(gormDB)
 	ctx := context.Background()
 
 	itemID := uuid.New()
@@ -126,7 +127,7 @@ func TestMasterdataItemRepository_GetByCode(t *testing.T) {
 
 func TestMasterdataItemRepository_ValidateCode(t *testing.T) {
 	gormDB, mock := setupMockDB(t)
-	repo := NewMasterdataItemRepository(gormDB)
+	repo := implpg.NewMasterdataItemRepository(gormDB)
 	ctx := context.Background()
 
 	t.Run("valid code exists", func(t *testing.T) {
@@ -156,7 +157,7 @@ func TestMasterdataItemRepository_ValidateCode(t *testing.T) {
 
 func TestMasterdataItemRepository_Create(t *testing.T) {
 	gormDB, mock := setupMockDB(t)
-	repo := NewMasterdataItemRepository(gormDB)
+	repo := implpg.NewMasterdataItemRepository(gormDB)
 	ctx := context.Background()
 
 	categoryID := uuid.New()
@@ -185,7 +186,7 @@ func TestMasterdataItemRepository_Create(t *testing.T) {
 
 func TestMasterdataItemRepository_List(t *testing.T) {
 	gormDB, mock := setupMockDB(t)
-	repo := NewMasterdataItemRepository(gormDB)
+	repo := implpg.NewMasterdataItemRepository(gormDB)
 	ctx := context.Background()
 
 	categoryID := uuid.New()
@@ -223,7 +224,7 @@ func TestMasterdataItemRepository_List(t *testing.T) {
 
 func TestMasterdataItemRepository_Delete(t *testing.T) {
 	gormDB, mock := setupMockDB(t)
-	repo := NewMasterdataItemRepository(gormDB)
+	repo := implpg.NewMasterdataItemRepository(gormDB)
 	ctx := context.Background()
 
 	itemID := uuid.New()
@@ -259,7 +260,7 @@ func TestMasterdataItemRepository_Delete(t *testing.T) {
 
 func TestMasterdataItemRepository_ExistsByCode(t *testing.T) {
 	gormDB, mock := setupMockDB(t)
-	repo := NewMasterdataItemRepository(gormDB)
+	repo := implpg.NewMasterdataItemRepository(gormDB)
 	ctx := context.Background()
 
 	categoryID := uuid.New()
@@ -293,7 +294,7 @@ func TestMasterdataItemRepository_ExistsByCode(t *testing.T) {
 
 func TestMasterdataItemRepository_GetChildren(t *testing.T) {
 	gormDB, mock := setupMockDB(t)
-	repo := NewMasterdataItemRepository(gormDB)
+	repo := implpg.NewMasterdataItemRepository(gormDB)
 	ctx := context.Background()
 
 	parentID := uuid.New()
@@ -324,7 +325,7 @@ func TestMasterdataItemRepository_GetChildren(t *testing.T) {
 
 func TestMasterdataItemRepository_GetDefaultItem(t *testing.T) {
 	gormDB, mock := setupMockDB(t)
-	repo := NewMasterdataItemRepository(gormDB)
+	repo := implpg.NewMasterdataItemRepository(gormDB)
 	ctx := context.Background()
 
 	categoryID := uuid.New()

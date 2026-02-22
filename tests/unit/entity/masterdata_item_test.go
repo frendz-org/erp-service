@@ -1,8 +1,10 @@
-package entity
+package entity_test
 
 import (
 	"testing"
 	"time"
+
+	"erp-service/entity"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -10,7 +12,7 @@ import (
 )
 
 func TestMasterdataItem_TableName(t *testing.T) {
-	item := MasterdataItem{}
+	item := entity.MasterdataItem{}
 	assert.Equal(t, "masterdata_items", item.TableName())
 }
 
@@ -19,23 +21,23 @@ func TestMasterdataItem_Validate(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		item    *MasterdataItem
+		item    *entity.MasterdataItem
 		wantErr bool
 		errMsg  string
 	}{
 		{
 			name: "valid item",
-			item: &MasterdataItem{
+			item: &entity.MasterdataItem{
 				CategoryID: categoryID,
 				Code:       "MALE",
 				Name:       "Male",
-				Status:     MasterdataItemStatusActive,
+				Status:     entity.MasterdataItemStatusActive,
 			},
 			wantErr: false,
 		},
 		{
 			name: "valid item with all fields",
-			item: &MasterdataItem{
+			item: &entity.MasterdataItem{
 				CategoryID:    categoryID,
 				TenantID:      func() *uuid.UUID { id := uuid.New(); return &id }(),
 				ParentItemID:  func() *uuid.UUID { id := uuid.New(); return &id }(),
@@ -46,7 +48,7 @@ func TestMasterdataItem_Validate(t *testing.T) {
 				SortOrder:     1,
 				IsSystem:      true,
 				IsDefault:     false,
-				Status:        MasterdataItemStatusActive,
+				Status:        entity.MasterdataItemStatusActive,
 				EffectiveFrom: func() *time.Time { t := time.Now().AddDate(-1, 0, 0); return &t }(),
 				EffectiveUntil: func() *time.Time { t := time.Now().AddDate(1, 0, 0); return &t }(),
 			},
@@ -54,27 +56,27 @@ func TestMasterdataItem_Validate(t *testing.T) {
 		},
 		{
 			name: "missing category_id",
-			item: &MasterdataItem{
+			item: &entity.MasterdataItem{
 				Code:   "MALE",
 				Name:   "Male",
-				Status: MasterdataItemStatusActive,
+				Status: entity.MasterdataItemStatusActive,
 			},
 			wantErr: true,
 			errMsg:  "category_id is required",
 		},
 		{
 			name: "missing code",
-			item: &MasterdataItem{
+			item: &entity.MasterdataItem{
 				CategoryID: categoryID,
 				Name:       "Male",
-				Status:     MasterdataItemStatusActive,
+				Status:     entity.MasterdataItemStatusActive,
 			},
 			wantErr: true,
 			errMsg:  "code is required",
 		},
 		{
 			name: "code too long",
-			item: &MasterdataItem{
+			item: &entity.MasterdataItem{
 				CategoryID: categoryID,
 				Code: func() string {
 					s := ""
@@ -84,24 +86,24 @@ func TestMasterdataItem_Validate(t *testing.T) {
 					return s
 				}(),
 				Name:   "Test",
-				Status: MasterdataItemStatusActive,
+				Status: entity.MasterdataItemStatusActive,
 			},
 			wantErr: true,
 			errMsg:  "code must not exceed 100 characters",
 		},
 		{
 			name: "missing name",
-			item: &MasterdataItem{
+			item: &entity.MasterdataItem{
 				CategoryID: categoryID,
 				Code:       "MALE",
-				Status:     MasterdataItemStatusActive,
+				Status:     entity.MasterdataItemStatusActive,
 			},
 			wantErr: true,
 			errMsg:  "name is required",
 		},
 		{
 			name: "name too long",
-			item: &MasterdataItem{
+			item: &entity.MasterdataItem{
 				CategoryID: categoryID,
 				Code:       "TEST",
 				Name: func() string {
@@ -111,14 +113,14 @@ func TestMasterdataItem_Validate(t *testing.T) {
 					}
 					return s
 				}(),
-				Status: MasterdataItemStatusActive,
+				Status: entity.MasterdataItemStatusActive,
 			},
 			wantErr: true,
 			errMsg:  "name must not exceed 255 characters",
 		},
 		{
 			name: "alt_name too long",
-			item: &MasterdataItem{
+			item: &entity.MasterdataItem{
 				CategoryID: categoryID,
 				Code:       "TEST",
 				Name:       "Test",
@@ -129,14 +131,14 @@ func TestMasterdataItem_Validate(t *testing.T) {
 					}
 					return &s
 				}(),
-				Status: MasterdataItemStatusActive,
+				Status: entity.MasterdataItemStatusActive,
 			},
 			wantErr: true,
 			errMsg:  "alt_name must not exceed 255 characters",
 		},
 		{
 			name: "invalid status",
-			item: &MasterdataItem{
+			item: &entity.MasterdataItem{
 				CategoryID: categoryID,
 				Code:       "MALE",
 				Name:       "Male",
@@ -147,15 +149,15 @@ func TestMasterdataItem_Validate(t *testing.T) {
 		},
 		{
 			name: "self-referencing parent",
-			item: func() *MasterdataItem {
+			item: func() *entity.MasterdataItem {
 				id := uuid.New()
-				return &MasterdataItem{
+				return &entity.MasterdataItem{
 					ID:           id,
 					CategoryID:   categoryID,
 					ParentItemID: &id,
 					Code:         "SELF",
 					Name:         "Self Reference",
-					Status:       MasterdataItemStatusActive,
+					Status:       entity.MasterdataItemStatusActive,
 				}
 			}(),
 			wantErr: true,
@@ -163,11 +165,11 @@ func TestMasterdataItem_Validate(t *testing.T) {
 		},
 		{
 			name: "invalid effective dates - from after until",
-			item: &MasterdataItem{
+			item: &entity.MasterdataItem{
 				CategoryID:     categoryID,
 				Code:           "TEMP",
 				Name:           "Temporary Item",
-				Status:         MasterdataItemStatusActive,
+				Status:         entity.MasterdataItemStatusActive,
 				EffectiveFrom:  func() *time.Time { t := time.Now().AddDate(1, 0, 0); return &t }(),
 				EffectiveUntil: func() *time.Time { t := time.Now().AddDate(-1, 0, 0); return &t }(),
 			},
@@ -176,11 +178,11 @@ func TestMasterdataItem_Validate(t *testing.T) {
 		},
 		{
 			name: "valid inactive item",
-			item: &MasterdataItem{
+			item: &entity.MasterdataItem{
 				CategoryID: categoryID,
 				Code:       "OLD",
 				Name:       "Old Item",
-				Status:     MasterdataItemStatusInactive,
+				Status:     entity.MasterdataItemStatusInactive,
 			},
 			wantErr: false,
 		},
@@ -207,31 +209,31 @@ func TestMasterdataItem_IsEffective(t *testing.T) {
 	nextWeek := now.AddDate(0, 0, 7)
 
 	tests := []struct {
-		name           string
-		item           *MasterdataItem
-		checkTime      time.Time
-		wantEffective  bool
+		name          string
+		item          *entity.MasterdataItem
+		checkTime     time.Time
+		wantEffective bool
 	}{
 		{
 			name: "active with no date restrictions",
-			item: &MasterdataItem{
-				Status: MasterdataItemStatusActive,
+			item: &entity.MasterdataItem{
+				Status: entity.MasterdataItemStatusActive,
 			},
 			checkTime:     now,
 			wantEffective: true,
 		},
 		{
 			name: "inactive item",
-			item: &MasterdataItem{
-				Status: MasterdataItemStatusInactive,
+			item: &entity.MasterdataItem{
+				Status: entity.MasterdataItemStatusInactive,
 			},
 			checkTime:     now,
 			wantEffective: false,
 		},
 		{
 			name: "active within date range",
-			item: &MasterdataItem{
-				Status:         MasterdataItemStatusActive,
+			item: &entity.MasterdataItem{
+				Status:         entity.MasterdataItemStatusActive,
 				EffectiveFrom:  &yesterday,
 				EffectiveUntil: &tomorrow,
 			},
@@ -240,8 +242,8 @@ func TestMasterdataItem_IsEffective(t *testing.T) {
 		},
 		{
 			name: "before effective_from",
-			item: &MasterdataItem{
-				Status:        MasterdataItemStatusActive,
+			item: &entity.MasterdataItem{
+				Status:        entity.MasterdataItemStatusActive,
 				EffectiveFrom: &tomorrow,
 			},
 			checkTime:     now,
@@ -249,8 +251,8 @@ func TestMasterdataItem_IsEffective(t *testing.T) {
 		},
 		{
 			name: "after effective_until",
-			item: &MasterdataItem{
-				Status:         MasterdataItemStatusActive,
+			item: &entity.MasterdataItem{
+				Status:         entity.MasterdataItemStatusActive,
 				EffectiveUntil: &yesterday,
 			},
 			checkTime:     now,
@@ -258,8 +260,8 @@ func TestMasterdataItem_IsEffective(t *testing.T) {
 		},
 		{
 			name: "on effective_from date",
-			item: &MasterdataItem{
-				Status:        MasterdataItemStatusActive,
+			item: &entity.MasterdataItem{
+				Status:        entity.MasterdataItemStatusActive,
 				EffectiveFrom: &lastWeek,
 			},
 			checkTime:     now,
@@ -267,8 +269,8 @@ func TestMasterdataItem_IsEffective(t *testing.T) {
 		},
 		{
 			name: "on effective_until date",
-			item: &MasterdataItem{
-				Status:         MasterdataItemStatusActive,
+			item: &entity.MasterdataItem{
+				Status:         entity.MasterdataItemStatusActive,
 				EffectiveUntil: &nextWeek,
 			},
 			checkTime:     now,
@@ -288,59 +290,59 @@ func TestMasterdataItem_IsCurrentlyEffective(t *testing.T) {
 	yesterday := time.Now().AddDate(0, 0, -1)
 	tomorrow := time.Now().AddDate(0, 0, 1)
 
-	item := &MasterdataItem{
-		Status:         MasterdataItemStatusActive,
+	item := &entity.MasterdataItem{
+		Status:         entity.MasterdataItemStatusActive,
 		EffectiveFrom:  &yesterday,
 		EffectiveUntil: &tomorrow,
 	}
 
 	assert.True(t, item.IsCurrentlyEffective())
 
-	item.Status = MasterdataItemStatusInactive
+	item.Status = entity.MasterdataItemStatusInactive
 	assert.False(t, item.IsCurrentlyEffective())
 }
 
 func TestMasterdataItem_Deactivate(t *testing.T) {
-	item := &MasterdataItem{
+	item := &entity.MasterdataItem{
 		CategoryID: uuid.New(),
 		Code:       "MALE",
 		Name:       "Male",
-		Status:     MasterdataItemStatusActive,
+		Status:     entity.MasterdataItemStatusActive,
 	}
 
 	item.Deactivate()
 
-	assert.Equal(t, MasterdataItemStatusInactive, item.Status)
+	assert.Equal(t, entity.MasterdataItemStatusInactive, item.Status)
 	assert.False(t, item.UpdatedAt.IsZero())
 }
 
 func TestMasterdataItem_Activate(t *testing.T) {
-	item := &MasterdataItem{
+	item := &entity.MasterdataItem{
 		CategoryID: uuid.New(),
 		Code:       "MALE",
 		Name:       "Male",
-		Status:     MasterdataItemStatusInactive,
+		Status:     entity.MasterdataItemStatusInactive,
 	}
 
 	item.Activate()
 
-	assert.Equal(t, MasterdataItemStatusActive, item.Status)
+	assert.Equal(t, entity.MasterdataItemStatusActive, item.Status)
 	assert.False(t, item.UpdatedAt.IsZero())
 }
 
 func TestMasterdataItem_IsActive(t *testing.T) {
 	tests := []struct {
 		name   string
-		status MasterdataItemStatus
+		status entity.MasterdataItemStatus
 		want   bool
 	}{
-		{"active", MasterdataItemStatusActive, true},
-		{"inactive", MasterdataItemStatusInactive, false},
+		{"active", entity.MasterdataItemStatusActive, true},
+		{"inactive", entity.MasterdataItemStatusInactive, false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			item := &MasterdataItem{Status: tt.status}
+			item := &entity.MasterdataItem{Status: tt.status}
 			assert.Equal(t, tt.want, item.IsActive())
 		})
 	}
@@ -366,7 +368,7 @@ func TestMasterdataItem_IsGlobal(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			item := &MasterdataItem{TenantID: tt.tenantID}
+			item := &entity.MasterdataItem{TenantID: tt.tenantID}
 			assert.Equal(t, tt.want, item.IsGlobal())
 			assert.Equal(t, !tt.want, item.IsTenantSpecific())
 		})
@@ -393,7 +395,7 @@ func TestMasterdataItem_HasParent(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			item := &MasterdataItem{ParentItemID: tt.parentItemID}
+			item := &entity.MasterdataItem{ParentItemID: tt.parentItemID}
 			assert.Equal(t, tt.want, item.HasParent())
 			assert.Equal(t, !tt.want, item.IsRootItem())
 		})
@@ -401,7 +403,7 @@ func TestMasterdataItem_HasParent(t *testing.T) {
 }
 
 func TestMasterdataItem_IncrementVersion(t *testing.T) {
-	item := &MasterdataItem{
+	item := &entity.MasterdataItem{
 		CategoryID: uuid.New(),
 		Code:       "MALE",
 		Name:       "Male",
@@ -416,6 +418,6 @@ func TestMasterdataItem_IncrementVersion(t *testing.T) {
 }
 
 func TestMasterdataItem_StatusConstants(t *testing.T) {
-	assert.Equal(t, MasterdataItemStatus("ACTIVE"), MasterdataItemStatusActive)
-	assert.Equal(t, MasterdataItemStatus("INACTIVE"), MasterdataItemStatusInactive)
+	assert.Equal(t, entity.MasterdataItemStatus("ACTIVE"), entity.MasterdataItemStatusActive)
+	assert.Equal(t, entity.MasterdataItemStatus("INACTIVE"), entity.MasterdataItemStatusInactive)
 }

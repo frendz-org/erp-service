@@ -1,7 +1,9 @@
-package auth
+package auth_test
 
 import (
 	"testing"
+
+	"erp-service/iam/auth"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -20,7 +22,7 @@ func TestMaskEmailForRegistration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			result := maskEmail(tt.input)
+			result := auth.MaskEmail(tt.input)
 			assert.Equal(t, tt.expected, result)
 		})
 	}

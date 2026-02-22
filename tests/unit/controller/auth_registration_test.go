@@ -1,4 +1,4 @@
-package controller
+package controller_test
 
 import (
 	"bytes"
@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"erp-service/config"
+	"erp-service/delivery/http/controller"
 	"erp-service/iam/auth"
 	"erp-service/pkg/errors"
 
@@ -249,7 +250,7 @@ func TestSetPasswordController(t *testing.T) {
 			tt.setupMock(mockUC)
 
 			app := setupTestApp()
-			ctrl := NewRegistrationController(&config.Config{}, mockUC)
+			ctrl := controller.NewRegistrationController(&config.Config{}, mockUC)
 			app.Post("/registrations/:id/set-password", ctrl.SetPassword)
 
 			bodyBytes, _ := json.Marshal(tt.body)
@@ -416,7 +417,7 @@ func TestCompleteProfileRegistrationController(t *testing.T) {
 			tt.setupMock(mockUC)
 
 			app := setupTestApp()
-			ctrl := NewRegistrationController(&config.Config{}, mockUC)
+			ctrl := controller.NewRegistrationController(&config.Config{}, mockUC)
 			app.Post("/registrations/:id/complete-profile", ctrl.CompleteProfileRegistration)
 
 			bodyBytes, _ := json.Marshal(tt.body)

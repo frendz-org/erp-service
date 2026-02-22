@@ -1,8 +1,10 @@
-package entity
+package entity_test
 
 import (
 	"testing"
 	"time"
+
+	"erp-service/entity"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -11,45 +13,45 @@ import (
 func TestRegistrationSession_CanSetPassword(t *testing.T) {
 	tests := []struct {
 		name     string
-		session  *RegistrationSession
+		session  *entity.RegistrationSession
 		expected bool
 	}{
 		{
 			name: "can set password when status is VERIFIED",
-			session: &RegistrationSession{
-				Status:    RegistrationSessionStatusVerified,
+			session: &entity.RegistrationSession{
+				Status:    entity.RegistrationSessionStatusVerified,
 				ExpiresAt: time.Now().Add(10 * time.Minute),
 			},
 			expected: true,
 		},
 		{
 			name: "can set password when status is PASSWORD_SET (idempotent)",
-			session: &RegistrationSession{
-				Status:    RegistrationSessionStatusPasswordSet,
+			session: &entity.RegistrationSession{
+				Status:    entity.RegistrationSessionStatusPasswordSet,
 				ExpiresAt: time.Now().Add(10 * time.Minute),
 			},
 			expected: true,
 		},
 		{
 			name: "cannot set password when status is PENDING_VERIFICATION",
-			session: &RegistrationSession{
-				Status:    RegistrationSessionStatusPendingVerification,
+			session: &entity.RegistrationSession{
+				Status:    entity.RegistrationSessionStatusPendingVerification,
 				ExpiresAt: time.Now().Add(10 * time.Minute),
 			},
 			expected: false,
 		},
 		{
 			name: "cannot set password when status is COMPLETED",
-			session: &RegistrationSession{
-				Status:    RegistrationSessionStatusCompleted,
+			session: &entity.RegistrationSession{
+				Status:    entity.RegistrationSessionStatusCompleted,
 				ExpiresAt: time.Now().Add(10 * time.Minute),
 			},
 			expected: false,
 		},
 		{
 			name: "cannot set password when session is expired",
-			session: &RegistrationSession{
-				Status:    RegistrationSessionStatusVerified,
+			session: &entity.RegistrationSession{
+				Status:    entity.RegistrationSessionStatusVerified,
 				ExpiresAt: time.Now().Add(-1 * time.Minute),
 			},
 			expected: false,
@@ -67,34 +69,34 @@ func TestRegistrationSession_CanSetPassword(t *testing.T) {
 func TestRegistrationSession_IsPasswordSet(t *testing.T) {
 	tests := []struct {
 		name     string
-		session  *RegistrationSession
+		session  *entity.RegistrationSession
 		expected bool
 	}{
 		{
 			name: "true when status is PASSWORD_SET",
-			session: &RegistrationSession{
-				Status: RegistrationSessionStatusPasswordSet,
+			session: &entity.RegistrationSession{
+				Status: entity.RegistrationSessionStatusPasswordSet,
 			},
 			expected: true,
 		},
 		{
 			name: "false when status is VERIFIED",
-			session: &RegistrationSession{
-				Status: RegistrationSessionStatusVerified,
+			session: &entity.RegistrationSession{
+				Status: entity.RegistrationSessionStatusVerified,
 			},
 			expected: false,
 		},
 		{
 			name: "false when status is PENDING_VERIFICATION",
-			session: &RegistrationSession{
-				Status: RegistrationSessionStatusPendingVerification,
+			session: &entity.RegistrationSession{
+				Status: entity.RegistrationSessionStatusPendingVerification,
 			},
 			expected: false,
 		},
 		{
 			name: "false when status is COMPLETED",
-			session: &RegistrationSession{
-				Status: RegistrationSessionStatusCompleted,
+			session: &entity.RegistrationSession{
+				Status: entity.RegistrationSessionStatusCompleted,
 			},
 			expected: false,
 		},
@@ -111,45 +113,45 @@ func TestRegistrationSession_IsPasswordSet(t *testing.T) {
 func TestRegistrationSession_CanCompleteProfile(t *testing.T) {
 	tests := []struct {
 		name     string
-		session  *RegistrationSession
+		session  *entity.RegistrationSession
 		expected bool
 	}{
 		{
 			name: "can complete profile when password is set and not expired",
-			session: &RegistrationSession{
-				Status:    RegistrationSessionStatusPasswordSet,
+			session: &entity.RegistrationSession{
+				Status:    entity.RegistrationSessionStatusPasswordSet,
 				ExpiresAt: time.Now().Add(10 * time.Minute),
 			},
 			expected: true,
 		},
 		{
 			name: "cannot complete profile when status is VERIFIED (password not set)",
-			session: &RegistrationSession{
-				Status:    RegistrationSessionStatusVerified,
+			session: &entity.RegistrationSession{
+				Status:    entity.RegistrationSessionStatusVerified,
 				ExpiresAt: time.Now().Add(10 * time.Minute),
 			},
 			expected: false,
 		},
 		{
 			name: "cannot complete profile when status is PENDING_VERIFICATION",
-			session: &RegistrationSession{
-				Status:    RegistrationSessionStatusPendingVerification,
+			session: &entity.RegistrationSession{
+				Status:    entity.RegistrationSessionStatusPendingVerification,
 				ExpiresAt: time.Now().Add(10 * time.Minute),
 			},
 			expected: false,
 		},
 		{
 			name: "cannot complete profile when status is COMPLETED",
-			session: &RegistrationSession{
-				Status:    RegistrationSessionStatusCompleted,
+			session: &entity.RegistrationSession{
+				Status:    entity.RegistrationSessionStatusCompleted,
 				ExpiresAt: time.Now().Add(10 * time.Minute),
 			},
 			expected: false,
 		},
 		{
 			name: "cannot complete profile when session is expired",
-			session: &RegistrationSession{
-				Status:    RegistrationSessionStatusPasswordSet,
+			session: &entity.RegistrationSession{
+				Status:    entity.RegistrationSessionStatusPasswordSet,
 				ExpiresAt: time.Now().Add(-1 * time.Minute),
 			},
 			expected: false,
@@ -167,53 +169,53 @@ func TestRegistrationSession_CanCompleteProfile(t *testing.T) {
 func TestRegistrationSession_CanComplete_UpdatedForNewFlow(t *testing.T) {
 	tests := []struct {
 		name     string
-		session  *RegistrationSession
+		session  *entity.RegistrationSession
 		expected bool
 	}{
 		{
 			name: "can complete with legacy flow (VERIFIED status)",
-			session: &RegistrationSession{
-				Status:    RegistrationSessionStatusVerified,
+			session: &entity.RegistrationSession{
+				Status:    entity.RegistrationSessionStatusVerified,
 				ExpiresAt: time.Now().Add(10 * time.Minute),
 			},
 			expected: true,
 		},
 		{
 			name: "can complete with new flow (PASSWORD_SET status)",
-			session: &RegistrationSession{
-				Status:    RegistrationSessionStatusPasswordSet,
+			session: &entity.RegistrationSession{
+				Status:    entity.RegistrationSessionStatusPasswordSet,
 				ExpiresAt: time.Now().Add(10 * time.Minute),
 			},
 			expected: true,
 		},
 		{
 			name: "cannot complete when status is PENDING_VERIFICATION",
-			session: &RegistrationSession{
-				Status:    RegistrationSessionStatusPendingVerification,
+			session: &entity.RegistrationSession{
+				Status:    entity.RegistrationSessionStatusPendingVerification,
 				ExpiresAt: time.Now().Add(10 * time.Minute),
 			},
 			expected: false,
 		},
 		{
 			name: "cannot complete when status is COMPLETED",
-			session: &RegistrationSession{
-				Status:    RegistrationSessionStatusCompleted,
+			session: &entity.RegistrationSession{
+				Status:    entity.RegistrationSessionStatusCompleted,
 				ExpiresAt: time.Now().Add(10 * time.Minute),
 			},
 			expected: false,
 		},
 		{
 			name: "cannot complete when session is expired (VERIFIED)",
-			session: &RegistrationSession{
-				Status:    RegistrationSessionStatusVerified,
+			session: &entity.RegistrationSession{
+				Status:    entity.RegistrationSessionStatusVerified,
 				ExpiresAt: time.Now().Add(-1 * time.Minute),
 			},
 			expected: false,
 		},
 		{
 			name: "cannot complete when session is expired (PASSWORD_SET)",
-			session: &RegistrationSession{
-				Status:    RegistrationSessionStatusPasswordSet,
+			session: &entity.RegistrationSession{
+				Status:    entity.RegistrationSessionStatusPasswordSet,
 				ExpiresAt: time.Now().Add(-1 * time.Minute),
 			},
 			expected: false,
@@ -232,10 +234,10 @@ func TestRegistrationSession_PasswordFields(t *testing.T) {
 	t.Run("password set timestamp is set correctly", func(t *testing.T) {
 		passwordSetAt := time.Now()
 
-		session := &RegistrationSession{
+		session := &entity.RegistrationSession{
 			ID:            uuid.New(),
 			Email:         "test@example.com",
-			Status:        RegistrationSessionStatusPasswordSet,
+			Status:        entity.RegistrationSessionStatusPasswordSet,
 			PasswordSetAt: &passwordSetAt,
 			ExpiresAt:     time.Now().Add(10 * time.Minute),
 		}
@@ -245,10 +247,10 @@ func TestRegistrationSession_PasswordFields(t *testing.T) {
 	})
 
 	t.Run("password set timestamp can be nil initially", func(t *testing.T) {
-		session := &RegistrationSession{
+		session := &entity.RegistrationSession{
 			ID:        uuid.New(),
 			Email:     "test@example.com",
-			Status:    RegistrationSessionStatusVerified,
+			Status:    entity.RegistrationSessionStatusVerified,
 			ExpiresAt: time.Now().Add(10 * time.Minute),
 		}
 

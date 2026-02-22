@@ -1,8 +1,10 @@
-package jwt
+package jwt_test
 
 import (
 	"testing"
 	"time"
+
+	jwtpkg "erp-service/pkg/jwt"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -10,19 +12,19 @@ import (
 )
 
 func TestGenerateAccessToken_JTI(t *testing.T) {
-	config := &TokenConfig{
+	config := &jwtpkg.TokenConfig{
 		SigningMethod: "HS256",
 		AccessSecret:  "test-secret",
 		AccessExpiry:  15 * time.Minute,
-		Issuer:        "iam-service",
-		Audience:      []string{"iam-service"},
+		Issuer:        "erp-service",
+		Audience:      []string{"erp-service"},
 	}
 
 	userID := uuid.New()
 	email := "test@example.com"
 	sessionID := uuid.New()
 
-	token, err := GenerateAccessToken(
+	token, err := jwtpkg.GenerateAccessToken(
 		userID,
 		email,
 		nil,
@@ -37,7 +39,7 @@ func TestGenerateAccessToken_JTI(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, token)
 
-	claims, err := ParseAccessToken(token, config)
+	claims, err := jwtpkg.ParseAccessToken(token, config)
 	require.NoError(t, err)
 	require.NotNil(t, claims)
 
@@ -47,19 +49,19 @@ func TestGenerateAccessToken_JTI(t *testing.T) {
 }
 
 func TestGenerateAccessToken_JTI_Uniqueness(t *testing.T) {
-	config := &TokenConfig{
+	config := &jwtpkg.TokenConfig{
 		SigningMethod: "HS256",
 		AccessSecret:  "test-secret",
 		AccessExpiry:  15 * time.Minute,
-		Issuer:        "iam-service",
-		Audience:      []string{"iam-service"},
+		Issuer:        "erp-service",
+		Audience:      []string{"erp-service"},
 	}
 
 	userID := uuid.New()
 	email := "test@example.com"
 	sessionID := uuid.New()
 
-	token1, err := GenerateAccessToken(
+	token1, err := jwtpkg.GenerateAccessToken(
 		userID,
 		email,
 		nil,
@@ -72,7 +74,7 @@ func TestGenerateAccessToken_JTI_Uniqueness(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	token2, err := GenerateAccessToken(
+	token2, err := jwtpkg.GenerateAccessToken(
 		userID,
 		email,
 		nil,
@@ -85,10 +87,10 @@ func TestGenerateAccessToken_JTI_Uniqueness(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	claims1, err := ParseAccessToken(token1, config)
+	claims1, err := jwtpkg.ParseAccessToken(token1, config)
 	require.NoError(t, err)
 
-	claims2, err := ParseAccessToken(token2, config)
+	claims2, err := jwtpkg.ParseAccessToken(token2, config)
 	require.NoError(t, err)
 
 	assert.NotEqual(t, claims1.RegisteredClaims.ID, claims2.RegisteredClaims.ID,
@@ -96,12 +98,12 @@ func TestGenerateAccessToken_JTI_Uniqueness(t *testing.T) {
 }
 
 func TestGenerateMultiTenantAccessToken_JTI(t *testing.T) {
-	config := &TokenConfig{
+	config := &jwtpkg.TokenConfig{
 		SigningMethod: "HS256",
 		AccessSecret:  "test-secret",
 		AccessExpiry:  15 * time.Minute,
-		Issuer:        "iam-service",
-		Audience:      []string{"iam-service"},
+		Issuer:        "erp-service",
+		Audience:      []string{"erp-service"},
 	}
 
 	userID := uuid.New()
@@ -109,10 +111,10 @@ func TestGenerateMultiTenantAccessToken_JTI(t *testing.T) {
 	sessionID := uuid.New()
 	tenantID := uuid.New()
 
-	tenants := []TenantClaim{
+	tenants := []jwtpkg.TenantClaim{
 		{
 			TenantID: tenantID,
-			Products: []ProductClaim{
+			Products: []jwtpkg.ProductClaim{
 				{
 					ProductID:   uuid.New(),
 					ProductCode: "APP1",
@@ -123,7 +125,7 @@ func TestGenerateMultiTenantAccessToken_JTI(t *testing.T) {
 		},
 	}
 
-	token, err := GenerateMultiTenantAccessToken(
+	token, err := jwtpkg.GenerateMultiTenantAccessToken(
 		userID,
 		email,
 		[]string{"PLATFORM_ADMIN"},
@@ -135,7 +137,7 @@ func TestGenerateMultiTenantAccessToken_JTI(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, token)
 
-	claims, err := ParseMultiTenantAccessToken(token, config)
+	claims, err := jwtpkg.ParseMultiTenantAccessToken(token, config)
 	require.NoError(t, err)
 	require.NotNil(t, claims)
 
