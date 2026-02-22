@@ -55,10 +55,10 @@ info:
 
 servers:
   - url: http://localhost:8080
-    description: Development
-  - url: https://api-staging.example.com
-    description: Staging
-  - url: https://api.example.com
+    description: Local
+  - url: https://erp-uat.frendz.id
+    description: UAT
+  - url: https://erp-prod.frendz.id
     description: Production
 
 security:
@@ -95,6 +95,8 @@ tags:
       Member management scoped to a product.
       All endpoints require JWT + X-Tenant-ID + product membership.
       Admin operations require TENANT_PRODUCT_ADMIN role.
+  - name: Docs
+    description: API documentation endpoints (Swagger UI and raw OpenAPI spec)
 
 paths:
   # ==========================================
@@ -1493,6 +1495,39 @@ paths:
           $ref: '#/components/responses/InternalServerError'
 
   # ==========================================
+  # DOCS
+  # ==========================================
+  /api/v1/docs/openapi.yaml:
+    get:
+      tags: [Docs]
+      summary: Get OpenAPI spec
+      description: Returns the raw OpenAPI 3.0 specification file in YAML format.
+      operationId: getOpenAPISpec
+      security: []
+      responses:
+        '200':
+          description: OpenAPI specification
+          content:
+            application/x-yaml:
+              schema:
+                type: string
+
+  /api/v1/docs/swagger:
+    get:
+      tags: [Docs]
+      summary: Swagger UI
+      description: Serves an interactive Swagger UI page for exploring the API.
+      operationId: getSwaggerUI
+      security: []
+      responses:
+        '200':
+          description: Swagger UI HTML page
+          content:
+            text/html:
+              schema:
+                type: string
+
+  # ==========================================
   # PARTICIPANTS
   # ==========================================
   /api/v1/saving/participants/self-register:
@@ -1543,7 +1578,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /api/v1/saving/products/{productId}/participants:
+  /api/v1/saving/participants:
     post:
       tags: [Participants]
       summary: Create participant
@@ -1552,7 +1587,6 @@ paths:
         Requires `participant:create` permission.
       operationId: createParticipant
       parameters:
-        - $ref: '#/components/parameters/ProductID'
         - $ref: '#/components/parameters/TenantIDHeader'
       requestBody:
         required: true
@@ -1562,6 +1596,8 @@ paths:
               $ref: '#/components/schemas/CreateParticipantRequest'
             example:
               full_name: "John Doe"
+              ktp_number: "3201012345678901"
+              employee_number: "EMP-001"
       responses:
         '201':
           description: Participant created
@@ -1590,7 +1626,6 @@ paths:
         Requires `participant:read` permission.
       operationId: listParticipants
       parameters:
-        - $ref: '#/components/parameters/ProductID'
         - $ref: '#/components/parameters/TenantIDHeader'
         - name: status
           in: query
@@ -1638,14 +1673,13 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /api/v1/saving/products/{productId}/participants/{id}:
+  /api/v1/saving/participants/{id}:
     get:
       tags: [Participants]
       summary: Get participant
       description: Returns a specific participant. Requires `participant:read` permission.
       operationId: getParticipant
       parameters:
-        - $ref: '#/components/parameters/ProductID'
         - $ref: '#/components/parameters/TenantIDHeader'
         - $ref: '#/components/parameters/ParticipantID'
       responses:
@@ -1670,7 +1704,6 @@ paths:
       description: Soft-deletes a participant. Requires `participant:delete` permission.
       operationId: deleteParticipant
       parameters:
-        - $ref: '#/components/parameters/ProductID'
         - $ref: '#/components/parameters/TenantIDHeader'
         - $ref: '#/components/parameters/ParticipantID'
       responses:
@@ -1685,14 +1718,13 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /api/v1/saving/products/{productId}/participants/{id}/personal-data:
+  /api/v1/saving/participants/{id}/personal-data:
     put:
       tags: [Participants]
       summary: Update participant personal data
       description: Updates the personal data section. Requires `participant:update` permission.
       operationId: updateParticipantPersonalData
       parameters:
-        - $ref: '#/components/parameters/ProductID'
         - $ref: '#/components/parameters/TenantIDHeader'
         - $ref: '#/components/parameters/ParticipantID'
       requestBody:
@@ -1721,14 +1753,13 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /api/v1/saving/products/{productId}/participants/{id}/identities:
+  /api/v1/saving/participants/{id}/identities:
     put:
       tags: [Participants]
       summary: Save participant identity
       description: Creates or updates an identity document. Requires `participant:update` permission.
       operationId: saveParticipantIdentity
       parameters:
-        - $ref: '#/components/parameters/ProductID'
         - $ref: '#/components/parameters/TenantIDHeader'
         - $ref: '#/components/parameters/ParticipantID'
       requestBody:
@@ -1761,14 +1792,13 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /api/v1/saving/products/{productId}/participants/{id}/identities/{identityId}:
+  /api/v1/saving/participants/{id}/identities/{identityId}:
     delete:
       tags: [Participants]
       summary: Delete participant identity
       description: Removes an identity document. Requires `participant:update` permission.
       operationId: deleteParticipantIdentity
       parameters:
-        - $ref: '#/components/parameters/ProductID'
         - $ref: '#/components/parameters/TenantIDHeader'
         - $ref: '#/components/parameters/ParticipantID'
         - name: identityId
@@ -1789,14 +1819,13 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /api/v1/saving/products/{productId}/participants/{id}/addresses:
+  /api/v1/saving/participants/{id}/addresses:
     put:
       tags: [Participants]
-      summary: Save participant address
-      description: Creates or updates an address. Requires `participant:update` permission.
-      operationId: saveParticipantAddress
+      summary: Save participant addresses (batch)
+      description: Creates or updates addresses in batch. Requires `participant:update` permission.
+      operationId: saveParticipantAddresses
       parameters:
-        - $ref: '#/components/parameters/ProductID'
         - $ref: '#/components/parameters/TenantIDHeader'
         - $ref: '#/components/parameters/ParticipantID'
       requestBody:
@@ -1804,15 +1833,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SaveAddressRequest'
+              $ref: '#/components/schemas/SaveAddressesRequest'
             example:
-              address_type: HOME
-              country_code: ID
-              province_code: "32"
-              city_code: "3201"
-              address_line: "Jl. Merdeka No. 1"
-              postal_code: "16912"
-              is_primary: true
+              addresses:
+                - address_type: HOME
+                  country_code: ID
+                  province_code: "32"
+                  city_code: "3201"
+                  address_line: "Jl. Merdeka No. 1"
+                  postal_code: "16912"
+                  is_primary: true
       responses:
         '200':
           description: Address saved
@@ -1833,14 +1863,13 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /api/v1/saving/products/{productId}/participants/{id}/addresses/{addressId}:
+  /api/v1/saving/participants/{id}/addresses/{addressId}:
     delete:
       tags: [Participants]
       summary: Delete participant address
       description: Removes an address. Requires `participant:update` permission.
       operationId: deleteParticipantAddress
       parameters:
-        - $ref: '#/components/parameters/ProductID'
         - $ref: '#/components/parameters/TenantIDHeader'
         - $ref: '#/components/parameters/ParticipantID'
         - name: addressId
@@ -1861,14 +1890,13 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /api/v1/saving/products/{productId}/participants/{id}/bank-accounts:
+  /api/v1/saving/participants/{id}/bank-accounts:
     put:
       tags: [Participants]
       summary: Save participant bank account
       description: Creates or updates a bank account. Requires `participant:update` permission.
       operationId: saveParticipantBankAccount
       parameters:
-        - $ref: '#/components/parameters/ProductID'
         - $ref: '#/components/parameters/TenantIDHeader'
         - $ref: '#/components/parameters/ParticipantID'
       requestBody:
@@ -1903,14 +1931,13 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /api/v1/saving/products/{productId}/participants/{id}/bank-accounts/{accountId}:
+  /api/v1/saving/participants/{id}/bank-accounts/{accountId}:
     delete:
       tags: [Participants]
       summary: Delete participant bank account
       description: Removes a bank account. Requires `participant:update` permission.
       operationId: deleteParticipantBankAccount
       parameters:
-        - $ref: '#/components/parameters/ProductID'
         - $ref: '#/components/parameters/TenantIDHeader'
         - $ref: '#/components/parameters/ParticipantID'
         - name: accountId
@@ -1931,14 +1958,13 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /api/v1/saving/products/{productId}/participants/{id}/family-members:
+  /api/v1/saving/participants/{id}/family-members:
     put:
       tags: [Participants]
-      summary: Save participant family member
-      description: Creates or updates a family member. Requires `participant:update` permission.
-      operationId: saveParticipantFamilyMember
+      summary: Save participant family members (batch)
+      description: Creates or updates family members in batch. Requires `participant:update` permission.
+      operationId: saveParticipantFamilyMembers
       parameters:
-        - $ref: '#/components/parameters/ProductID'
         - $ref: '#/components/parameters/TenantIDHeader'
         - $ref: '#/components/parameters/ParticipantID'
       requestBody:
@@ -1946,11 +1972,12 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SaveFamilyMemberRequest'
+              $ref: '#/components/schemas/SaveFamilyMembersRequest'
             example:
-              full_name: "Jane Doe"
-              relationship_type: SPOUSE
-              is_dependent: true
+              family_members:
+                - full_name: "Jane Doe"
+                  relationship_type: SPOUSE
+                  is_dependent: true
       responses:
         '200':
           description: Family member saved
@@ -1971,14 +1998,13 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /api/v1/saving/products/{productId}/participants/{id}/family-members/{memberId}:
+  /api/v1/saving/participants/{id}/family-members/{memberId}:
     delete:
       tags: [Participants]
       summary: Delete participant family member
       description: Removes a family member. Requires `participant:update` permission.
       operationId: deleteParticipantFamilyMember
       parameters:
-        - $ref: '#/components/parameters/ProductID'
         - $ref: '#/components/parameters/TenantIDHeader'
         - $ref: '#/components/parameters/ParticipantID'
         - name: memberId
@@ -1999,14 +2025,13 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /api/v1/saving/products/{productId}/participants/{id}/employment:
+  /api/v1/saving/participants/{id}/employment:
     put:
       tags: [Participants]
       summary: Save participant employment
       description: Creates or updates employment information. Requires `participant:update` permission.
       operationId: saveParticipantEmployment
       parameters:
-        - $ref: '#/components/parameters/ProductID'
         - $ref: '#/components/parameters/TenantIDHeader'
         - $ref: '#/components/parameters/ParticipantID'
       requestBody:
@@ -2040,14 +2065,13 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /api/v1/saving/products/{productId}/participants/{id}/pension:
+  /api/v1/saving/participants/{id}/pension:
     put:
       tags: [Participants]
       summary: Save participant pension
       description: Creates or updates pension information for a participant. Requires `participant:update` permission.
       operationId: saveParticipantPension
       parameters:
-        - $ref: '#/components/parameters/ProductID'
         - $ref: '#/components/parameters/TenantIDHeader'
         - $ref: '#/components/parameters/ParticipantID'
       requestBody:
@@ -2080,14 +2104,13 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /api/v1/saving/products/{productId}/participants/{id}/beneficiaries:
+  /api/v1/saving/participants/{id}/beneficiaries:
     put:
       tags: [Participants]
-      summary: Save participant beneficiary
-      description: Creates or updates a beneficiary. Requires `participant:update` permission.
-      operationId: saveParticipantBeneficiary
+      summary: Save participant beneficiaries (batch)
+      description: Creates or updates beneficiaries in batch. Requires `participant:update` permission.
+      operationId: saveParticipantBeneficiaries
       parameters:
-        - $ref: '#/components/parameters/ProductID'
         - $ref: '#/components/parameters/TenantIDHeader'
         - $ref: '#/components/parameters/ParticipantID'
       requestBody:
@@ -2095,10 +2118,11 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SaveBeneficiaryRequest'
+              $ref: '#/components/schemas/SaveBeneficiariesRequest'
             example:
-              family_member_id: "550e8400-e29b-41d4-a716-446655440001"
-              account_number: "0987654321"
+              beneficiaries:
+                - family_member_id: "550e8400-e29b-41d4-a716-446655440001"
+                  account_number: "0987654321"
       responses:
         '200':
           description: Beneficiary saved
@@ -2119,14 +2143,13 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /api/v1/saving/products/{productId}/participants/{id}/beneficiaries/{beneficiaryId}:
+  /api/v1/saving/participants/{id}/beneficiaries/{beneficiaryId}:
     delete:
       tags: [Participants]
       summary: Delete participant beneficiary
       description: Removes a beneficiary. Requires `participant:update` permission.
       operationId: deleteParticipantBeneficiary
       parameters:
-        - $ref: '#/components/parameters/ProductID'
         - $ref: '#/components/parameters/TenantIDHeader'
         - $ref: '#/components/parameters/ParticipantID'
         - name: beneficiaryId
@@ -2147,7 +2170,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /api/v1/saving/products/{productId}/participants/{id}/files:
+  /api/v1/saving/participants/{id}/files:
     post:
       tags: [Participants]
       summary: Upload participant file
@@ -2157,7 +2180,6 @@ paths:
         Supported MIME types: image/jpeg, image/png, image/gif, application/pdf.
       operationId: uploadParticipantFile
       parameters:
-        - $ref: '#/components/parameters/ProductID'
         - $ref: '#/components/parameters/TenantIDHeader'
         - $ref: '#/components/parameters/ParticipantID'
         - name: field_name
@@ -2199,14 +2221,13 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /api/v1/saving/products/{productId}/participants/{id}/status-history:
+  /api/v1/saving/participants/{id}/status-history:
     get:
       tags: [Participants]
       summary: Get participant status history
       description: Returns the status transition history for a participant. Requires `participant:read` permission.
       operationId: getParticipantStatusHistory
       parameters:
-        - $ref: '#/components/parameters/ProductID'
         - $ref: '#/components/parameters/TenantIDHeader'
         - $ref: '#/components/parameters/ParticipantID'
       responses:
@@ -2225,7 +2246,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /api/v1/saving/products/{productId}/participants/{id}/submit:
+  /api/v1/saving/participants/{id}/submit:
     post:
       tags: [Participants]
       summary: Submit participant for approval
@@ -2234,7 +2255,6 @@ paths:
         Requires `participant:submit` permission.
       operationId: submitParticipant
       parameters:
-        - $ref: '#/components/parameters/ProductID'
         - $ref: '#/components/parameters/TenantIDHeader'
         - $ref: '#/components/parameters/ParticipantID'
       responses:
@@ -2255,7 +2275,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /api/v1/saving/products/{productId}/participants/{id}/approve:
+  /api/v1/saving/participants/{id}/approve:
     post:
       tags: [Participants]
       summary: Approve participant
@@ -2264,7 +2284,6 @@ paths:
         Requires `participant:approve` permission.
       operationId: approveParticipant
       parameters:
-        - $ref: '#/components/parameters/ProductID'
         - $ref: '#/components/parameters/TenantIDHeader'
         - $ref: '#/components/parameters/ParticipantID'
       responses:
@@ -2285,7 +2304,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /api/v1/saving/products/{productId}/participants/{id}/reject:
+  /api/v1/saving/participants/{id}/reject:
     post:
       tags: [Participants]
       summary: Reject participant
@@ -2294,7 +2313,6 @@ paths:
         Requires `participant:reject` permission.
       operationId: rejectParticipant
       parameters:
-        - $ref: '#/components/parameters/ProductID'
         - $ref: '#/components/parameters/TenantIDHeader'
         - $ref: '#/components/parameters/ParticipantID'
       requestBody:
@@ -2328,7 +2346,7 @@ paths:
   # ==========================================
   # MEMBERS
   # ==========================================
-  /api/v1/saving/products/{productId}/members/register:
+  /api/v1/saving/members/register:
     post:
       tags: [Members]
       summary: Register as member
@@ -2338,7 +2356,6 @@ paths:
         Any authenticated user with product access can register.
       operationId: registerMember
       parameters:
-        - $ref: '#/components/parameters/ProductID'
         - $ref: '#/components/parameters/TenantIDHeader'
       responses:
         '201':
@@ -2358,7 +2375,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /api/v1/saving/products/{productId}/members:
+  /api/v1/saving/members:
     get:
       tags: [Members]
       summary: List members
@@ -2367,7 +2384,6 @@ paths:
         Requires TENANT_PRODUCT_ADMIN role.
       operationId: listMembers
       parameters:
-        - $ref: '#/components/parameters/ProductID'
         - $ref: '#/components/parameters/TenantIDHeader'
         - name: status
           in: query
@@ -2405,14 +2421,13 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /api/v1/saving/products/{productId}/members/{memberId}:
+  /api/v1/saving/members/{memberId}:
     get:
       tags: [Members]
       summary: Get member details
       description: Returns details for a specific member. Requires TENANT_PRODUCT_ADMIN role.
       operationId: getMember
       parameters:
-        - $ref: '#/components/parameters/ProductID'
         - $ref: '#/components/parameters/TenantIDHeader'
         - $ref: '#/components/parameters/MemberID'
       responses:
@@ -2431,7 +2446,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /api/v1/saving/products/{productId}/members/{memberId}/approve:
+  /api/v1/saving/members/{memberId}/approve:
     post:
       tags: [Members]
       summary: Approve member
@@ -2441,7 +2456,6 @@ paths:
         Requires TENANT_PRODUCT_ADMIN role.
       operationId: approveMember
       parameters:
-        - $ref: '#/components/parameters/ProductID'
         - $ref: '#/components/parameters/TenantIDHeader'
         - $ref: '#/components/parameters/MemberID'
       requestBody:
@@ -2472,14 +2486,13 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /api/v1/saving/products/{productId}/members/{memberId}/reject:
+  /api/v1/saving/members/{memberId}/reject:
     post:
       tags: [Members]
       summary: Reject member
       description: Rejects a PENDING_APPROVAL member registration. Requires TENANT_PRODUCT_ADMIN role.
       operationId: rejectMember
       parameters:
-        - $ref: '#/components/parameters/ProductID'
         - $ref: '#/components/parameters/TenantIDHeader'
         - $ref: '#/components/parameters/MemberID'
       requestBody:
@@ -2510,14 +2523,13 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /api/v1/saving/products/{productId}/members/{memberId}/role:
+  /api/v1/saving/members/{memberId}/role:
     put:
       tags: [Members]
       summary: Change member role
       description: Updates the role assigned to an active member. Requires TENANT_PRODUCT_ADMIN role.
       operationId: changeMemberRole
       parameters:
-        - $ref: '#/components/parameters/ProductID'
         - $ref: '#/components/parameters/TenantIDHeader'
         - $ref: '#/components/parameters/MemberID'
       requestBody:
@@ -2548,14 +2560,13 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /api/v1/saving/products/{productId}/members/{memberId}/deactivate:
+  /api/v1/saving/members/{memberId}/deactivate:
     post:
       tags: [Members]
       summary: Deactivate member
       description: Deactivates an active member, revoking their product access. Requires TENANT_PRODUCT_ADMIN role.
       operationId: deactivateMember
       parameters:
-        - $ref: '#/components/parameters/ProductID'
         - $ref: '#/components/parameters/TenantIDHeader'
         - $ref: '#/components/parameters/MemberID'
       responses:
@@ -3713,13 +3724,24 @@ components:
     # ---- Participants ----
     CreateParticipantRequest:
       type: object
-      required: [full_name]
+      required: [full_name, ktp_number, employee_number]
       properties:
         full_name:
           type: string
           minLength: 2
           maxLength: 255
           example: "John Doe"
+        ktp_number:
+          type: string
+          minLength: 16
+          maxLength: 16
+          pattern: '^\d{16}$'
+          description: 16-digit national identity number (KTP)
+          example: "3201012345678901"
+        employee_number:
+          type: string
+          maxLength: 50
+          example: "EMP-001"
 
     UpdatePersonalDataRequest:
       type: object
@@ -3797,10 +3819,11 @@ components:
           type: string
           format: date-time
           nullable: true
-        photo_file_path:
+        photo_file_id:
           type: string
-          maxLength: 500
+          format: uuid
           nullable: true
+          description: UUID of a previously uploaded photo file
 
     SaveAddressRequest:
       type: object
@@ -3917,10 +3940,11 @@ components:
         is_dependent:
           type: boolean
           example: true
-        supporting_doc_file_path:
+        supporting_doc_file_id:
           type: string
-          maxLength: 500
+          format: uuid
           nullable: true
+          description: UUID of a previously uploaded supporting document file
 
     SaveEmploymentRequest:
       type: object
@@ -4042,22 +4066,55 @@ components:
           type: string
           format: uuid
           example: "550e8400-e29b-41d4-a716-446655440001"
-        identity_photo_file_path:
+        identity_photo_file_id:
           type: string
-          maxLength: 500
+          format: uuid
           nullable: true
-        family_card_photo_file_path:
+          description: UUID of a previously uploaded identity photo file
+        family_card_photo_file_id:
           type: string
-          maxLength: 500
+          format: uuid
           nullable: true
-        bank_book_photo_file_path:
+          description: UUID of a previously uploaded family card photo file
+        bank_book_photo_file_id:
           type: string
-          maxLength: 500
+          format: uuid
           nullable: true
+          description: UUID of a previously uploaded bank book photo file
         account_number:
           type: string
           maxLength: 50
           nullable: true
+
+    SaveAddressesRequest:
+      type: object
+      required: [addresses]
+      properties:
+        addresses:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/SaveAddressRequest'
+
+    SaveFamilyMembersRequest:
+      type: object
+      required: [family_members]
+      properties:
+        family_members:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/SaveFamilyMemberRequest'
+
+    SaveBeneficiariesRequest:
+      type: object
+      required: [beneficiaries]
+      properties:
+        beneficiaries:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/SaveBeneficiaryRequest'
 
     RejectParticipantRequest:
       type: object
@@ -4154,6 +4211,7 @@ components:
         user_id:
           type: string
           format: uuid
+          nullable: true
         full_name:
           type: string
         gender:
@@ -4188,6 +4246,38 @@ components:
           type: string
           enum: [DRAFT, PENDING_APPROVAL, APPROVED, REJECTED]
           example: DRAFT
+        steps_completed:
+          $ref: '#/components/schemas/StepsCompleted'
+        created_by:
+          type: string
+          format: uuid
+        submitted_by:
+          type: string
+          format: uuid
+          nullable: true
+        submitted_at:
+          type: string
+          format: date-time
+          nullable: true
+        approved_by:
+          type: string
+          format: uuid
+          nullable: true
+        approved_at:
+          type: string
+          format: date-time
+          nullable: true
+        rejected_by:
+          type: string
+          format: uuid
+          nullable: true
+        rejected_at:
+          type: string
+          format: date-time
+          nullable: true
+        rejection_reason:
+          type: string
+          nullable: true
         identities:
           type: array
           items:
@@ -4224,6 +4314,24 @@ components:
           type: string
           format: date-time
 
+    StepsCompleted:
+      type: object
+      properties:
+        personal_data:
+          type: boolean
+        address:
+          type: boolean
+        bank_account:
+          type: boolean
+        family_members:
+          type: boolean
+        employment:
+          type: boolean
+        beneficiaries:
+          type: boolean
+        pension:
+          type: boolean
+
     ParticipantIdentityData:
       type: object
       properties:
@@ -4247,9 +4355,23 @@ components:
           type: string
           format: date-time
           nullable: true
-        photo_file_path:
+        photo_file_id:
+          type: string
+          format: uuid
+          nullable: true
+        photo_url:
           type: string
           nullable: true
+          description: Presigned URL for the identity photo
+        version:
+          type: integer
+          example: 1
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
 
     ParticipantAddressData:
       type: object
@@ -4289,6 +4411,15 @@ components:
           nullable: true
         is_primary:
           type: boolean
+        version:
+          type: integer
+          example: 1
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
 
     ParticipantBankAccountData:
       type: object
@@ -4319,6 +4450,15 @@ components:
           type: string
           format: date-time
           nullable: true
+        version:
+          type: integer
+          example: 1
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
 
     ParticipantFamilyMemberData:
       type: object
@@ -4333,9 +4473,23 @@ components:
           example: SPOUSE
         is_dependent:
           type: boolean
-        supporting_doc_file_path:
+        supporting_doc_file_id:
+          type: string
+          format: uuid
+          nullable: true
+        supporting_doc_url:
           type: string
           nullable: true
+          description: Presigned URL for the supporting document
+        version:
+          type: integer
+          example: 1
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
 
     ParticipantEmploymentData:
       type: object
@@ -4394,6 +4548,15 @@ components:
         retirement_type_code:
           type: string
           nullable: true
+        version:
+          type: integer
+          example: 1
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
 
     ParticipantPensionData:
       type: object
@@ -4442,18 +4605,77 @@ components:
         family_member_id:
           type: string
           format: uuid
-        identity_photo_file_path:
+        identity_photo_file_id:
+          type: string
+          format: uuid
+          nullable: true
+        identity_photo_url:
           type: string
           nullable: true
-        family_card_photo_file_path:
+          description: Presigned URL for the identity photo
+        family_card_photo_file_id:
+          type: string
+          format: uuid
+          nullable: true
+        family_card_photo_url:
           type: string
           nullable: true
-        bank_book_photo_file_path:
+          description: Presigned URL for the family card photo
+        bank_book_photo_file_id:
+          type: string
+          format: uuid
+          nullable: true
+        bank_book_photo_url:
           type: string
           nullable: true
+          description: Presigned URL for the bank book photo
         account_number:
           type: string
           nullable: true
+        version:
+          type: integer
+          example: 1
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ParticipantSummaryData:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        full_name:
+          type: string
+        ktp_number:
+          type: string
+          nullable: true
+        employee_number:
+          type: string
+          nullable: true
+        phone_number:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [DRAFT, PENDING_APPROVAL, APPROVED, REJECTED]
+        submitted_at:
+          type: string
+          format: date-time
+          nullable: true
+        approved_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
 
     ParticipantListResponse:
       type: object
@@ -4462,11 +4684,14 @@ components:
           type: boolean
           example: true
         data:
-          type: array
-          items:
-            $ref: '#/components/schemas/ParticipantData'
-        pagination:
-          $ref: '#/components/schemas/Pagination'
+          type: object
+          properties:
+            participants:
+              type: array
+              items:
+                $ref: '#/components/schemas/ParticipantSummaryData'
+            pagination:
+              $ref: '#/components/schemas/Pagination'
 
     ParticipantStatusHistoryResponse:
       type: object
@@ -4482,9 +4707,6 @@ components:
               id:
                 type: string
                 format: uuid
-              participant_id:
-                type: string
-                format: uuid
               from_status:
                 type: string
                 nullable: true
@@ -4494,10 +4716,12 @@ components:
               changed_by:
                 type: string
                 format: uuid
-                nullable: true
               reason:
                 type: string
                 nullable: true
+              changed_at:
+                type: string
+                format: date-time
               created_at:
                 type: string
                 format: date-time
@@ -4511,14 +4735,11 @@ components:
         data:
           type: object
           properties:
-            file_path:
+            file_id:
               type: string
-              description: Storage path for the uploaded file
-              example: "participants/018f3a2b/identity_photo/document.jpg"
-            url:
-              type: string
-              description: Presigned URL (temporary, expires in 1 hour)
-              example: "https://storage.example.com/..."
+              format: uuid
+              description: UUID of the uploaded file, use in subsequent save requests
+              example: "018f3a2b-1c2d-7e4f-8a5b-6c7d8e9f0a1b"
 
     # ---- Members ----
     ApproveMemberRequest:
