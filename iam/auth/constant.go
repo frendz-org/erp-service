@@ -17,7 +17,7 @@ const (
 	RegistrationOTPMaxResends     = 3
 	RegistrationOTPResendCooldown = 60
 
-	RegistrationCompleteTokenExpiryMinutes = 15
+	RegistrationCompleteTokenExpiryMinutes = 5
 	RegistrationCompleteTokenPurpose       = "registration_complete"
 
 	RegistrationRateLimitPerHour = 3
