@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"erp-service/delivery/http/dto/response"
@@ -25,7 +26,8 @@ func NewDevController(db *gorm.DB, redis DevRedisStore) *DevController {
 }
 
 func (d *DevController) ResetUserByEmail(c *fiber.Ctx) error {
-	email := strings.ToLower(strings.TrimSpace(c.Params("email")))
+	rawEmail, _ := url.QueryUnescape(c.Params("email"))
+	email := strings.ToLower(strings.TrimSpace(rawEmail))
 	if email == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(response.ErrorResponse(
 			"INVALID_EMAIL", "email parameter is required",
