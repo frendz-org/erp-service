@@ -9,8 +9,8 @@ import (
 	"erp-service/delivery/http/middleware"
 	"erp-service/delivery/http/router"
 	"erp-service/delivery/worker"
-	"erp-service/iam/auth"
 	"erp-service/files"
+	"erp-service/iam/auth"
 	"erp-service/iam/product"
 	"erp-service/iam/role"
 	"erp-service/iam/user"
@@ -49,9 +49,9 @@ func NewServer(cfg *config.Config) *Server {
 	})
 
 	app := fiber.New(fiber.Config{
-		JSONEncoder: json.Marshal,
-		JSONDecoder: json.Unmarshal,
-		AppName:     cfg.App.Name,
+		JSONEncoder:  json.Marshal,
+		JSONDecoder:  json.Unmarshal,
+		AppName:      cfg.App.Name,
 		BodyLimit:    6 * 1024 * 1024,
 		ReadTimeout:  cfg.Server.ReadTimeout,
 		WriteTimeout: cfg.Server.WriteTimeout,
@@ -214,20 +214,22 @@ func NewServer(cfg *config.Config) *Server {
 	mw.Setup(app)
 
 	api := app.Group("/api")
-	api.Use(limiter.New(limiter.Config{
-		Max:               10,
-		Expiration:        1 * time.Minute,
-		LimiterMiddleware: limiter.SlidingWindow{},
-		KeyGenerator: func(c *fiber.Ctx) string {
-			return c.IP()
-		},
-		LimitReached: func(c *fiber.Ctx) error {
-			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
-				"success": false,
-				"error":   "too many requests, please try again later",
-			})
-		},
-	}))
+	if cfg.IsProduction() {
+		api.Use(limiter.New(limiter.Config{
+			Max:               10,
+			Expiration:        1 * time.Minute,
+			LimiterMiddleware: limiter.SlidingWindow{},
+			KeyGenerator: func(c *fiber.Ctx) string {
+				return c.IP()
+			},
+			LimitReached: func(c *fiber.Ctx) error {
+				return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+					"success": false,
+					"error":   "too many requests, please try again later",
+				})
+			},
+		}))
+	}
 	v1 := api.Group("/v1")
 
 	router.SetupHealthRoutes(v1, healthController)
@@ -245,7 +247,7 @@ func NewServer(cfg *config.Config) *Server {
 	frendzSavingMW := middleware.ExtractFrendzSavingProduct(productUsecase)
 
 	saving := v1.Group("/saving")
-	router.SetupParticipantRoutes(saving, participantController, jwtMiddleware, frendzSavingMW)
+	router.SetupParticipantRoutes(saving, participantController, jwtMiddleware, frendzSavingMW, cfg)
 	router.SetupMemberRoutes(saving, memberController, jwtMiddleware, frendzSavingMW)
 
 	router.SetupDevRoutes(v1, cfg, devController)

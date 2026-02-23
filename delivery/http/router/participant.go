@@ -3,6 +3,7 @@ package router
 import (
 	"time"
 
+	"erp-service/config"
 	"erp-service/delivery/http/controller"
 	"erp-service/delivery/http/middleware"
 
@@ -30,10 +31,16 @@ func selfRegRateLimit() fiber.Handler {
 	})
 }
 
-func SetupParticipantRoutes(api fiber.Router, ctrl *controller.ParticipantController, jwtMiddleware fiber.Handler, frendzSavingMW fiber.Handler) {
+func SetupParticipantRoutes(api fiber.Router, ctrl *controller.ParticipantController, jwtMiddleware fiber.Handler, frendzSavingMW fiber.Handler, cfg *config.Config) {
+	isDev := cfg.IsDevelopment()
+
 	selfReg := api.Group("/participants")
 	selfReg.Use(jwtMiddleware)
-	selfReg.Post("/self-register", selfRegRateLimit(), ctrl.SelfRegister)
+	if isDev {
+		selfReg.Post("/self-register", ctrl.SelfRegister)
+	} else {
+		selfReg.Post("/self-register", selfRegRateLimit(), ctrl.SelfRegister)
+	}
 
 	participants := api.Group("/participants")
 	participants.Use(jwtMiddleware)
