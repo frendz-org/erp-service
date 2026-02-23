@@ -97,18 +97,20 @@ func (d *DevController) ResetUserByEmail(c *fiber.Ctx) error {
 				return fmt.Errorf("delete from files: %w", err)
 			}
 
-			coreTables := []string{
+			coreTablesByUserID := []string{
 				"user_tenant_registrations",
 				"user_auth_methods",
 				"user_security_states",
 				"user_profiles",
-				"users",
 			}
-			for _, table := range coreTables {
-				if err := tx.Exec(fmt.Sprintf("DELETE FROM %s WHERE id = ? OR user_id = ?", table), userID, userID).Error; err != nil {
-
+			for _, table := range coreTablesByUserID {
+				if err := tx.Exec(fmt.Sprintf("DELETE FROM %s WHERE user_id = ?", table), userID).Error; err != nil {
 					return fmt.Errorf("delete from %s: %w", table, err)
 				}
+			}
+
+			if err := tx.Exec("DELETE FROM users WHERE id = ?", userID).Error; err != nil {
+				return fmt.Errorf("delete from users: %w", err)
 			}
 
 			return nil
