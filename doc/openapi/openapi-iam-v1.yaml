@@ -95,6 +95,10 @@ tags:
       Member management scoped to a product.
       All endpoints require JWT + X-Tenant-ID + product membership.
       Admin operations require TENANT_PRODUCT_ADMIN role.
+  - name: Dev
+    description: |
+      Development-only endpoints for testing convenience.
+      These routes are NOT registered in production environments (APP_ENV=production).
   - name: Docs
     description: API documentation endpoints (Swagger UI and raw OpenAPI spec)
 
@@ -2341,6 +2345,50 @@ paths:
           $ref: '#/components/responses/NotFound'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # ==========================================
+  # DEV (non-production only)
+  # ==========================================
+  /api/v1/dev/users/{email}:
+    delete:
+      tags: [Dev]
+      summary: Reset user by email (dev only)
+      description: |
+        Hard-deletes all data associated with the given email address, including
+        user record, profile, auth methods, sessions, tokens, role assignments,
+        participant records (and all child tables), registrations, and related
+        Redis keys (rate limits, email locks, blacklist).
+
+        **Not registered in production.** Returns 200 regardless of whether
+        the user existed; the `user_found` flag indicates if a DB deletion occurred.
+      operationId: devResetUserByEmail
+      security: []
+      parameters:
+        - name: email
+          in: path
+          required: true
+          description: Email address of the user to reset (case-insensitive)
+          schema:
+            type: string
+            format: email
+          example: test@example.com
+      responses:
+        '200':
+          description: Reset complete
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevResetUserResponse'
+              example:
+                success: true
+                message: "user reset complete"
+                data:
+                  email: test@example.com
+                  user_found: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -4869,3 +4917,25 @@ components:
             $ref: '#/components/schemas/MemberData'
         pagination:
           $ref: '#/components/schemas/Pagination'
+
+    # ---- Dev ----
+    DevResetUserResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "user reset complete"
+        data:
+          type: object
+          properties:
+            email:
+              type: string
+              format: email
+              example: test@example.com
+            user_found:
+              type: boolean
+              description: Whether a user with this email existed and was deleted
+              example: true
