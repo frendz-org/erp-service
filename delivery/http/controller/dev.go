@@ -134,3 +134,61 @@ func (d *DevController) ResetUserByEmail(c *fiber.Ctx) error {
 		"user_found": userFound,
 	}))
 }
+
+func (d *DevController) ResetUserSessionsByEmail(c *fiber.Ctx) error {
+	rawEmail, _ := url.QueryUnescape(c.Params("email"))
+	email := strings.ToLower(strings.TrimSpace(rawEmail))
+	if email == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(response.ErrorResponse(
+			"INVALID_EMAIL", "email parameter is required",
+		))
+	}
+
+	ctx := c.UserContext()
+
+	var userID string
+	err := d.db.WithContext(ctx).
+		Raw("SELECT id FROM users WHERE LOWER(email) = ?", email).
+		Scan(&userID).Error
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(response.ErrorResponse(
+			"DB_ERROR", "failed to look up user",
+		))
+	}
+
+	userFound := userID != ""
+
+	if userFound {
+		if err := d.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+			sessionTables := []string{
+				"user_sessions",
+				"refresh_tokens",
+			}
+			for _, table := range sessionTables {
+				if err := tx.Exec(fmt.Sprintf("DELETE FROM %s WHERE user_id = ?", table), userID).Error; err != nil {
+					return fmt.Errorf("delete from %s: %w", table, err)
+				}
+			}
+			return nil
+		}); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(response.ErrorResponse(
+				"RESET_FAILED", fmt.Sprintf("transaction failed: %s", err.Error()),
+			))
+		}
+	}
+
+	redisKeys := []string{
+		"reg_email:" + email,
+		"reg_rate:" + email,
+		"login_rate:" + email,
+	}
+	if userFound {
+		redisKeys = append(redisKeys, "blacklist:user:"+userID)
+	}
+	_ = d.redis.Delete(ctx, redisKeys...)
+
+	return c.JSON(response.SuccessResponse("user sessions reset complete", fiber.Map{
+		"email":      email,
+		"user_found": userFound,
+	}))
+}
