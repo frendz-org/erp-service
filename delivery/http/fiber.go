@@ -198,6 +198,7 @@ func NewServer(cfg *config.Config) *Server {
 	masterdataController := controller.NewMasterdataController(cfg, masterdataUsecase)
 	memberController := controller.NewMemberController(memberUsecase)
 	participantController := controller.NewParticipantController(participantUsecase)
+	devController := controller.NewDevController(postgresDB, inMemoryStore)
 
 	fileCleanupUC := files.NewUsecase(fileRepo, fileStorage, txManager, zapLogger, files.DefaultConfig())
 	fileWorker := worker.NewWorker(fileCleanupUC, zapLogger)
@@ -246,6 +247,8 @@ func NewServer(cfg *config.Config) *Server {
 	saving := v1.Group("/saving")
 	router.SetupParticipantRoutes(saving, participantController, jwtMiddleware, frendzSavingMW)
 	router.SetupMemberRoutes(saving, memberController, jwtMiddleware, frendzSavingMW)
+
+	router.SetupDevRoutes(v1, cfg, devController)
 
 	return server
 }
