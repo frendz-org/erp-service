@@ -53,16 +53,13 @@ func (d *DevController) ResetUserByEmail(c *fiber.Ctx) error {
 
 			leafTables := []string{
 				"user_role_assignments",
-				"role_assignments_queue",
-				"mfa_devices",
 				"user_sessions",
 				"refresh_tokens",
-				"password_reset_tokens",
-				"email_verifications",
-				"pin_verification_logs",
-				"auth_logs",
-				"permission_checks",
-				"admin_audit_logs",
+				"verification_challenges",
+				"mfa_enrollments",
+				"recovery_codes",
+				"password_history",
+				"user_branches",
 			}
 			for _, table := range leafTables {
 				if err := tx.Exec(fmt.Sprintf("DELETE FROM %s WHERE user_id = ?", table), userID).Error; err != nil {
@@ -96,9 +93,12 @@ func (d *DevController) ResetUserByEmail(c *fiber.Ctx) error {
 				}
 			}
 
+			if err := tx.Exec("DELETE FROM files WHERE uploaded_by = ?", userID).Error; err != nil {
+				return fmt.Errorf("delete from files: %w", err)
+			}
+
 			coreTables := []string{
 				"user_tenant_registrations",
-				"registrations",
 				"user_auth_methods",
 				"user_security_states",
 				"user_profiles",
