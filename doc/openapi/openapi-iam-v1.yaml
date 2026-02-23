@@ -2392,6 +2392,48 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /api/v1/dev/users/{email}/sessions:
+    delete:
+      tags: [Dev]
+      summary: Reset user sessions by email (dev only)
+      description: |
+        Soft reset — clears only auth state for the given email while keeping
+        the user account intact. Deletes DB sessions and refresh tokens, plus
+        Redis rate limits, email locks, and user blacklist.
+
+        Use this when FE needs to log in again without re-registering.
+
+        **Not registered in production.** Returns 200 regardless of whether
+        the user existed; the `user_found` flag indicates if a DB deletion occurred.
+      operationId: devResetUserSessionsByEmail
+      security: []
+      parameters:
+        - name: email
+          in: path
+          required: true
+          description: Email address of the user (case-insensitive)
+          schema:
+            type: string
+            format: email
+          example: test@example.com
+      responses:
+        '200':
+          description: Sessions reset complete
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevResetUserResponse'
+              example:
+                success: true
+                message: "user sessions reset complete"
+                data:
+                  email: test@example.com
+                  user_found: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   # ==========================================
   # MEMBERS
   # ==========================================
