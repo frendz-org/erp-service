@@ -10,13 +10,12 @@ import (
 )
 
 func SetupAuthRoutes(api fiber.Router, cfg *config.Config, authController *controller.AuthController, blacklistStore auth.TokenBlacklistStore) {
+	api.Post("/auth/refresh-token", authController.RefreshToken)
+
 	auth := api.Group("/auth")
 	auth.Use(middleware.JWTAuth(cfg, blacklistStore))
 	auth.Post("/logout", authController.Logout)
 	auth.Post("/logout-all", authController.LogoutAll)
-
-	refreshToken := api.Group("/auth")
-	refreshToken.Post("/refresh-token", authController.RefreshToken)
 
 	registrations := api.Group("/registrations")
 	registrations.Post("", authController.InitiateRegistration)
