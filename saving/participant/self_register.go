@@ -95,10 +95,9 @@ func (uc *usecase) SelfRegister(ctx context.Context, req *SelfRegisterRequest) (
 	}
 
 	validateResp, err := uc.masterdataUsecase.ValidateItemCode(ctx, &masterdata.ValidateCodeRequest{
-		CategoryCode:   "TENANT",
-		ItemCode:       req.Organization,
-		ParentItemCode: "TENANT_TYPE_002",
-		RequireActive:  true,
+		CategoryCode:  "TENANT",
+		ItemCode:      req.Organization,
+		RequireActive: true,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("validate organization: %w", err)
@@ -242,19 +241,20 @@ func (uc *usecase) createNewSelfRegisteredParticipant(
 		genderStr := string(*profile.Gender)
 
 		newParticipant := &entity.Participant{
-			TenantID:    tenantID,
-			ProductID:   productID,
-			UserID:      &req.UserID,
-			FullName:    profile.FullName(),
-			DateOfBirth: profile.DateOfBirth,
-			Gender:      &genderStr,
-			KTPNumber:   &req.IdentityNumber,
-			PhoneNumber: &req.PhoneNumber,
-			Status:      entity.ParticipantStatusDraft,
-			CreatedBy:   req.UserID,
-			Version:     1,
-			CreatedAt:   now,
-			UpdatedAt:   now,
+			TenantID:       tenantID,
+			ProductID:      productID,
+			UserID:         &req.UserID,
+			FullName:       profile.FullName(),
+			DateOfBirth:    profile.DateOfBirth,
+			Gender:         &genderStr,
+			KTPNumber:      &req.IdentityNumber,
+			PhoneNumber:    &req.PhoneNumber,
+			Status:         entity.ParticipantStatusDraft,
+			CreatedBy:      req.UserID,
+			Version:        1,
+			CreatedAt:      now,
+			UpdatedAt:      now,
+			StepsCompleted: map[string]bool{},
 		}
 		if err := uc.participantRepo.Create(txCtx, newParticipant); err != nil {
 
