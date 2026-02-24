@@ -3321,29 +3321,68 @@ components:
           type: string
         phone_number:
           type: string
+          nullable: true
         date_of_birth:
           type: string
           format: date
           nullable: true
+        gender:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/GenderData'
+          description: Resolved gender with masterdata code and display name
         address:
           type: string
           nullable: true
+        profile_picture_url:
+          type: string
+          nullable: true
+        email_verified:
+          type: boolean
+        pin_set:
+          type: boolean
         status:
           type: string
           enum: [PENDING_VERIFICATION, ACTIVE, INACTIVE, SUSPENDED, LOCKED]
         is_active:
           type: boolean
+        last_login_at:
+          type: string
+          format: date-time
+          nullable: true
         roles:
           type: array
           items:
-            type: string
-          example: ["PLATFORM_ADMIN"]
+            $ref: '#/components/schemas/UserRoleData'
         created_at:
           type: string
           format: date-time
         updated_at:
           type: string
           format: date-time
+
+    GenderData:
+      type: object
+      description: Resolved gender from masterdata
+      properties:
+        code:
+          type: string
+          description: Masterdata item code (e.g. GENDER_001)
+          example: GENDER_001
+        name:
+          type: string
+          description: Human-readable name resolved from masterdata
+          example: Male
+
+    UserRoleData:
+      type: object
+      properties:
+        code:
+          type: string
+          example: PLATFORM_ADMIN
+        name:
+          type: string
+          example: Platform Administrator
 
     UserListResponse:
       type: object
