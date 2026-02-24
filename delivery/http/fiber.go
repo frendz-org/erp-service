@@ -155,6 +155,7 @@ func NewServer(cfg *config.Config) *Server {
 		tenantRepo,
 		roleRepo,
 		userRoleRepo,
+		masterdataUsecase,
 	)
 
 	memberUsecase := member.NewUsecase(

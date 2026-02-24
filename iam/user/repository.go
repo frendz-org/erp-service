@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"erp-service/entity"
+	"erp-service/masterdata"
 
 	"github.com/google/uuid"
 )
@@ -84,4 +85,8 @@ type PINVerificationLogRepository interface {
 
 type UserRoleRepository interface {
 	Create(ctx context.Context, userRole *entity.UserRole) error
+}
+
+type MasterdataUsecase interface {
+	GetItemByCode(ctx context.Context, categoryCode string, tenantID *uuid.UUID, itemCode string) (*masterdata.ItemResponse, error)
 }

@@ -15,6 +15,7 @@ type usecase struct {
 	TenantRepo            TenantRepository
 	RoleRepo              RoleRepository
 	UserRoleRepo          UserRoleRepository
+	MasterdataUsecase     MasterdataUsecase
 }
 
 func NewUsecase(
@@ -27,6 +28,7 @@ func NewUsecase(
 	tenantRepo TenantRepository,
 	roleRepo RoleRepository,
 	userRoleRepo UserRoleRepository,
+	masterdataUsecase MasterdataUsecase,
 ) Usecase {
 	return &usecase{
 		TxManager:             txManager,
@@ -38,10 +40,11 @@ func NewUsecase(
 		TenantRepo:            tenantRepo,
 		RoleRepo:              roleRepo,
 		UserRoleRepo:          userRoleRepo,
+		MasterdataUsecase:     masterdataUsecase,
 	}
 }
 
-func mapUserToDetailResponse(user *entity.User, profile *entity.UserProfile, authMethod *entity.UserAuthMethod, securityState *entity.UserSecurityState) *UserDetailResponse {
+func mapUserToDetailResponse(user *entity.User, profile *entity.UserProfile, authMethod *entity.UserAuthMethod, securityState *entity.UserSecurityState, gender *GenderResponse) *UserDetailResponse {
 	resp := &UserDetailResponse{
 		ID:        user.ID,
 		Email:     user.Email,
@@ -61,6 +64,7 @@ func mapUserToDetailResponse(user *entity.User, profile *entity.UserProfile, aut
 		resp.LastName = profile.LastName
 		resp.FullName = profile.FullName()
 		resp.PhoneNumber = profile.PhoneNumber
+		resp.Gender = gender
 		resp.Address = profile.Address
 		resp.ProfilePictureURL = profile.ProfilePictureURL
 		if profile.DateOfBirth != nil {
