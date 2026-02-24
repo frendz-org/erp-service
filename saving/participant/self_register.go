@@ -95,7 +95,7 @@ func (uc *usecase) SelfRegister(ctx context.Context, req *SelfRegisterRequest) (
 	}
 
 	validateResp, err := uc.masterdataUsecase.ValidateItemCode(ctx, &masterdata.ValidateCodeRequest{
-		CategoryCode:   "TENANT_TYPE",
+		CategoryCode:   "TENANT",
 		ItemCode:       req.Organization,
 		ParentItemCode: "TENANT_TYPE_002",
 		RequireActive:  true,
