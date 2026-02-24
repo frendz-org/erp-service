@@ -378,7 +378,15 @@ paths:
       summary: Initiate login
       description: |
         Starts the password + OTP two-factor login flow. Verifies the user's password
-        first, then sends an OTP to the user's email. Rate limited to 10 req/min.
+        first, then sends an OTP to the user's email. Rate limited to 5 req/hour per email.
+
+        Returns a `UnifiedLoginResponse` with `status` field indicating the outcome:
+        - `OTP_REQUIRED` — password verified, OTP sent to email (includes session details)
+        - `SUCCESS` — login complete, tokens returned (future: when OTP is skipped)
+
+        To prevent user enumeration, invalid credentials for non-existent or inactive
+        users still return a 200 with a dummy OTP_REQUIRED response and a constant-time
+        delay of 500ms.
       operationId: initiateLogin
       security: []
       requestBody:
@@ -392,11 +400,11 @@ paths:
               password: MySecureP@ss1
       responses:
         '200':
-          description: Login initiated — OTP sent to email
+          description: Login initiated — OTP sent to email (or direct success)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InitiateLoginResponse'
+                $ref: '#/components/schemas/UnifiedLoginResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -413,6 +421,7 @@ paths:
       description: |
         Verifies the OTP for the login session.
         On success, returns access + refresh tokens with full multi-tenant claims.
+        The response includes the user's tenant memberships and product-level roles/permissions.
       operationId: verifyLoginOTP
       security: []
       parameters:
@@ -432,9 +441,17 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnifiedLoginResponse'
+                $ref: '#/components/schemas/VerifyLoginOTPResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '410':
+          description: Login session has expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
         '500':
@@ -444,7 +461,10 @@ paths:
     post:
       tags: [Login]
       summary: Resend login OTP
-      description: Resends the OTP for an existing login session.
+      description: |
+        Resends the OTP for an existing login session.
+        Subject to cooldown (60s between resends) and max resend limit (3 resends).
+        Returns 404 if session not found, 410 if expired, 429 if in cooldown or limit reached.
       operationId: resendLoginOTP
       security: []
       parameters:
@@ -463,9 +483,17 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessMessageResponse'
+                $ref: '#/components/schemas/ResendLoginOTPResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '410':
+          description: Login session has expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '429':
           $ref: '#/components/responses/TooManyRequests'
         '500':
@@ -475,11 +503,20 @@ paths:
     get:
       tags: [Login]
       summary: Get login session status
-      description: Returns the current state of a login session.
+      description: |
+        Returns the current state of a login session.
+        Requires the `email` query parameter to match the session's email (prevents enumeration).
       operationId: getLoginStatus
       security: []
       parameters:
         - $ref: '#/components/parameters/LoginSessionID'
+        - name: email
+          in: query
+          required: true
+          description: Email address associated with the login session
+          schema:
+            type: string
+            format: email
       responses:
         '200':
           description: Login session status
@@ -487,6 +524,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LoginStatusResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -500,9 +539,11 @@ paths:
       tags: [Auth]
       summary: Refresh access token
       description: |
-        Exchanges a valid refresh token for a new access token.
-        Rate limited to 20 req/min.
+        Exchanges a valid refresh token for a new access + refresh token pair.
         The old refresh token is invalidated and a new one is issued (token rotation).
+
+        This endpoint does NOT require a valid access token — it can be called
+        when the access token has expired. No JWT middleware is applied.
       operationId: refreshToken
       security: []
       requestBody:
@@ -515,7 +556,7 @@ paths:
               refresh_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
       responses:
         '200':
-          description: New access and refresh tokens
+          description: New access and refresh tokens with user profile
           content:
             application/json:
               schema:
@@ -524,8 +565,6 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '429':
-          $ref: '#/components/responses/TooManyRequests'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -3183,27 +3222,6 @@ components:
           minLength: 8
           example: MySecureP@ss1
 
-    InitiateLoginResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: true
-        data:
-          type: object
-          properties:
-            login_session_id:
-              type: string
-              format: uuid
-              example: 018f3a2b-1c2d-7e4f-8a5b-6c7d8e9f0a1b
-            status:
-              type: string
-              enum: [OTP_REQUIRED]
-              example: OTP_REQUIRED
-            message:
-              type: string
-              example: "OTP sent to your email"
-
     VerifyLoginOTPRequest:
       type: object
       required: [email, otp_code]
@@ -3221,22 +3239,58 @@ components:
 
     UnifiedLoginResponse:
       type: object
+      description: |
+        Polymorphic response for login initiation. The `status` field determines which
+        fields are present:
+        - `OTP_REQUIRED`: OTP session fields are populated, token fields are absent.
+        - `SUCCESS`: Token + user fields are populated, OTP session fields are absent.
       properties:
         success:
           type: boolean
           example: true
         data:
           type: object
+          required: [status]
           properties:
             status:
               type: string
               enum: [SUCCESS, OTP_REQUIRED]
-              example: SUCCESS
+              description: Indicates whether login is complete or OTP verification is needed
+              example: OTP_REQUIRED
+            # --- OTP_REQUIRED fields ---
+            login_session_id:
+              type: string
+              format: uuid
+              description: Session ID for subsequent OTP verification (only when status=OTP_REQUIRED)
+              example: "018f3a2b-1c2d-7e4f-8a5b-6c7d8e9f0a1b"
+            email:
+              type: string
+              description: Masked email address (e.g. u***@example.com)
+              example: "u***@example.com"
+            otp_expires_at:
+              type: string
+              format: date-time
+              description: When the OTP code expires (only when status=OTP_REQUIRED)
+            session_expires_at:
+              type: string
+              format: date-time
+              description: When the login session expires (only when status=OTP_REQUIRED)
+            attempts_allowed:
+              type: integer
+              description: Maximum OTP verification attempts allowed
+              example: 5
+            resends_allowed:
+              type: integer
+              description: Maximum OTP resends allowed
+              example: 3
+            # --- SUCCESS fields ---
             access_token:
               type: string
+              description: JWT access token (RS256, only when status=SUCCESS)
               example: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
             refresh_token:
               type: string
+              description: JWT refresh token (HS256, only when status=SUCCESS)
               example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
             token_type:
               type: string
@@ -3245,6 +3299,36 @@ components:
               type: integer
               description: Access token lifetime in seconds
               example: 3600
+            user:
+              $ref: '#/components/schemas/LoginUserData'
+
+    VerifyLoginOTPResponse:
+      type: object
+      description: Returned after successful OTP verification during login.
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            access_token:
+              type: string
+              description: JWT access token (RS256)
+              example: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+            refresh_token:
+              type: string
+              description: JWT refresh token (HS256)
+              example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            expires_in:
+              type: integer
+              description: Access token lifetime in seconds
+              example: 3600
+            token_type:
+              type: string
+              example: Bearer
+            user:
+              $ref: '#/components/schemas/LoginUserData'
 
     ResendLoginOTPRequest:
       type: object
@@ -3255,8 +3339,9 @@ components:
           format: email
           example: user@example.com
 
-    LoginStatusResponse:
+    ResendLoginOTPResponse:
       type: object
+      description: Returned after successfully resending a login OTP.
       properties:
         success:
           type: boolean
@@ -3266,10 +3351,116 @@ components:
           properties:
             status:
               type: string
-              enum: [PENDING_VERIFICATION, VERIFIED]
-              example: PENDING_VERIFICATION
+              example: OTP_RESENT
+            login_session_id:
+              type: string
+              format: uuid
+              example: "018f3a2b-1c2d-7e4f-8a5b-6c7d8e9f0a1b"
+            email:
+              type: string
+              description: Masked email address
+              example: "u***@example.com"
+            otp_expires_at:
+              type: string
+              format: date-time
+              description: When the new OTP code expires
+            resends_remaining:
+              type: integer
+              description: Number of resends still available
+              example: 2
+            cooldown_seconds:
+              type: integer
+              description: Seconds to wait before next resend is allowed
+              example: 60
 
-    # ---- Auth ----
+    LoginStatusResponse:
+      type: object
+      description: Current state of a login session.
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              description: Current session status
+              example: pending_verification
+            login_session_id:
+              type: string
+              format: uuid
+              example: "018f3a2b-1c2d-7e4f-8a5b-6c7d8e9f0a1b"
+            email:
+              type: string
+              description: Masked email address
+              example: "u***@example.com"
+            attempts_remaining:
+              type: integer
+              description: OTP verification attempts remaining
+              example: 4
+            resends_remaining:
+              type: integer
+              description: OTP resends remaining
+              example: 2
+            expires_at:
+              type: string
+              format: date-time
+              description: When the login session expires
+            cooldown_remaining:
+              type: integer
+              description: Seconds remaining in resend cooldown (0 if not in cooldown)
+              example: 0
+
+    # ---- Auth (Token management) ----
+    LoginUserData:
+      type: object
+      description: User profile with multi-tenant memberships returned in token responses.
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        full_name:
+          type: string
+        tenants:
+          type: array
+          items:
+            $ref: '#/components/schemas/LoginTenantData'
+
+    LoginTenantData:
+      type: object
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/LoginProductData'
+
+    LoginProductData:
+      type: object
+      properties:
+        product_id:
+          type: string
+          format: uuid
+        product_code:
+          type: string
+          example: "DAPEN_SAVING"
+        roles:
+          type: array
+          items:
+            type: string
+          example: ["TENANT_PRODUCT_ADMIN"]
+        permissions:
+          type: array
+          items:
+            type: string
+          example: ["participant:read", "participant:create"]
+
     RefreshTokenRequest:
       type: object
       required: [refresh_token]
@@ -3280,6 +3471,7 @@ components:
 
     RefreshTokenResponse:
       type: object
+      description: New token pair with refreshed user profile and tenant memberships.
       properties:
         success:
           type: boolean
@@ -3289,16 +3481,21 @@ components:
           properties:
             access_token:
               type: string
+              description: New JWT access token (RS256)
               example: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
             refresh_token:
               type: string
+              description: New JWT refresh token (HS256, old one is invalidated)
               example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
             token_type:
               type: string
               example: Bearer
             expires_in:
               type: integer
+              description: Access token lifetime in seconds
               example: 3600
+            user:
+              $ref: '#/components/schemas/LoginUserData'
 
     LogoutRequest:
       type: object
@@ -3306,6 +3503,7 @@ components:
       properties:
         refresh_token:
           type: string
+          description: The refresh token to invalidate alongside the current access token
           example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 
     # ---- Users ----
