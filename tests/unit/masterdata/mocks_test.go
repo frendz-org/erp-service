@@ -87,6 +87,14 @@ func (m *MockItemRepository) GetByID(ctx context.Context, id uuid.UUID) (*entity
 	return args.Get(0).(*entity.MasterdataItem), args.Error(1)
 }
 
+func (m *MockItemRepository) GetByCodeOnly(ctx context.Context, code string) (*entity.MasterdataItem, error) {
+	args := m.Called(ctx, code)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*entity.MasterdataItem), args.Error(1)
+}
+
 func (m *MockItemRepository) GetByCode(ctx context.Context, categoryID uuid.UUID, tenantID *uuid.UUID, code string) (*entity.MasterdataItem, error) {
 	args := m.Called(ctx, categoryID, tenantID, code)
 	if args.Get(0) == nil {
