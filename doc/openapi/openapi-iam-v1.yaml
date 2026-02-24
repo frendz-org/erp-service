@@ -1421,11 +1421,25 @@ paths:
     get:
       tags: [Masterdata]
       summary: Get item children
-      description: Returns all child items of a given item.
+      description: |
+        Returns all child items of a given item.
+        Accepts either a UUID or a masterdata item code as the path parameter.
       operationId: getMasterdataItemChildren
       security: []
       parameters:
-        - $ref: '#/components/parameters/MasterdataItemID'
+        - name: id
+          in: path
+          required: true
+          description: Item UUID or masterdata item code
+          schema:
+            type: string
+          examples:
+            uuid:
+              value: "550e8400-e29b-41d4-a716-446655440000"
+              summary: By UUID
+            code:
+              value: "JAWA_BARAT"
+              summary: By item code
       responses:
         '200':
           description: Child items
