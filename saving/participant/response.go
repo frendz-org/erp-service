@@ -221,5 +221,6 @@ type SelfRegisterParticipantData struct {
 type SelfRegisterResponse struct {
 	IsLinked           bool                         `json:"is_linked"`
 	RegistrationStatus string                       `json:"registration_status"`
+	TenantID           uuid.UUID                    `json:"tenant_id"`
 	Data               *SelfRegisterParticipantData `json:"data"`
 }

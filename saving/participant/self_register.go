@@ -211,6 +211,7 @@ func (uc *usecase) linkExistingParticipantToUser(
 		result = &SelfRegisterResponse{
 			IsLinked:           true,
 			RegistrationStatus: string(entity.UTRStatusPendingApproval),
+			TenantID:           tenantID,
 			Data: &SelfRegisterParticipantData{
 				ParticipantNumber: pensionNumber,
 				Status:            currentStatus,
@@ -297,6 +298,7 @@ func (uc *usecase) createNewSelfRegisteredParticipant(
 		result = &SelfRegisterResponse{
 			IsLinked:           false,
 			RegistrationStatus: string(entity.UTRStatusPendingApproval),
+			TenantID:           tenantID,
 			Data: &SelfRegisterParticipantData{
 				ParticipantNumber: req.ParticipantNumber,
 				Status:            string(entity.ParticipantStatusDraft),
