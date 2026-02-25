@@ -94,6 +94,14 @@ func (m *MockParticipantRepository) GetByEmployeeNumber(ctx context.Context, ten
 	return args.Get(0).(*entity.Participant), args.Error(1)
 }
 
+func (m *MockParticipantRepository) GetByUserAndTenantProduct(ctx context.Context, userID, tenantID, productID uuid.UUID) (*entity.Participant, error) {
+	args := m.Called(ctx, userID, tenantID, productID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*entity.Participant), args.Error(1)
+}
+
 type MockParticipantIdentityRepository struct {
 	mock.Mock
 }

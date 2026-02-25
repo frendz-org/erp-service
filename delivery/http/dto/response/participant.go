@@ -53,6 +53,11 @@ type ParticipantResponse struct {
 	Beneficiaries   []BeneficiaryResponse  `json:"beneficiaries,omitempty"`
 }
 
+type MyParticipantResponse struct {
+	ParticipantResponse
+	RegistrationStatus string `json:"registration_status"`
+}
+
 type IdentityResponse struct {
 	ID                uuid.UUID  `json:"id"`
 	IdentityType      string     `json:"identity_type"`

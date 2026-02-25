@@ -29,6 +29,7 @@ type ParticipantRepository interface {
 	GetByKTPAndPensionNumber(ctx context.Context, ktpNumber, pensionNumber string, tenantID, productID uuid.UUID) (*entity.Participant, *entity.ParticipantPension, error)
 	GetByKTPNumber(ctx context.Context, tenantID, productID uuid.UUID, ktpNumber string) (*entity.Participant, error)
 	GetByEmployeeNumber(ctx context.Context, tenantID, productID uuid.UUID, employeeNumber string) (*entity.Participant, error)
+	GetByUserAndTenantProduct(ctx context.Context, userID, tenantID, productID uuid.UUID) (*entity.Participant, error)
 }
 
 type TenantRepository interface {

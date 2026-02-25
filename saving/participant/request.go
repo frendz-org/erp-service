@@ -260,6 +260,12 @@ type DeleteChildEntityRequest struct {
 	ProductID     uuid.UUID `json:"-"`
 }
 
+type GetMyParticipantRequest struct {
+	UserID    uuid.UUID `json:"-"`
+	TenantID  uuid.UUID `json:"-"`
+	ProductID uuid.UUID `json:"-"`
+}
+
 type SelfRegisterRequest struct {
 	UserID            uuid.UUID `json:"-"`
 	Organization      string    `json:"organization"       validate:"required,min=6,max=50"`

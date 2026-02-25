@@ -212,6 +212,22 @@ func (m *MockParticipantUsecase) SelfRegister(ctx context.Context, req *particip
 	return args.Get(0).(*participant.SelfRegisterResponse), args.Error(1)
 }
 
+func (m *MockParticipantUsecase) GetMyParticipant(ctx context.Context, req *participant.GetMyParticipantRequest) (*participant.MyParticipantResponse, error) {
+	args := m.Called(ctx, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*participant.MyParticipantResponse), args.Error(1)
+}
+
+func (m *MockParticipantUsecase) GetMyStatusHistory(ctx context.Context, req *participant.GetMyParticipantRequest) ([]participant.StatusHistoryResponse, error) {
+	args := m.Called(ctx, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]participant.StatusHistoryResponse), args.Error(1)
+}
+
 func setupParticipantApp(uc *MockParticipantUsecase, userID uuid.UUID) *fiber.App {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {

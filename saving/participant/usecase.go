@@ -18,6 +18,8 @@ type ParticipantReader interface {
 	GetParticipant(ctx context.Context, req *GetParticipantRequest) (*ParticipantResponse, error)
 	ListParticipants(ctx context.Context, req *ListParticipantsRequest) (*ListParticipantsResponse, error)
 	GetStatusHistory(ctx context.Context, req *GetParticipantRequest) ([]StatusHistoryResponse, error)
+	GetMyParticipant(ctx context.Context, req *GetMyParticipantRequest) (*MyParticipantResponse, error)
+	GetMyStatusHistory(ctx context.Context, req *GetMyParticipantRequest) ([]StatusHistoryResponse, error)
 }
 
 type ParticipantWriter interface {

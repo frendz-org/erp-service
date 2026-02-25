@@ -953,6 +953,68 @@ func (ctrl *ParticipantController) Reject(c *fiber.Ctx) error {
 	})
 }
 
+func (ctrl *ParticipantController) GetMe(c *fiber.Ctx) error {
+	userID, err := middleware.GetUserID(c)
+	if err != nil {
+		return participantError(c, err)
+	}
+
+	tenantID, err := middleware.GetTenantIDFromContext(c)
+	if err != nil {
+		return participantError(c, err)
+	}
+
+	productID, err := middleware.GetProductIDFromContext(c)
+	if err != nil {
+		return participantError(c, err)
+	}
+
+	result, err := ctrl.usecase.GetMyParticipant(c.UserContext(), &participant.GetMyParticipantRequest{
+		UserID:    userID,
+		TenantID:  tenantID,
+		ProductID: productID,
+	})
+	if err != nil {
+		return participantError(c, err)
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"data":    presenter.MapMyParticipantResponse(result),
+	})
+}
+
+func (ctrl *ParticipantController) GetMyStatusHistory(c *fiber.Ctx) error {
+	userID, err := middleware.GetUserID(c)
+	if err != nil {
+		return participantError(c, err)
+	}
+
+	tenantID, err := middleware.GetTenantIDFromContext(c)
+	if err != nil {
+		return participantError(c, err)
+	}
+
+	productID, err := middleware.GetProductIDFromContext(c)
+	if err != nil {
+		return participantError(c, err)
+	}
+
+	result, err := ctrl.usecase.GetMyStatusHistory(c.UserContext(), &participant.GetMyParticipantRequest{
+		UserID:    userID,
+		TenantID:  tenantID,
+		ProductID: productID,
+	})
+	if err != nil {
+		return participantError(c, err)
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"data":    result,
+	})
+}
+
 func (ctrl *ParticipantController) SelfRegister(c *fiber.Ctx) error {
 	claims, err := middleware.GetUserClaims(c)
 	if err != nil {

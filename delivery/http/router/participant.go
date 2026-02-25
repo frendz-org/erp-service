@@ -31,6 +31,26 @@ func selfRegRateLimit() fiber.Handler {
 	})
 }
 
+func meRateLimit() fiber.Handler {
+	return limiter.New(limiter.Config{
+		Max:        15,
+		Expiration: 1 * time.Minute,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			if uid, ok := c.Locals("userID").(string); ok && uid != "" {
+				return "me:" + uid
+			}
+			return "me:" + c.IP()
+		},
+		LimitReached: func(c *fiber.Ctx) error {
+			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+				"success": false,
+				"error":   "too many requests",
+				"code":    "ERR_TOO_MANY_REQUESTS",
+			})
+		},
+	})
+}
+
 func SetupParticipantRoutes(api fiber.Router, ctrl *controller.ParticipantController, jwtMiddleware fiber.Handler, frendzSavingMW fiber.Handler, cfg *config.Config) {
 	isDev := cfg.IsDevelopment()
 
@@ -40,6 +60,21 @@ func SetupParticipantRoutes(api fiber.Router, ctrl *controller.ParticipantContro
 		selfReg.Post("/self-register", ctrl.SelfRegister)
 	} else {
 		selfReg.Post("/self-register", selfRegRateLimit(), ctrl.SelfRegister)
+	}
+
+	// Self-service /me routes: JWT + TenantContext + frendzSavingMW, NO role middleware.
+	// MUST be registered BEFORE /:id routes to avoid Fiber matching "me" as :id.
+	me := api.Group("/participants/me")
+	me.Use(jwtMiddleware)
+	me.Use(middleware.ExtractTenantContext())
+	me.Use(frendzSavingMW)
+	if isDev {
+		me.Get("/", ctrl.GetMe)
+		me.Get("/status-history", ctrl.GetMyStatusHistory)
+	} else {
+		meLimiter := meRateLimit()
+		me.Get("/", meLimiter, ctrl.GetMe)
+		me.Get("/status-history", meLimiter, ctrl.GetMyStatusHistory)
 	}
 
 	participants := api.Group("/participants")

@@ -9,6 +9,13 @@ func MapSelfRegisterResponse(resp *participant.SelfRegisterResponse) *participan
 	return resp
 }
 
+func MapMyParticipantResponse(dto *participant.MyParticipantResponse) response.MyParticipantResponse {
+	return response.MyParticipantResponse{
+		ParticipantResponse: MapParticipantResponse(&dto.ParticipantResponse),
+		RegistrationStatus:  dto.RegistrationStatus,
+	}
+}
+
 func MapEmploymentResponse(dto *participant.EmploymentResponse) response.EmploymentResponse {
 	return response.EmploymentResponse{
 		ID:                 dto.ID,

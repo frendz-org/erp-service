@@ -120,6 +120,17 @@ func (r *participantRepository) GetByEmployeeNumber(ctx context.Context, tenantI
 	return &participant, nil
 }
 
+func (r *participantRepository) GetByUserAndTenantProduct(ctx context.Context, userID, tenantID, productID uuid.UUID) (*entity.Participant, error) {
+	var p entity.Participant
+	err := r.getDB(ctx).
+		Where("user_id = ? AND tenant_id = ? AND product_id = ? AND deleted_at IS NULL", userID, tenantID, productID).
+		First(&p).Error
+	if err != nil {
+		return nil, translateError(err, "participant")
+	}
+	return &p, nil
+}
+
 func (r *participantRepository) Update(ctx context.Context, participant *entity.Participant) error {
 	oldVersion := participant.Version
 	participant.Version = oldVersion + 1

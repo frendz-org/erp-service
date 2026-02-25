@@ -207,6 +207,11 @@ type FileUploadResponse struct {
 	FileID uuid.UUID `json:"file_id"`
 }
 
+type MyParticipantResponse struct {
+	ParticipantResponse
+	RegistrationStatus string `json:"registration_status"`
+}
+
 type SelfRegisterParticipantData struct {
 	ParticipantNumber string    `json:"participant_number"`
 	Status            string    `json:"status"`
