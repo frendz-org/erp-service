@@ -95,6 +95,10 @@ tags:
       Member management scoped to a product.
       All endpoints require JWT + X-Tenant-ID + product membership.
       Admin operations require TENANT_PRODUCT_ADMIN role.
+  - name: Pension
+    description: |
+      Pension fund summary endpoints.
+      Requires JWT authentication. Data is read from the pension production database.
   - name: Dev
     description: |
       Development-only endpoints for testing convenience.
@@ -1636,6 +1640,67 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /api/v1/saving/participants/me:
+    get:
+      tags: [Participants]
+      summary: Get my participant profile
+      description: |
+        Returns the full participant profile for the currently authenticated user,
+        including registration status from the user-tenant-registration record.
+        Resolved via JWT user_id + tenant context + frendz-saving product.
+        No role middleware required — any authenticated user with a participant record can access.
+        Rate limited to 15 req/min per user (production only).
+      operationId: getMyParticipant
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIDHeader'
+      responses:
+        '200':
+          description: Participant profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyParticipantResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/saving/participants/me/status-history:
+    get:
+      tags: [Participants]
+      summary: Get my participant status history
+      description: |
+        Returns the status change history for the currently authenticated user's
+        participant record. Each entry shows a status transition (e.g. DRAFT → PENDING_APPROVAL).
+        Resolved via JWT user_id + tenant context + frendz-saving product.
+        No role middleware required. Rate limited to 15 req/min per user (production only).
+      operationId: getMyParticipantStatusHistory
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIDHeader'
+      responses:
+        '200':
+          description: Status history retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipantStatusHistoryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /api/v1/saving/participants:
     post:
       tags: [Participants]
@@ -2728,6 +2793,41 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # ==========================================
+  # PENSION
+  # ==========================================
+  /api/v1/pension/amount-summary:
+    get:
+      tags: [Pension]
+      summary: Get pension amount summary
+      description: |
+        Returns the authenticated user's pension balance summary, including total saldo
+        (cumulative sum of all pension transactions) and month-over-month growth percentage.
+
+        The user's employee number is resolved from their participant record in the platform DB.
+        If the user has no participant record or no employee number, the query aggregates
+        across all employees (admin/aggregate mode).
+
+        Data is read from the pension production database (`pension_transactions` table).
+      operationId: getPensionAmountSummary
+      responses:
+        '200':
+          description: Pension summary returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PensionAmountSummaryResponse'
+              example:
+                success: true
+                data:
+                  user: "John Doe"
+                  totalSaldo: 45000000
+                  growthPercentage: 3.25
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -4534,6 +4634,25 @@ components:
                   type: string
                   format: date-time
 
+    MyParticipantResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          allOf:
+            - $ref: '#/components/schemas/ParticipantData'
+            - type: object
+              properties:
+                registration_status:
+                  type: string
+                  description: |
+                    Registration status from user_tenant_registrations.
+                    Empty string if no UTR record found (data anomaly).
+                  enum: [PENDING_APPROVAL, APPROVED, REJECTED, ""]
+                  example: PENDING_APPROVAL
+
     ParticipantResponse:
       type: object
       properties:
@@ -5232,3 +5351,27 @@ components:
               type: boolean
               description: Whether a user with this email existed and was deleted
               example: true
+
+    PensionAmountSummaryResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            user:
+              type: string
+              description: Full name of the authenticated user
+              example: "John Doe"
+            totalSaldo:
+              type: integer
+              format: int64
+              description: Cumulative pension balance (no decimals)
+              example: 45000000
+            growthPercentage:
+              type: number
+              format: double
+              description: Month-over-month growth percentage, rounded to 2 decimal places
+              example: 3.25
