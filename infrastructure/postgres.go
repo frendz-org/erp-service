@@ -33,3 +33,26 @@ func NewPostgres(cfg config.PostgresConfig, logger *zap.Logger) (*gorm.DB, error
 
 	return db, nil
 }
+
+func NewPostgresProd(logger *zap.Logger) (*gorm.DB, error) {
+	dsn := "host=216.244.94.150 port=5432 user=admin password=Dapen13524 dbname=db_dapen_prod sslmode=disable"
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		return nil, err
+	}
+
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get underlying sql.DB: %w", err)
+	}
+
+	sqlDB.SetMaxOpenConns(10)
+	sqlDB.SetMaxIdleConns(5)
+
+	logger.Info("Successfully connected to Postgres Prod",
+		zap.String("host", "216.244.94.150"),
+		zap.String("database", "db_dapen_prod"),
+	)
+
+	return db, nil
+}

@@ -64,6 +64,11 @@ func NewServer(cfg *config.Config) *Server {
 		log.Fatal("failed to connect to postgres:", err)
 	}
 
+	postgresProdDB, err := infrastructure.NewPostgresProd(zapLogger)
+	if err != nil {
+		log.Fatal("failed to connect to postgres prod:", err)
+	}
+
 	redisClient, err := infrastructure.NewRedis(cfg.Infra.Redis)
 	if err != nil {
 		log.Fatal("failed to connect to redis:", err)
@@ -200,6 +205,7 @@ func NewServer(cfg *config.Config) *Server {
 	memberController := controller.NewMemberController(memberUsecase)
 	participantController := controller.NewParticipantController(participantUsecase)
 	devController := controller.NewDevController(postgresDB, inMemoryStore)
+	pensionController := controller.NewPensionController(postgresDB, postgresProdDB)
 
 	fileCleanupUC := files.NewUsecase(fileRepo, fileStorage, txManager, zapLogger, files.DefaultConfig())
 	fileWorker := worker.NewWorker(fileCleanupUC, zapLogger)
@@ -250,6 +256,8 @@ func NewServer(cfg *config.Config) *Server {
 	saving := v1.Group("/saving")
 	router.SetupParticipantRoutes(saving, participantController, jwtMiddleware, frendzSavingMW, cfg)
 	router.SetupMemberRoutes(saving, memberController, jwtMiddleware, frendzSavingMW)
+
+	router.SetupPensionRoutes(v1, pensionController, jwtMiddleware)
 
 	router.SetupDevRoutes(v1, cfg, devController)
 
