@@ -100,6 +100,7 @@ type UserSessionRepository interface {
 
 type UserTenantRegistrationRepository interface {
 	ListActiveByUserID(ctx context.Context, userID uuid.UUID) ([]entity.UserTenantRegistration, error)
+	ListByUserIDForClaims(ctx context.Context, userID uuid.UUID) ([]entity.UserTenantRegistration, error)
 }
 
 type ProductsByTenantRepository interface {

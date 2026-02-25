@@ -147,7 +147,7 @@ func (uc *usecase) VerifyLoginOTP(
 }
 
 func (uc *usecase) buildMultiTenantClaims(ctx context.Context, userID uuid.UUID) ([]jwtpkg.TenantClaim, []TenantResponse, []string, error) {
-	registrations, err := uc.UserTenantRegRepo.ListActiveByUserID(ctx, userID)
+	registrations, err := uc.UserTenantRegRepo.ListByUserIDForClaims(ctx, userID)
 	if err != nil {
 		return nil, nil, nil, err
 	}

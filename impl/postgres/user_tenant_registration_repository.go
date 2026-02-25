@@ -35,6 +35,18 @@ func (r *userTenantRegistrationRepository) ListActiveByUserID(ctx context.Contex
 	return registrations, nil
 }
 
+func (r *userTenantRegistrationRepository) ListByUserIDForClaims(ctx context.Context, userID uuid.UUID) ([]entity.UserTenantRegistration, error) {
+	var registrations []entity.UserTenantRegistration
+	err := r.getDB(ctx).
+		Where("user_id = ? AND status IN ? AND deleted_at IS NULL", userID,
+			[]entity.UserTenantRegistrationStatus{entity.UTRStatusActive, entity.UTRStatusPendingApproval}).
+		Find(&registrations).Error
+	if err != nil {
+		return nil, translateError(err, "user tenant registration")
+	}
+	return registrations, nil
+}
+
 func (r *userTenantRegistrationRepository) Create(ctx context.Context, reg *entity.UserTenantRegistration) error {
 	if err := r.getDB(ctx).Create(reg).Error; err != nil {
 		return translateError(err, "member registration")
