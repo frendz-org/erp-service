@@ -100,7 +100,7 @@ func TestSelfRegister_Success_NewParticipant(t *testing.T) {
 	mdValidator := &mockMasterdataValidator{}
 
 	mdValidator.On("ValidateItemCode", ctx, mock.MatchedBy(func(r *masterdata.ValidateCodeRequest) bool {
-		return r.CategoryCode == "TENANT_TYPE" && r.ItemCode == req.Organization
+		return r.CategoryCode == "TENANT" && r.ItemCode == req.Organization
 	})).Return(&masterdata.ValidateCodeResponse{Valid: true}, nil)
 
 	tenantRepo.On("GetByCode", ctx, req.Organization).Return(tenant, nil)

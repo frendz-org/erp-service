@@ -578,6 +578,14 @@ func (m *MockUserTenantRegistrationRepository) ListActiveByUserID(ctx context.Co
 	return args.Get(0).([]entity.UserTenantRegistration), args.Error(1)
 }
 
+func (m *MockUserTenantRegistrationRepository) ListByUserIDForClaims(ctx context.Context, userID uuid.UUID) ([]entity.UserTenantRegistration, error) {
+	args := m.Called(ctx, userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]entity.UserTenantRegistration), args.Error(1)
+}
+
 type MockProductsByTenantRepository struct {
 	mock.Mock
 }
