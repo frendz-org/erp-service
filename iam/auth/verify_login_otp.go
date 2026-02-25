@@ -152,30 +152,80 @@ func (uc *usecase) buildMultiTenantClaims(ctx context.Context, userID uuid.UUID)
 		return nil, nil, nil, err
 	}
 
+	// Group registrations by tenant_id, preserving insertion order.
+	type tenantGroup struct {
+		tenantID uuid.UUID
+		regs     []entity.UserTenantRegistration
+	}
+	tenantIndex := make(map[uuid.UUID]int)
+	var tenantGroups []tenantGroup
+
+	for _, reg := range registrations {
+		idx, exists := tenantIndex[reg.TenantID]
+		if !exists {
+			idx = len(tenantGroups)
+			tenantIndex[reg.TenantID] = idx
+			tenantGroups = append(tenantGroups, tenantGroup{tenantID: reg.TenantID})
+		}
+		tenantGroups[idx].regs = append(tenantGroups[idx].regs, reg)
+	}
+
 	var jwtClaims []jwtpkg.TenantClaim
 	var dtoTenants []TenantResponse
 
-	for _, reg := range registrations {
-		products, err := uc.ProductsByTenantRepo.ListActiveByTenantID(ctx, reg.TenantID)
+	for _, tg := range tenantGroups {
+		// Fetch active products for this tenant (needed for product codes).
+		products, err := uc.ProductsByTenantRepo.ListActiveByTenantID(ctx, tg.tenantID)
 		if err != nil {
 			return nil, nil, nil, err
+		}
+		productByID := make(map[uuid.UUID]entity.Product, len(products))
+		for _, p := range products {
+			productByID[p.ID] = p
+		}
+
+		// Group UTRs within this tenant by product_id, collecting registration types.
+		type productGroup struct {
+			productID         uuid.UUID
+			registrationTypes []string
+		}
+		productIndex := make(map[uuid.UUID]int)
+		var productGroups []productGroup
+
+		for _, reg := range tg.regs {
+			if reg.ProductID == nil {
+				continue
+			}
+			pid := *reg.ProductID
+			idx, exists := productIndex[pid]
+			if !exists {
+				idx = len(productGroups)
+				productIndex[pid] = idx
+				productGroups = append(productGroups, productGroup{productID: pid})
+			}
+			productGroups[idx].registrationTypes = append(productGroups[idx].registrationTypes, reg.RegistrationType)
 		}
 
 		var jwtProducts []jwtpkg.ProductClaim
 		var dtoProducts []ProductResponse
 
-		for _, product := range products {
+		for _, pg := range productGroups {
+			product, exists := productByID[pg.productID]
+			if !exists {
+				continue // product not active, skip
+			}
+
 			userRoles, err := uc.UserRoleRepo.ListActiveByUserID(ctx, userID, &product.ID)
 			if err != nil {
 				return nil, nil, nil, err
 			}
 
 			var roleIDs []uuid.UUID
-			var roleNames []string
 			for _, ur := range userRoles {
 				roleIDs = append(roleIDs, ur.RoleID)
 			}
 
+			var roleNames []string
 			if len(roleIDs) > 0 {
 				roles, err := uc.RoleRepo.GetByIDs(ctx, roleIDs)
 				if err != nil {
@@ -195,27 +245,29 @@ func (uc *usecase) buildMultiTenantClaims(ctx context.Context, userID uuid.UUID)
 			}
 
 			jwtProducts = append(jwtProducts, jwtpkg.ProductClaim{
-				ProductID:   product.ID,
-				ProductCode: product.Code,
-				Roles:       roleNames,
-				Permissions: permissions,
+				ProductID:         product.ID,
+				ProductCode:       product.Code,
+				RegistrationTypes: pg.registrationTypes,
+				Roles:             roleNames,
+				Permissions:       permissions,
 			})
 
 			dtoProducts = append(dtoProducts, ProductResponse{
-				ProductID:   product.ID,
-				ProductCode: product.Code,
-				Roles:       roleNames,
-				Permissions: permissions,
+				ProductID:         product.ID,
+				ProductCode:       product.Code,
+				RegistrationTypes: pg.registrationTypes,
+				Roles:             roleNames,
+				Permissions:       permissions,
 			})
 		}
 
 		jwtClaims = append(jwtClaims, jwtpkg.TenantClaim{
-			TenantID: reg.TenantID,
+			TenantID: tg.tenantID,
 			Products: jwtProducts,
 		})
 
 		dtoTenants = append(dtoTenants, TenantResponse{
-			TenantID: reg.TenantID,
+			TenantID: tg.tenantID,
 			Products: dtoProducts,
 		})
 	}

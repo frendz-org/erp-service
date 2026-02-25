@@ -7,10 +7,11 @@ import (
 )
 
 type LoginProductResponse struct {
-	ProductID   uuid.UUID `json:"product_id"`
-	ProductCode string    `json:"product_code"`
-	Roles       []string  `json:"roles,omitempty"`
-	Permissions []string  `json:"permissions,omitempty"`
+	ProductID         uuid.UUID `json:"product_id"`
+	ProductCode       string    `json:"product_code"`
+	RegistrationTypes []string  `json:"registration_types,omitempty"`
+	Roles             []string  `json:"roles,omitempty"`
+	Permissions       []string  `json:"permissions,omitempty"`
 }
 
 type LoginTenantResponse struct {

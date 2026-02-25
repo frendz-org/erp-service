@@ -103,10 +103,11 @@ func toLoginUserResponse(user *auth.LoginUserResponse) *response.LoginUserRespon
 		}
 		for _, p := range t.Products {
 			tenant.Products = append(tenant.Products, response.LoginProductResponse{
-				ProductID:   p.ProductID,
-				ProductCode: p.ProductCode,
-				Roles:       p.Roles,
-				Permissions: p.Permissions,
+				ProductID:         p.ProductID,
+				ProductCode:       p.ProductCode,
+				RegistrationTypes: p.RegistrationTypes,
+				Roles:             p.Roles,
+				Permissions:       p.Permissions,
 			})
 		}
 		result.Tenants = append(result.Tenants, tenant)
