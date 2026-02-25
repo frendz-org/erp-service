@@ -62,8 +62,6 @@ func SetupParticipantRoutes(api fiber.Router, ctrl *controller.ParticipantContro
 		selfReg.Post("/self-register", selfRegRateLimit(), ctrl.SelfRegister)
 	}
 
-	// Self-service /me routes: JWT + TenantContext + frendzSavingMW, NO role middleware.
-	// MUST be registered BEFORE /:id routes to avoid Fiber matching "me" as :id.
 	me := api.Group("/participants/me")
 	me.Use(jwtMiddleware)
 	me.Use(middleware.ExtractTenantContext())

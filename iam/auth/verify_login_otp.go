@@ -152,7 +152,6 @@ func (uc *usecase) buildMultiTenantClaims(ctx context.Context, userID uuid.UUID)
 		return nil, nil, nil, err
 	}
 
-	// Group registrations by tenant_id, preserving insertion order.
 	type tenantGroup struct {
 		tenantID uuid.UUID
 		regs     []entity.UserTenantRegistration
@@ -174,7 +173,7 @@ func (uc *usecase) buildMultiTenantClaims(ctx context.Context, userID uuid.UUID)
 	var dtoTenants []TenantResponse
 
 	for _, tg := range tenantGroups {
-		// Fetch active products for this tenant (needed for product codes).
+
 		products, err := uc.ProductsByTenantRepo.ListActiveByTenantID(ctx, tg.tenantID)
 		if err != nil {
 			return nil, nil, nil, err
@@ -184,7 +183,6 @@ func (uc *usecase) buildMultiTenantClaims(ctx context.Context, userID uuid.UUID)
 			productByID[p.ID] = p
 		}
 
-		// Group UTRs within this tenant by product_id, collecting registration types.
 		type productGroup struct {
 			productID         uuid.UUID
 			registrationTypes []string
@@ -212,7 +210,7 @@ func (uc *usecase) buildMultiTenantClaims(ctx context.Context, userID uuid.UUID)
 		for _, pg := range productGroups {
 			product, exists := productByID[pg.productID]
 			if !exists {
-				continue // product not active, skip
+				continue
 			}
 
 			userRoles, err := uc.UserRoleRepo.ListActiveByUserID(ctx, userID, &product.ID)

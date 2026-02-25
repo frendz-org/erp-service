@@ -15,8 +15,6 @@ func SetupMemberRoutes(api fiber.Router, ctrl *controller.MemberController, jwtM
 
 	members.Post("/self-register", ctrl.Register)
 
-	// Self-service /me route: JWT + TenantContext + frendzSavingMW, NO role middleware.
-	// MUST be registered BEFORE /:memberId to avoid Fiber matching "me" as :memberId.
 	members.Get("/me", ctrl.GetMe)
 
 	adminMW := middleware.RequireProductRole("TENANT_PRODUCT_ADMIN")
