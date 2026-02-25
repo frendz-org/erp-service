@@ -52,6 +52,7 @@ func (uc *usecase) RegisterMember(ctx context.Context, req *RegisterRequest) (*R
 
 	return &RegisterResponse{
 		ID:               reg.ID,
+		TenantID:         reg.TenantID,
 		Status:           string(reg.Status),
 		RegistrationType: reg.RegistrationType,
 		CreatedAt:        reg.CreatedAt,

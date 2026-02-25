@@ -8,9 +8,26 @@ import (
 func MapMemberRegisterResponse(dto *member.RegisterResponse) response.MemberRegisterResponse {
 	return response.MemberRegisterResponse{
 		ID:               dto.ID,
+		TenantID:         dto.TenantID,
 		Status:           dto.Status,
 		RegistrationType: dto.RegistrationType,
 		CreatedAt:        dto.CreatedAt,
+	}
+}
+
+func MapMyMemberResponse(dto *member.MyMemberResponse) response.MyMemberResponse {
+	return response.MyMemberResponse{
+		ID:               dto.ID,
+		UserID:           dto.UserID,
+		FirstName:        dto.FirstName,
+		LastName:         dto.LastName,
+		Email:            dto.Email,
+		Status:           dto.Status,
+		RegistrationType: dto.RegistrationType,
+		RoleCode:         dto.RoleCode,
+		RoleName:         dto.RoleName,
+		CreatedAt:        dto.CreatedAt,
+		UpdatedAt:        dto.UpdatedAt,
 	}
 }
 

@@ -23,6 +23,53 @@ func NewMemberController(uc member.Usecase) *MemberController {
 	}
 }
 
+func (ctrl *MemberController) GetMe(c *fiber.Ctx) error {
+	tenantID, err := middleware.GetTenantIDFromContext(c)
+	if err != nil {
+		appErr := errors.GetAppError(err)
+		return c.Status(appErr.HTTPStatus).JSON(fiber.Map{
+			"success": false,
+			"error":   appErr.Message,
+		})
+	}
+
+	productID, err := middleware.GetProductIDFromContext(c)
+	if err != nil {
+		appErr := errors.GetAppError(err)
+		return c.Status(appErr.HTTPStatus).JSON(fiber.Map{
+			"success": false,
+			"error":   appErr.Message,
+		})
+	}
+
+	userClaims, err := middleware.GetMultiTenantClaims(c)
+	if err != nil {
+		appErr := errors.GetAppError(err)
+		return c.Status(appErr.HTTPStatus).JSON(fiber.Map{
+			"success": false,
+			"error":   appErr.Message,
+		})
+	}
+
+	result, err := ctrl.usecase.GetMyMember(c.UserContext(), &member.GetMyMemberRequest{
+		UserID:    userClaims.UserID,
+		TenantID:  tenantID,
+		ProductID: productID,
+	})
+	if err != nil {
+		appErr := errors.GetAppError(err)
+		return c.Status(appErr.HTTPStatus).JSON(fiber.Map{
+			"success": false,
+			"error":   appErr.Message,
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"data":    presenter.MapMyMemberResponse(result),
+	})
+}
+
 func (ctrl *MemberController) Register(c *fiber.Ctx) error {
 	tenantID, err := middleware.GetTenantIDFromContext(c)
 	if err != nil {
