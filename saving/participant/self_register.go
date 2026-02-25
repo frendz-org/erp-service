@@ -143,7 +143,6 @@ func (uc *usecase) SelfRegister(ctx context.Context, req *SelfRegisterRequest) (
 	}
 
 	if existingParticipant != nil {
-
 		switch {
 		case existingParticipant.UserID != nil && *existingParticipant.UserID == req.UserID:
 			return nil, apperrors.ErrConflict("registration not eligible")
@@ -184,7 +183,6 @@ func (uc *usecase) linkExistingParticipantToUser(
 	}
 
 	err := uc.txManager.WithTransaction(ctx, func(txCtx context.Context) error {
-
 		participant.UserID = &req.UserID
 		if err := uc.participantRepo.Update(txCtx, participant); err != nil {
 			return fmt.Errorf("update participant user link: %w", err)
@@ -248,6 +246,7 @@ func (uc *usecase) createNewSelfRegisteredParticipant(
 			DateOfBirth:    profile.DateOfBirth,
 			Gender:         &genderStr,
 			KTPNumber:      &req.IdentityNumber,
+			EmployeeNumber: &req.ParticipantNumber,
 			PhoneNumber:    &req.PhoneNumber,
 			Status:         entity.ParticipantStatusDraft,
 			CreatedBy:      req.UserID,
