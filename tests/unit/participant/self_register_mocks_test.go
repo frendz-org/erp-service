@@ -166,7 +166,12 @@ func buildSelfRegisterUsecase(
 	utrRepo *mockUserTenantRegistrationRepository,
 	profileRepo *mockUserProfileRepository,
 	mdValidator *mockMasterdataValidator,
+	empDataRepo *MockEmployeeDataRepository,
 ) participant.Usecase {
+	var edr participant.EmployeeDataRepository
+	if empDataRepo != nil {
+		edr = empDataRepo
+	}
 	return participant.NewUsecase(
 		&config.Config{},
 		zap.NewNop(),
@@ -188,5 +193,6 @@ func buildSelfRegisterUsecase(
 		utrRepo,
 		profileRepo,
 		mdValidator,
+		edr,
 	)
 }

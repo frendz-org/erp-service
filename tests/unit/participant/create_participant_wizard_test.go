@@ -50,6 +50,7 @@ func makeCreateUsecase() (participant.Usecase, *MockTransactionManager, *MockPar
 		nil,
 		nil,
 		nil,
+		nil,
 	)
 	return uc, txMgr, participantRepo, statusHistoryRepo, identityRepo, addressRepo, bankAccountRepo, familyMemberRepo, employmentRepo, pensionRepo, beneficiaryRepo
 }

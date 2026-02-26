@@ -45,6 +45,7 @@ func newTestUsecase(
 		nil,
 		nil,
 		nil,
+		nil,
 	)
 }
 

@@ -460,3 +460,15 @@ func (m *MockFileRepository) ReleaseStaleClaimsOlderThan(ctx context.Context, ag
 	args := m.Called(ctx, age)
 	return args.Error(0)
 }
+
+type MockEmployeeDataRepository struct {
+	mock.Mock
+}
+
+func (m *MockEmployeeDataRepository) GetByEmpNo(ctx context.Context, empNo string) (*entity.EmployeeData, error) {
+	args := m.Called(ctx, empNo)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*entity.EmployeeData), args.Error(1)
+}
