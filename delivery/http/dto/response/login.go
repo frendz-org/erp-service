@@ -77,3 +77,16 @@ type LoginStatusResponse struct {
 	ExpiresAt         time.Time `json:"expires_at"`
 	CooldownRemaining int       `json:"cooldown_remaining,omitempty"`
 }
+
+type GoogleAuthURLResponse struct {
+	AuthURL string `json:"auth_url"`
+}
+
+type GoogleCallbackResponse struct {
+	AccessToken  string            `json:"access_token"`
+	RefreshToken string            `json:"refresh_token"`
+	ExpiresIn    int               `json:"expires_in"`
+	TokenType    string            `json:"token_type"`
+	IsNewUser    bool              `json:"is_new_user"`
+	User         LoginUserResponse `json:"user"`
+}

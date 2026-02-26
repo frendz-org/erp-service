@@ -86,6 +86,29 @@ func ToRefreshTokenResponse(resp *auth.RefreshTokenResponse) *response.RefreshTo
 	}
 }
 
+func ToGoogleAuthURLResponse(resp *auth.GoogleAuthURLResponse) *response.GoogleAuthURLResponse {
+	if resp == nil {
+		return nil
+	}
+	return &response.GoogleAuthURLResponse{
+		AuthURL: resp.AuthURL,
+	}
+}
+
+func ToGoogleCallbackResponse(resp *auth.GoogleCallbackResponse) *response.GoogleCallbackResponse {
+	if resp == nil {
+		return nil
+	}
+	return &response.GoogleCallbackResponse{
+		AccessToken:  resp.AccessToken,
+		RefreshToken: resp.RefreshToken,
+		ExpiresIn:    resp.ExpiresIn,
+		TokenType:    resp.TokenType,
+		IsNewUser:    resp.IsNewUser,
+		User:         *toLoginUserResponse(&resp.User),
+	}
+}
+
 func toLoginUserResponse(user *auth.LoginUserResponse) *response.LoginUserResponse {
 	if user == nil {
 		return nil

@@ -30,4 +30,8 @@ func SetupAuthRoutes(api fiber.Router, cfg *config.Config, authController *contr
 	login.Post("/:id/verify-otp", authController.VerifyLoginOTP)
 	login.Post("/:id/resend-otp", authController.ResendLoginOTP)
 	login.Get("/:id/status", authController.GetLoginStatus)
+
+	google := api.Group("/auth/google")
+	google.Get("", authController.GoogleLogin)
+	google.Post("/callback", authController.GoogleCallback)
 }
