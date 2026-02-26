@@ -47,5 +47,10 @@ func (uc *usecase) DeactivateMember(ctx context.Context, req *DeactivateRequest)
 		return nil, emailErr
 	}
 
-	return mapToDetailResponse(reg, profile, email, nil, nil), nil
+	m, mErr := uc.memberRepo.GetByRegistrationID(ctx, reg.ID)
+	if mErr != nil && !errors.IsNotFound(mErr) {
+		return nil, mErr
+	}
+
+	return mapToDetailResponse(reg, profile, email, nil, nil, m), nil
 }

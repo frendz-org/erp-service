@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"erp-service/entity"
+	"erp-service/masterdata"
 
 	"github.com/google/uuid"
 )
@@ -20,12 +21,15 @@ type MemberListFilter struct {
 }
 
 type MemberListRow struct {
-	Registration entity.UserTenantRegistration
-	FirstName    string
-	LastName     string
-	Email        string
-	RoleCode     *string
-	RoleName     *string
+	Registration      entity.UserTenantRegistration
+	FirstName         string
+	LastName          string
+	Email             string
+	RoleCode          *string
+	RoleName          *string
+	ParticipantNumber *string
+	IdentityNumber    *string
+	OrganizationCode  *string
 }
 
 type UserTenantRegistrationRepository interface {
@@ -44,6 +48,7 @@ type UserRoleRepository interface {
 
 type ProductRepository interface {
 	GetByIDAndTenant(ctx context.Context, productID, tenantID uuid.UUID) (*entity.Product, error)
+	GetByCodeAndTenant(ctx context.Context, tenantID uuid.UUID, code string) (*entity.Product, error)
 }
 
 type RoleRepository interface {
@@ -61,4 +66,23 @@ type UserProfileRepository interface {
 
 type UserRepository interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*entity.User, error)
+}
+
+type MemberRepository interface {
+	Create(ctx context.Context, m *entity.Member) error
+	GetByRegistrationID(ctx context.Context, registrationID uuid.UUID) (*entity.Member, error)
+	GetByUserTenantProduct(ctx context.Context, userID, tenantID, productID uuid.UUID) (*entity.Member, error)
+	GetByParticipantNumber(ctx context.Context, tenantID, productID uuid.UUID, participantNumber string) (*entity.Member, error)
+}
+
+type EmployeeDataRepository interface {
+	GetByEmpNo(ctx context.Context, empNo string) (*entity.EmployeeData, error)
+}
+
+type TenantRepository interface {
+	GetByCode(ctx context.Context, code string) (*entity.Tenant, error)
+}
+
+type MasterdataUsecase interface {
+	ValidateItemCode(ctx context.Context, req *masterdata.ValidateCodeRequest) (*masterdata.ValidateCodeResponse, error)
 }

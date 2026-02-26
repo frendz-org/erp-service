@@ -35,5 +35,10 @@ func (uc *usecase) GetMember(ctx context.Context, req *GetMemberRequest) (*Membe
 		}
 	}
 
-	return mapToDetailResponse(reg, profile, email, roleCode, roleName), nil
+	m, mErr := uc.memberRepo.GetByRegistrationID(ctx, reg.ID)
+	if mErr != nil && !errors.IsNotFound(mErr) {
+		return nil, mErr
+	}
+
+	return mapToDetailResponse(reg, profile, email, roleCode, roleName, m), nil
 }

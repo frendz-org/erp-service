@@ -32,20 +32,23 @@ func (uc *usecase) validateTenantBoundary(reg *entity.UserTenantRegistration, te
 
 func mapRowToListItem(row MemberListRow) MemberListItem {
 	return MemberListItem{
-		ID:               row.Registration.ID,
-		UserID:           row.Registration.UserID,
-		FirstName:        row.FirstName,
-		LastName:         row.LastName,
-		Email:            row.Email,
-		Status:           string(row.Registration.Status),
-		RegistrationType: row.Registration.RegistrationType,
-		RoleCode:         row.RoleCode,
-		RoleName:         row.RoleName,
-		CreatedAt:        row.Registration.CreatedAt,
+		ID:                row.Registration.ID,
+		UserID:            row.Registration.UserID,
+		FirstName:         row.FirstName,
+		LastName:          row.LastName,
+		Email:             row.Email,
+		Status:            string(row.Registration.Status),
+		RegistrationType:  row.Registration.RegistrationType,
+		RoleCode:          row.RoleCode,
+		RoleName:          row.RoleName,
+		ParticipantNumber: row.ParticipantNumber,
+		IdentityNumber:    row.IdentityNumber,
+		OrganizationCode:  row.OrganizationCode,
+		CreatedAt:         row.Registration.CreatedAt,
 	}
 }
 
-func mapToDetailResponse(reg *entity.UserTenantRegistration, profile *entity.UserProfile, email string, roleCode, roleName *string) *MemberDetailResponse {
+func mapToDetailResponse(reg *entity.UserTenantRegistration, profile *entity.UserProfile, email string, roleCode, roleName *string, m *entity.Member) *MemberDetailResponse {
 	resp := &MemberDetailResponse{
 		ID:               reg.ID,
 		UserID:           reg.UserID,
@@ -64,6 +67,12 @@ func mapToDetailResponse(reg *entity.UserTenantRegistration, profile *entity.Use
 	if profile != nil {
 		resp.FirstName = profile.FirstName
 		resp.LastName = profile.LastName
+	}
+
+	if m != nil {
+		resp.ParticipantNumber = &m.ParticipantNumber
+		resp.IdentityNumber = &m.IdentityNumber
+		resp.OrganizationCode = &m.OrganizationCode
 	}
 
 	return resp

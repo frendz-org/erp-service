@@ -66,5 +66,10 @@ func (uc *usecase) ApproveMember(ctx context.Context, req *ApproveRequest) (*Mem
 		return nil, emailErr
 	}
 
-	return mapToDetailResponse(reg, profile, email, &role.Code, &role.Name), nil
+	m, mErr := uc.memberRepo.GetByRegistrationID(ctx, reg.ID)
+	if mErr != nil && !errors.IsNotFound(mErr) {
+		return nil, mErr
+	}
+
+	return mapToDetailResponse(reg, profile, email, &role.Code, &role.Name, m), nil
 }

@@ -49,5 +49,15 @@ func (uc *usecase) GetMyMember(ctx context.Context, req *GetMyMemberRequest) (*M
 		resp.LastName = profile.LastName
 	}
 
+	m, mErr := uc.memberRepo.GetByRegistrationID(ctx, reg.ID)
+	if mErr != nil && !errors.IsNotFound(mErr) {
+		return nil, mErr
+	}
+	if m != nil {
+		resp.ParticipantNumber = &m.ParticipantNumber
+		resp.IdentityNumber = &m.IdentityNumber
+		resp.OrganizationCode = &m.OrganizationCode
+	}
+
 	return resp, nil
 }
