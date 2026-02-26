@@ -2684,12 +2684,24 @@ paths:
       tags: [Members]
       summary: Self-register as member
       description: |
-        Submits a membership registration request for the current user in the given product.
+        Submits a membership registration request for the current user.
+        The tenant and product are resolved from the `organization` code in the request body
+        (format: `TENANT_XXX`), so no `X-Tenant-ID` header is required.
         Creates a `user_tenant_registrations` record with type MEMBER and status PENDING_APPROVAL.
-        Any authenticated user with product access can register.
+        Any authenticated user can call this endpoint.
       operationId: selfRegisterMember
-      parameters:
-        - $ref: '#/components/parameters/TenantIDHeader'
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SelfRegisterMemberRequest'
+            example:
+              organization: "TENANT_001"
+              participant_number: "EMP-001234"
+              identity_number: "3201234567890001"
       responses:
         '201':
           description: Membership registration submitted
@@ -2701,8 +2713,6 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
         '409':
           $ref: '#/components/responses/Conflict'
         '500':
@@ -5464,6 +5474,26 @@ components:
           type: string
           example: MEMBER_VIEWER
 
+    SelfRegisterMemberRequest:
+      type: object
+      required:
+        - organization
+        - participant_number
+        - identity_number
+      properties:
+        organization:
+          type: string
+          description: Organization code in TENANT_XXX format; used to resolve the tenant and product.
+          example: TENANT_001
+        participant_number:
+          type: string
+          description: Employee / participant number issued by the organization.
+          example: EMP-001234
+        identity_number:
+          type: string
+          description: 16-digit national identity number (NIK).
+          example: "3201234567890001"
+
     MemberRegisterResponse:
       type: object
       properties:
@@ -5487,6 +5517,18 @@ components:
               type: string
               enum: [MEMBER]
               example: MEMBER
+            participant_number:
+              type: string
+              example: EMP-001234
+            identity_number:
+              type: string
+              example: "3201234567890001"
+            organization_code:
+              type: string
+              example: TENANT_001
+            full_name:
+              type: string
+              example: John Doe
             created_at:
               type: string
               format: date-time
@@ -5529,6 +5571,18 @@ components:
             role_name:
               type: string
               nullable: true
+            participant_number:
+              type: string
+              nullable: true
+              example: EMP-001234
+            identity_number:
+              type: string
+              nullable: true
+              example: "3201234567890001"
+            organization_code:
+              type: string
+              nullable: true
+              example: TENANT_001
             created_at:
               type: string
               format: date-time
@@ -5576,6 +5630,18 @@ components:
         role_name:
           type: string
           nullable: true
+        participant_number:
+          type: string
+          nullable: true
+          example: EMP-001234
+        identity_number:
+          type: string
+          nullable: true
+          example: "3201234567890001"
+        organization_code:
+          type: string
+          nullable: true
+          example: TENANT_001
         approved_by:
           type: string
           format: uuid
