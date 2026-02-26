@@ -121,6 +121,22 @@ func (m *MockAuthUsecase) GetLoginStatus(ctx context.Context, req *auth.GetLogin
 	return args.Get(0).(*auth.LoginStatusResponse), args.Error(1)
 }
 
+func (m *MockAuthUsecase) GetGoogleAuthURL(ctx context.Context) (*auth.GoogleAuthURLResponse, error) {
+	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*auth.GoogleAuthURLResponse), args.Error(1)
+}
+
+func (m *MockAuthUsecase) HandleGoogleCallback(ctx context.Context, req *auth.GoogleCallbackRequest) (*auth.GoogleCallbackResponse, error) {
+	args := m.Called(ctx, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*auth.GoogleCallbackResponse), args.Error(1)
+}
+
 func setupTestApp() *fiber.App {
 	return fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {

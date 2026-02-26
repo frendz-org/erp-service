@@ -193,6 +193,22 @@ func (m *MockUserAuthMethodRepository) GetByUserID(ctx context.Context, userID u
 	return args.Get(0).(*entity.UserAuthMethod), args.Error(1)
 }
 
+func (m *MockUserAuthMethodRepository) GetByUserIDAndMethodType(ctx context.Context, userID uuid.UUID, methodType string) (*entity.UserAuthMethod, error) {
+	args := m.Called(ctx, userID, methodType)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*entity.UserAuthMethod), args.Error(1)
+}
+
+func (m *MockUserAuthMethodRepository) GetByCredentialField(ctx context.Context, methodType, jsonField, value string) (*entity.UserAuthMethod, error) {
+	args := m.Called(ctx, methodType, jsonField, value)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*entity.UserAuthMethod), args.Error(1)
+}
+
 func (m *MockUserAuthMethodRepository) Update(ctx context.Context, authMethod *entity.UserAuthMethod) error {
 	args := m.Called(ctx, authMethod)
 	return args.Error(0)
@@ -564,6 +580,16 @@ func (m *MockInMemoryStore) GetUserBlacklistTimestamp(ctx context.Context, userI
 		return nil, args.Error(1)
 	}
 	return args.Get(0).(*time.Time), args.Error(1)
+}
+
+func (m *MockInMemoryStore) StoreOAuthState(ctx context.Context, state string, ttl time.Duration) error {
+	args := m.Called(ctx, state, ttl)
+	return args.Error(0)
+}
+
+func (m *MockInMemoryStore) GetAndDeleteOAuthState(ctx context.Context, state string) (bool, error) {
+	args := m.Called(ctx, state)
+	return args.Bool(0), args.Error(1)
 }
 
 type MockUserTenantRegistrationRepository struct {
