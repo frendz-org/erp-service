@@ -2603,6 +2603,48 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /api/v1/dev/users/{email}/assign-product-admin:
+    post:
+      tags: [Dev]
+      summary: Assign TENANT_PRODUCT_ADMIN role to user
+      description: |
+        Assigns the TENANT_PRODUCT_ADMIN role to a user identified by email for a specified
+        tenant and product. Idempotent — returns 200 whether the role was newly assigned or
+        already present; the `already_assigned` flag distinguishes the two cases.
+
+        **Not registered in production.** Guarded by an IsProduction check; no authentication
+        required.
+      operationId: devAssignProductAdmin
+      security: []
+      parameters:
+        - name: email
+          in: path
+          required: true
+          description: Email address of the user (case-insensitive)
+          schema:
+            type: string
+            format: email
+          example: user@example.com
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DevAssignProductAdminRequest'
+      responses:
+        '200':
+          description: Role assigned (or already assigned)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevAssignProductAdminResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   # ==========================================
   # MEMBERS
   # ==========================================
@@ -2694,6 +2736,18 @@ paths:
             minimum: 1
             maximum: 100
             default: 20
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            enum: [created_at, updated_at, full_name, status]
+            default: created_at
+        - name: sort_order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
       responses:
         '200':
           description: Paginated list of members
@@ -3158,7 +3212,7 @@ components:
         page:
           type: integer
           example: 1
-        per_page:
+        limit:
           type: integer
           example: 20
         total:
@@ -5507,11 +5561,14 @@ components:
           type: boolean
           example: true
         data:
-          type: array
-          items:
-            $ref: '#/components/schemas/MemberData'
-        pagination:
-          $ref: '#/components/schemas/Pagination'
+          type: object
+          properties:
+            members:
+              type: array
+              items:
+                $ref: '#/components/schemas/MemberData'
+            pagination:
+              $ref: '#/components/schemas/Pagination'
 
     # ---- Dev ----
     DevResetUserResponse:
@@ -5534,6 +5591,48 @@ components:
               type: boolean
               description: Whether a user with this email existed and was deleted
               example: true
+
+    DevAssignProductAdminRequest:
+      type: object
+      required:
+        - tenant_code
+        - product_code
+      properties:
+        tenant_code:
+          type: string
+          description: Code of the tenant to scope the role assignment
+          example: TENANT_001
+        product_code:
+          type: string
+          description: Code of the product to scope the role assignment
+          example: frendz-saving
+
+    DevAssignProductAdminResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "TENANT_PRODUCT_ADMIN role assigned"
+        data:
+          type: object
+          properties:
+            email:
+              type: string
+              format: email
+              example: user@example.com
+            tenant_code:
+              type: string
+              example: TENANT_001
+            product_code:
+              type: string
+              example: frendz-saving
+            already_assigned:
+              type: boolean
+              description: True if the user already had the role before this call
+              example: false
 
     PensionAmountSummaryResponse:
       type: object
