@@ -13,7 +13,7 @@ type usecase struct {
 	profileRepo       UserProfileRepository
 	userRepo          UserRepository
 	memberRepo        MemberRepository
-	employeeDataRepo  EmployeeDataRepository
+	csiEmployeeRepo   CsiEmployeeRepository
 	tenantRepo        TenantRepository
 	masterdataUsecase MasterdataUsecase
 }
@@ -29,7 +29,7 @@ func NewUsecase(
 	profileRepo UserProfileRepository,
 	userRepo UserRepository,
 	memberRepo MemberRepository,
-	employeeDataRepo EmployeeDataRepository,
+	csiEmployeeRepo CsiEmployeeRepository,
 	tenantRepo TenantRepository,
 	masterdataUsecase MasterdataUsecase,
 ) Usecase {
@@ -44,7 +44,7 @@ func NewUsecase(
 		profileRepo:       profileRepo,
 		userRepo:          userRepo,
 		memberRepo:        memberRepo,
-		employeeDataRepo:  employeeDataRepo,
+		csiEmployeeRepo:   csiEmployeeRepo,
 		tenantRepo:        tenantRepo,
 		masterdataUsecase: masterdataUsecase,
 	}

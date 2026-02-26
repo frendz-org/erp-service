@@ -118,7 +118,7 @@ func (uc *usecase) RegisterMember(ctx context.Context, req *RegisterRequest) (*R
 		return nil, errors.ErrConflict("you already have a member registration for this product")
 	}
 
-	_, err = uc.employeeDataRepo.GetByEmpNo(ctx, req.ParticipantNumber)
+	_, err = uc.csiEmployeeRepo.GetByEmployeeNo(ctx, req.ParticipantNumber)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return nil, errors.ErrNotFound("employee number not found")

@@ -133,3 +133,7 @@ type ParticipantStatusHistoryRepository interface {
 type EmployeeDataRepository interface {
 	GetByEmpNo(ctx context.Context, empNo string) (*entity.EmployeeData, error)
 }
+
+type CsiEmployeeRepository interface {
+	GetByEmployeeNo(ctx context.Context, employeeNo string) (*entity.CsiEmployee, error)
+}

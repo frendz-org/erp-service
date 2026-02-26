@@ -98,7 +98,7 @@ func NewServer(cfg *config.Config) *Server {
 	productRegConfigRepo := postgres.NewProductRegistrationConfigRepository(postgresDB)
 
 	memberRepo := postgres.NewMemberRepository(postgresDB)
-	employeeDataRepo := postgres.NewEmployeeDataRepository(postgresDB)
+	csiEmployeeRepo := postgres.NewCsiEmployeeRepository(postgresDB)
 	participantRepo := postgres.NewParticipantRepository(postgresDB)
 	participantIdentityRepo := postgres.NewParticipantIdentityRepository(postgresDB)
 	participantAddressRepo := postgres.NewParticipantAddressRepository(postgresDB)
@@ -176,7 +176,7 @@ func NewServer(cfg *config.Config) *Server {
 		userProfileRepo,
 		authUserRepo,
 		memberRepo,
-		employeeDataRepo,
+		csiEmployeeRepo,
 		tenantRepo,
 		masterdataUsecase,
 	)
@@ -201,7 +201,7 @@ func NewServer(cfg *config.Config) *Server {
 		userTenantRegRepo,
 		userProfileRepo,
 		masterdataUsecase,
-		employeeDataRepo,
+		csiEmployeeRepo,
 	)
 
 	healthController := controller.NewHealthController(cfg)

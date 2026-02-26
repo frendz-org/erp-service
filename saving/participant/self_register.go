@@ -163,7 +163,7 @@ func (uc *usecase) SelfRegister(ctx context.Context, req *SelfRegisterRequest) (
 		return nil, fmt.Errorf("check existing registration: %w", err)
 	}
 
-	_, err = uc.employeeDataRepo.GetByEmpNo(ctx, req.ParticipantNumber)
+	_, err = uc.csiEmployeeRepo.GetByEmployeeNo(ctx, req.ParticipantNumber)
 	if err != nil {
 		if apperrors.IsNotFound(err) {
 			return nil, apperrors.ErrNotFound("employee number not found")

@@ -79,6 +79,10 @@ type EmployeeDataRepository interface {
 	GetByEmpNo(ctx context.Context, empNo string) (*entity.EmployeeData, error)
 }
 
+type CsiEmployeeRepository interface {
+	GetByEmployeeNo(ctx context.Context, employeeNo string) (*entity.CsiEmployee, error)
+}
+
 type TenantRepository interface {
 	GetByCode(ctx context.Context, code string) (*entity.Tenant, error)
 }
