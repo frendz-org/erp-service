@@ -3831,7 +3831,7 @@
     },
     {
       "name": "Members",
-      "description": "Member management. JWT + X-Tenant-ID + product-scoped. Admin routes require TENANT_PRODUCT_ADMIN role. Base: /api/v1/saving/members",
+      "description": "Member management. Self-register requires JWT only (tenant/product resolved from organization code). All other routes require JWT + X-Tenant-ID + product-scoped. Admin routes require TENANT_PRODUCT_ADMIN role. Base: /api/v1/saving/members",
       "item": [
         {
           "name": "Register as Member",
@@ -3856,15 +3856,20 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}" },
-              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"organization\": \"TENANT_001\",\n    \"participant_number\": \"ABC12345\",\n    \"identity_number\": \"3201011234560001\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
             "url": {
               "raw": "{{base_url}}/api/v1/saving/members/self-register",
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "saving", "members", "self-register"]
             },
-            "description": "Self-register as a member for a product. No request body required — identity derived from JWT. Creates a PENDING_APPROVAL registration."
+            "description": "Self-register as a member. Tenant and product are resolved from the organization code in the request body. Requires Authorization Bearer token. Creates a PENDING_APPROVAL registration."
           },
           "response": [
             {
@@ -3873,7 +3878,7 @@
               "code": 201,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"status\": \"PENDING_APPROVAL\",\n        \"registration_type\": \"MEMBER\",\n        \"created_at\": \"2026-02-18T10:00:00Z\"\n    }\n}"
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"tenant_id\": \"019500a1-...\",\n        \"status\": \"PENDING_APPROVAL\",\n        \"registration_type\": \"MEMBER\",\n        \"participant_number\": \"ABC12345\",\n        \"identity_number\": \"3201011234560001\",\n        \"organization_code\": \"TENANT_001\",\n        \"full_name\": \"Budi Santoso\",\n        \"created_at\": \"2026-02-18T10:00:00Z\"\n    }\n}"
             },
             {
               "name": "401 - Unauthorized",
@@ -3933,7 +3938,7 @@
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"user_id\": \"019500a2-...\",\n        \"status\": \"ACTIVE\",\n        \"role_code\": \"MEMBER\",\n        \"created_at\": \"2026-02-18T10:00:00Z\"\n    }\n}"
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"user_id\": \"019500a2-...\",\n        \"first_name\": \"Budi\",\n        \"last_name\": \"Santoso\",\n        \"email\": \"user@example.com\",\n        \"status\": \"ACTIVE\",\n        \"registration_type\": \"MEMBER\",\n        \"role_code\": \"MEMBER\",\n        \"role_name\": \"Member\",\n        \"participant_number\": \"ABC12345\",\n        \"identity_number\": \"3201011234560001\",\n        \"organization_code\": \"TENANT_001\",\n        \"created_at\": \"2026-02-18T10:00:00Z\",\n        \"updated_at\": \"2026-02-18T10:00:00Z\"\n    }\n}"
             },
             {
               "name": "404 - Member Not Found",
@@ -4000,7 +4005,7 @@
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"members\": [\n            {\n                \"id\": \"019500g1-...\",\n                \"user_id\": \"019500a2-...\",\n                \"first_name\": \"Budi\",\n                \"last_name\": \"Santoso\",\n                \"email\": \"user@example.com\",\n                \"status\": \"PENDING_APPROVAL\",\n                \"registration_type\": \"MEMBER\",\n                \"created_at\": \"2026-02-18T10:00:00Z\"\n            }\n        ],\n        \"pagination\": {\n            \"total\": 1,\n            \"page\": 1,\n            \"limit\": 10,\n            \"total_pages\": 1\n        }\n    }\n}"
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"members\": [\n            {\n                \"id\": \"019500g1-...\",\n                \"user_id\": \"019500a2-...\",\n                \"first_name\": \"Budi\",\n                \"last_name\": \"Santoso\",\n                \"email\": \"user@example.com\",\n                \"status\": \"PENDING_APPROVAL\",\n                \"registration_type\": \"MEMBER\",\n                \"role_code\": \"MEMBER\",\n                \"role_name\": \"Member\",\n                \"participant_number\": \"ABC12345\",\n                \"identity_number\": \"3201011234560001\",\n                \"organization_code\": \"TENANT_001\",\n                \"created_at\": \"2026-02-18T10:00:00Z\"\n            }\n        ],\n        \"pagination\": {\n            \"total\": 1,\n            \"page\": 1,\n            \"limit\": 10,\n            \"total_pages\": 1\n        }\n    }\n}"
             }
           ]
         },
@@ -4043,7 +4048,7 @@
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"user_id\": \"019500a2-...\",\n        \"first_name\": \"Budi\",\n        \"last_name\": \"Santoso\",\n        \"email\": \"user@example.com\",\n        \"status\": \"PENDING_APPROVAL\",\n        \"registration_type\": \"MEMBER\",\n        \"version\": 1,\n        \"created_at\": \"2026-02-18T10:00:00Z\",\n        \"updated_at\": \"2026-02-18T10:00:00Z\"\n    }\n}"
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"user_id\": \"019500a2-...\",\n        \"first_name\": \"Budi\",\n        \"last_name\": \"Santoso\",\n        \"email\": \"user@example.com\",\n        \"status\": \"PENDING_APPROVAL\",\n        \"registration_type\": \"MEMBER\",\n        \"role_code\": \"MEMBER\",\n        \"role_name\": \"Member\",\n        \"participant_number\": \"ABC12345\",\n        \"identity_number\": \"3201011234560001\",\n        \"organization_code\": \"TENANT_001\",\n        \"version\": 1,\n        \"created_at\": \"2026-02-18T10:00:00Z\",\n        \"updated_at\": \"2026-02-18T10:00:00Z\"\n    }\n}"
             },
             {
               "name": "404 - Member Not Found",
@@ -4100,7 +4105,7 @@
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"status\": \"ACTIVE\",\n        \"role_code\": \"MEMBER\",\n        \"approved_by\": \"019500a2-...\",\n        \"approved_at\": \"2026-02-18T10:10:00Z\"\n    }\n}"
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"user_id\": \"019500a2-...\",\n        \"first_name\": \"Budi\",\n        \"last_name\": \"Santoso\",\n        \"email\": \"user@example.com\",\n        \"status\": \"ACTIVE\",\n        \"registration_type\": \"MEMBER\",\n        \"role_code\": \"MEMBER\",\n        \"role_name\": \"Member\",\n        \"participant_number\": \"ABC12345\",\n        \"identity_number\": \"3201011234560001\",\n        \"organization_code\": \"TENANT_001\",\n        \"approved_by\": \"019500a2-...\",\n        \"approved_at\": \"2026-02-18T10:10:00Z\",\n        \"version\": 2,\n        \"created_at\": \"2026-02-18T10:00:00Z\",\n        \"updated_at\": \"2026-02-18T10:10:00Z\"\n    }\n}"
             }
           ]
         },
@@ -4149,7 +4154,7 @@
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"status\": \"REJECTED\"\n    }\n}"
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"user_id\": \"019500a2-...\",\n        \"first_name\": \"Budi\",\n        \"last_name\": \"Santoso\",\n        \"email\": \"user@example.com\",\n        \"status\": \"REJECTED\",\n        \"registration_type\": \"MEMBER\",\n        \"participant_number\": \"ABC12345\",\n        \"identity_number\": \"3201011234560001\",\n        \"organization_code\": \"TENANT_001\",\n        \"version\": 2,\n        \"created_at\": \"2026-02-18T10:00:00Z\",\n        \"updated_at\": \"2026-02-18T10:15:00Z\"\n    }\n}"
             }
           ]
         },
@@ -4198,7 +4203,7 @@
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"role_code\": \"TENANT_PRODUCT_ADMIN\",\n        \"status\": \"ACTIVE\"\n    }\n}"
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"user_id\": \"019500a2-...\",\n        \"first_name\": \"Budi\",\n        \"last_name\": \"Santoso\",\n        \"email\": \"user@example.com\",\n        \"status\": \"ACTIVE\",\n        \"registration_type\": \"MEMBER\",\n        \"role_code\": \"TENANT_PRODUCT_ADMIN\",\n        \"role_name\": \"Tenant Product Admin\",\n        \"participant_number\": \"ABC12345\",\n        \"identity_number\": \"3201011234560001\",\n        \"organization_code\": \"TENANT_001\",\n        \"approved_by\": \"019500a2-...\",\n        \"approved_at\": \"2026-02-18T10:10:00Z\",\n        \"version\": 3,\n        \"created_at\": \"2026-02-18T10:00:00Z\",\n        \"updated_at\": \"2026-02-18T10:20:00Z\"\n    }\n}"
             }
           ]
         },
@@ -4247,7 +4252,7 @@
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"status\": \"INACTIVE\"\n    }\n}"
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"user_id\": \"019500a2-...\",\n        \"first_name\": \"Budi\",\n        \"last_name\": \"Santoso\",\n        \"email\": \"user@example.com\",\n        \"status\": \"INACTIVE\",\n        \"registration_type\": \"MEMBER\",\n        \"role_code\": \"MEMBER\",\n        \"role_name\": \"Member\",\n        \"participant_number\": \"ABC12345\",\n        \"identity_number\": \"3201011234560001\",\n        \"organization_code\": \"TENANT_001\",\n        \"version\": 4,\n        \"created_at\": \"2026-02-18T10:00:00Z\",\n        \"updated_at\": \"2026-02-18T10:25:00Z\"\n    }\n}"
             }
           ]
         }
