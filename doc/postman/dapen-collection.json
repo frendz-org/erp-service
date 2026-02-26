@@ -4264,6 +4264,111 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Dev",
+      "description": "Dev-only utility endpoints. Not registered in production (guarded by IsProduction check). No authentication required.",
+      "item": [
+        {
+          "name": "Assign Product Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  pm.expect(json.data).to.have.property('email');",
+                  "  pm.expect(json.data).to.have.property('tenant_code');",
+                  "  pm.expect(json.data).to.have.property('product_code');",
+                  "  pm.expect(json.data).to.have.property('already_assigned');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"tenant_code\": \"TENANT_001\",\n    \"product_code\": \"frendz-saving\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/dev/users/{{test_email}}/assign-product-admin",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "dev", "users", "{{test_email}}", "assign-product-admin"]
+            },
+            "description": "Assigns the product-admin role to a user identified by email, scoped to the given tenant and product. Dev-only — not available in production."
+          },
+          "response": [
+            {
+              "name": "200 - Role Assigned",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"email\": \"user@example.com\",\n        \"tenant_code\": \"TENANT_001\",\n        \"product_code\": \"frendz-saving\",\n        \"already_assigned\": false\n    }\n}"
+            },
+            {
+              "name": "200 - Already Assigned",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"email\": \"user@example.com\",\n        \"tenant_code\": \"TENANT_001\",\n        \"product_code\": \"frendz-saving\",\n        \"already_assigned\": true\n    }\n}"
+            },
+            {
+              "name": "400 - Missing Fields",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": {\n        \"code\": \"INVALID_BODY\",\n        \"message\": \"tenant_code and product_code are required\"\n    }\n}"
+            },
+            {
+              "name": "404 - User Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": {\n        \"code\": \"NOT_FOUND\",\n        \"message\": \"user not found\"\n    }\n}"
+            },
+            {
+              "name": "404 - Tenant Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": {\n        \"code\": \"NOT_FOUND\",\n        \"message\": \"tenant not found\"\n    }\n}"
+            },
+            {
+              "name": "404 - Product Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": {\n        \"code\": \"NOT_FOUND\",\n        \"message\": \"product not found\"\n    }\n}"
+            },
+            {
+              "name": "404 - Role Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": {\n        \"code\": \"NOT_FOUND\",\n        \"message\": \"product admin role not found\"\n    }\n}"
+            }
+          ]
+        }
+      ]
     }
   ]
 }
