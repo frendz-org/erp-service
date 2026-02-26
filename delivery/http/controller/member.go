@@ -71,24 +71,6 @@ func (ctrl *MemberController) GetMe(c *fiber.Ctx) error {
 }
 
 func (ctrl *MemberController) Register(c *fiber.Ctx) error {
-	tenantID, err := middleware.GetTenantIDFromContext(c)
-	if err != nil {
-		appErr := errors.GetAppError(err)
-		return c.Status(appErr.HTTPStatus).JSON(fiber.Map{
-			"success": false,
-			"error":   appErr.Message,
-		})
-	}
-
-	productID, err := middleware.GetProductIDFromContext(c)
-	if err != nil {
-		appErr := errors.GetAppError(err)
-		return c.Status(appErr.HTTPStatus).JSON(fiber.Map{
-			"success": false,
-			"error":   appErr.Message,
-		})
-	}
-
 	userClaims, err := middleware.GetMultiTenantClaims(c)
 	if err != nil {
 		appErr := errors.GetAppError(err)
@@ -98,10 +80,27 @@ func (ctrl *MemberController) Register(c *fiber.Ctx) error {
 		})
 	}
 
+	var body struct {
+		Organization      string `json:"organization" validate:"required"`
+		ParticipantNumber string `json:"participant_number" validate:"required"`
+		IdentityNumber    string `json:"identity_number" validate:"required"`
+	}
+	if err := c.BodyParser(&body); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"success": false,
+			"error":   "invalid request body",
+		})
+	}
+
+	if err := validate.Struct(&body); err != nil {
+		return errors.ErrValidationWithFields(convertValidationErrors(err.(validator.ValidationErrors)))
+	}
+
 	req := &member.RegisterRequest{
-		TenantID:  tenantID,
-		ProductID: productID,
-		UserID:    userClaims.UserID,
+		UserID:            userClaims.UserID,
+		Organization:      body.Organization,
+		ParticipantNumber: body.ParticipantNumber,
+		IdentityNumber:    body.IdentityNumber,
 	}
 
 	result, err := ctrl.usecase.RegisterMember(c.UserContext(), req)

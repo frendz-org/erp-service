@@ -8,12 +8,14 @@ import (
 )
 
 func SetupMemberRoutes(api fiber.Router, ctrl *controller.MemberController, jwtMiddleware fiber.Handler, frendzSavingMW fiber.Handler) {
+	selfReg := api.Group("/members")
+	selfReg.Use(jwtMiddleware)
+	selfReg.Post("/self-register", ctrl.Register)
+
 	members := api.Group("/members")
 	members.Use(jwtMiddleware)
 	members.Use(middleware.ExtractTenantContext())
 	members.Use(frendzSavingMW)
-
-	members.Post("/self-register", ctrl.Register)
 
 	members.Get("/me", ctrl.GetMe)
 

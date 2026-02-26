@@ -97,6 +97,7 @@ func NewServer(cfg *config.Config) *Server {
 
 	productRegConfigRepo := postgres.NewProductRegistrationConfigRepository(postgresDB)
 
+	memberRepo := postgres.NewMemberRepository(postgresDB)
 	employeeDataRepo := postgres.NewEmployeeDataRepository(postgresDB)
 	participantRepo := postgres.NewParticipantRepository(postgresDB)
 	participantIdentityRepo := postgres.NewParticipantIdentityRepository(postgresDB)
@@ -174,6 +175,10 @@ func NewServer(cfg *config.Config) *Server {
 		productRegConfigRepo,
 		userProfileRepo,
 		authUserRepo,
+		memberRepo,
+		employeeDataRepo,
+		tenantRepo,
+		masterdataUsecase,
 	)
 	participantUsecase := participant.NewUsecase(
 		cfg,

@@ -115,6 +115,7 @@ func (r *userTenantRegistrationRepository) ListByProductWithFilters(ctx context.
 		Joins("LEFT JOIN user_profiles up ON up.user_id = utr.user_id").
 		Joins("LEFT JOIN user_role_assignments ura ON ura.user_id = utr.user_id AND ura.product_id = utr.product_id AND ura.deleted_at IS NULL").
 		Joins("LEFT JOIN roles r ON r.id = ura.role_id AND r.deleted_at IS NULL AND r.status = 'ACTIVE'").
+		Joins("LEFT JOIN members m ON m.user_tenant_registration_id = utr.id AND m.deleted_at IS NULL").
 		Where("utr.tenant_id = ? AND utr.product_id = ? AND utr.registration_type = ? AND utr.deleted_at IS NULL",
 			filter.TenantID, filter.ProductID, "MEMBER")
 
@@ -146,23 +147,26 @@ func (r *userTenantRegistrationRepository) ListByProductWithFilters(ctx context.
 	offset := (filter.Page - 1) * filter.PerPage
 
 	type scanRow struct {
-		ID               uuid.UUID  `gorm:"column:id"`
-		UserID           uuid.UUID  `gorm:"column:user_id"`
-		TenantID         uuid.UUID  `gorm:"column:tenant_id"`
-		ProductID        *uuid.UUID `gorm:"column:product_id"`
-		RegistrationType string     `gorm:"column:registration_type"`
-		Status           string     `gorm:"column:utr_status"`
-		CreatedAt        time.Time  `gorm:"column:utr_created_at"`
-		FirstName        string     `gorm:"column:first_name"`
-		LastName         string     `gorm:"column:last_name"`
-		Email            string     `gorm:"column:email"`
-		RoleCode         *string    `gorm:"column:role_code"`
-		RoleName         *string    `gorm:"column:role_name"`
+		ID                uuid.UUID  `gorm:"column:id"`
+		UserID            uuid.UUID  `gorm:"column:user_id"`
+		TenantID          uuid.UUID  `gorm:"column:tenant_id"`
+		ProductID         *uuid.UUID `gorm:"column:product_id"`
+		RegistrationType  string     `gorm:"column:registration_type"`
+		Status            string     `gorm:"column:utr_status"`
+		CreatedAt         time.Time  `gorm:"column:utr_created_at"`
+		FirstName         string     `gorm:"column:first_name"`
+		LastName          string     `gorm:"column:last_name"`
+		Email             string     `gorm:"column:email"`
+		RoleCode          *string    `gorm:"column:role_code"`
+		RoleName          *string    `gorm:"column:role_name"`
+		ParticipantNumber *string    `gorm:"column:participant_number"`
+		IdentityNumber    *string    `gorm:"column:identity_number"`
+		OrganizationCode  *string    `gorm:"column:organization_code"`
 	}
 
 	var scanRows []scanRow
 	err := baseQuery.
-		Select("utr.id, utr.user_id, utr.tenant_id, utr.product_id, utr.registration_type, utr.status AS utr_status, utr.created_at AS utr_created_at, COALESCE(up.first_name, '') AS first_name, COALESCE(up.last_name, '') AS last_name, u.email, r.code AS role_code, r.name AS role_name").
+		Select("utr.id, utr.user_id, utr.tenant_id, utr.product_id, utr.registration_type, utr.status AS utr_status, utr.created_at AS utr_created_at, COALESCE(up.first_name, '') AS first_name, COALESCE(up.last_name, '') AS last_name, u.email, r.code AS role_code, r.name AS role_name, m.participant_number, m.identity_number, m.organization_code").
 		Order(orderClause).
 		Offset(offset).
 		Limit(filter.PerPage).
@@ -183,11 +187,14 @@ func (r *userTenantRegistrationRepository) ListByProductWithFilters(ctx context.
 				Status:           entity.UserTenantRegistrationStatus(sr.Status),
 				CreatedAt:        sr.CreatedAt,
 			},
-			FirstName: sr.FirstName,
-			LastName:  sr.LastName,
-			Email:     sr.Email,
-			RoleCode:  sr.RoleCode,
-			RoleName:  sr.RoleName,
+			FirstName:         sr.FirstName,
+			LastName:          sr.LastName,
+			Email:             sr.Email,
+			RoleCode:          sr.RoleCode,
+			RoleName:          sr.RoleName,
+			ParticipantNumber: sr.ParticipantNumber,
+			IdentityNumber:    sr.IdentityNumber,
+			OrganizationCode:  sr.OrganizationCode,
 		}
 		rows = append(rows, row)
 	}
