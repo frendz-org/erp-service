@@ -625,6 +625,57 @@ paths:
           $ref: '#/components/responses/InternalServerError'
 
   # ==========================================
+  # AUTH — Google OAuth2
+  # ==========================================
+  /api/v1/iam/auth/google:
+    get:
+      tags: [Auth]
+      summary: Get Google OAuth2 consent URL
+      description: |
+        Returns the Google OAuth2 authorization URL that the client should redirect the user
+        to in order to initiate the Google sign-in consent flow. No authentication required.
+      operationId: getGoogleAuthURL
+      security: []
+      responses:
+        '200':
+          description: Google OAuth2 consent URL returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoogleAuthURLResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/iam/auth/google/callback:
+    post:
+      tags: [Auth]
+      summary: Exchange Google authorization code for JWT tokens
+      description: |
+        Receives the authorization code and state parameter returned by Google after
+        user consent, exchanges them for Google tokens, and issues IAM access and refresh
+        tokens. If the Google account is not yet linked to any IAM user, a new user account
+        is created automatically (`is_new_user: true`). No authentication required.
+      operationId: googleCallback
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoogleCallbackRequest'
+      responses:
+        '200':
+          description: Authorization code exchanged — access and refresh tokens returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoogleCallbackResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # ==========================================
   # USERS
   # ==========================================
   /api/v1/iam/users/me:
@@ -2555,15 +2606,15 @@ paths:
   # ==========================================
   # MEMBERS
   # ==========================================
-  /api/v1/saving/members/register:
+  /api/v1/saving/members/self-register:
     post:
       tags: [Members]
-      summary: Register as member
+      summary: Self-register as member
       description: |
         Submits a membership registration request for the current user in the given product.
         Creates a `user_tenant_registrations` record with type MEMBER and status PENDING_APPROVAL.
         Any authenticated user with product access can register.
-      operationId: registerMember
+      operationId: selfRegisterMember
       parameters:
         - $ref: '#/components/parameters/TenantIDHeader'
       responses:
@@ -2581,6 +2632,33 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '409':
           $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/saving/members/me:
+    get:
+      tags: [Members]
+      summary: Get my member profile
+      description: |
+        Returns the membership record for the currently authenticated user in the given product.
+        Resolved via JWT user_id + tenant context + frendz-saving product.
+        No admin role required — any authenticated user with a member record can access.
+      operationId: getMyMember
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIDHeader'
+      responses:
+        '200':
+          description: My member profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyMemberResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -3605,6 +3683,63 @@ components:
           type: string
           description: The refresh token to invalidate alongside the current access token
           example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    # ---- Google OAuth2 ----
+    GoogleAuthURLResponse:
+      type: object
+      description: Contains the Google OAuth2 authorization URL for the consent screen redirect.
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            auth_url:
+              type: string
+              description: The full Google OAuth2 consent screen URL to redirect the user to
+
+    GoogleCallbackRequest:
+      type: object
+      description: Authorization code and state parameter returned by Google after user consent.
+      required: [code, state]
+      properties:
+        code:
+          type: string
+          description: The authorization code returned by Google in the OAuth2 callback
+        state:
+          type: string
+          description: The CSRF state parameter returned by Google, must match the value from the initial request
+
+    GoogleCallbackResponse:
+      type: object
+      description: |
+        Returned after successfully exchanging the Google authorization code for IAM tokens.
+        When `is_new_user` is true, a new IAM user account was created from the Google profile.
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            access_token:
+              type: string
+              description: JWT access token (RS256)
+            refresh_token:
+              type: string
+              description: JWT refresh token (HS256)
+            expires_in:
+              type: integer
+              description: Access token lifetime in seconds
+            token_type:
+              type: string
+              example: Bearer
+            is_new_user:
+              type: boolean
+              description: True if a new IAM user account was created during this OAuth2 flow
+            user:
+              $ref: '#/components/schemas/LoginUserData'
 
     # ---- Users ----
     UserProfileResponse:
@@ -5247,6 +5382,9 @@ components:
             id:
               type: string
               format: uuid
+            tenant_id:
+              type: string
+              format: uuid
             status:
               type: string
               enum: [PENDING_APPROVAL]
@@ -5256,6 +5394,51 @@ components:
               enum: [MEMBER]
               example: MEMBER
             created_at:
+              type: string
+              format: date-time
+
+    MyMemberResponse:
+      type: object
+      description: The authenticated user's own member record for a given product.
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            user_id:
+              type: string
+              format: uuid
+            first_name:
+              type: string
+            last_name:
+              type: string
+            email:
+              type: string
+              format: email
+            status:
+              type: string
+              enum: [PENDING_APPROVAL, ACTIVE, REJECTED, INACTIVE]
+              example: ACTIVE
+            registration_type:
+              type: string
+              enum: [MEMBER]
+              example: MEMBER
+            role_code:
+              type: string
+              nullable: true
+              example: MEMBER_PARTICIPANT
+            role_name:
+              type: string
+              nullable: true
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
               type: string
               format: date-time
 
