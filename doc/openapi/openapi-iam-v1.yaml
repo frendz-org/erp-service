@@ -1648,11 +1648,21 @@ paths:
       tags: [Participants]
       summary: Self-register as participant
       description: |
-        Allows an authenticated user to self-register as a participant by linking
-        an existing participant record via organization code, identity number,
-        participant number, and phone number.
-        Rate limited to 5 req/min per user. Returns 201 Created on new registration
-        or 200 OK if the participant record was already linked to this user.
+        Allows an authenticated user to self-register as a participant. Two paths exist:
+
+        **New-participant path** (participant_number NOT already in the system):
+        - `participant_number` is validated against the `employee_data` table.
+          Returns 404 if the employee number does not exist.
+        - Returns 409 if the `participant_number` is already associated with another participant.
+        - On success: creates a new participant with status `APPROVED` and a UTR with
+          `registration_status: ACTIVE`. Returns **201 Created**.
+
+        **Link-existing path** (participant_number already exists with matching KTP):
+        - Links the calling user to the existing participant record.
+        - `registration_status` will be `PENDING_APPROVAL`.
+        - Returns **200 OK**.
+
+        Rate limited to 5 req/min per user (production only).
       operationId: selfRegisterParticipant
       security:
         - BearerAuth: []
@@ -1669,13 +1679,17 @@ paths:
               phone_number: "+6281234567890"
       responses:
         '201':
-          description: Self-registration successful — participant linked for the first time
+          description: |
+            New participant created and auto-approved via employee verification.
+            `registration_status` is `ACTIVE` and participant `status` is `APPROVED`.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SelfRegisterParticipantResponse'
         '200':
-          description: Participant already linked — returning existing registration status
+          description: |
+            Existing participant record linked to this user.
+            `registration_status` is `PENDING_APPROVAL`.
           content:
             application/json:
               schema:
@@ -1684,6 +1698,23 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Employee number not found in employee data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: |
+            Conflict — one of:
+            - `participant number is already used` — the employee number is already associated
+              with another participant in this product.
+            - `registration not eligible` — the calling user is already registered or the
+              participant record is already claimed by another user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
         '429':
@@ -4803,12 +4834,20 @@ components:
           properties:
             is_linked:
               type: boolean
-              description: True if this call created the link; false if already linked
-              example: true
+              description: True if an existing participant record was linked to this user; false if a new participant was created.
+              example: false
             registration_status:
               type: string
-              description: Current registration status of the participant
-              example: APPROVED
+              description: |
+                UTR registration status for this user–product combination.
+                - `ACTIVE` — new participant created and auto-approved via employee verification (new-participant path).
+                - `PENDING_APPROVAL` — existing participant record was linked to this user (link-existing path).
+              enum: [ACTIVE, PENDING_APPROVAL]
+              example: ACTIVE
+            tenant_id:
+              type: string
+              format: uuid
+              description: UUID of the tenant the participant was registered into.
             data:
               type: object
               nullable: true
@@ -4818,6 +4857,7 @@ components:
                   example: "PART001"
                 status:
                   type: string
+                  description: Participant record status. `APPROVED` on new-participant path; preserves existing status on link-existing path.
                   example: APPROVED
                 created_at:
                   type: string
