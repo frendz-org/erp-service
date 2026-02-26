@@ -129,3 +129,8 @@ type ParticipantStatusHistoryRepository interface {
 	Create(ctx context.Context, history *entity.ParticipantStatusHistory) error
 	ListByParticipantID(ctx context.Context, participantID uuid.UUID) ([]*entity.ParticipantStatusHistory, error)
 }
+
+// EmployeeDataRepository provides read-only access to the external employee_data table.
+type EmployeeDataRepository interface {
+	GetByEmpNo(ctx context.Context, empNo string) (*entity.EmployeeData, error)
+}

@@ -163,6 +163,22 @@ func (uc *usecase) SelfRegister(ctx context.Context, req *SelfRegisterRequest) (
 		return nil, fmt.Errorf("check existing registration: %w", err)
 	}
 
+	_, err = uc.employeeDataRepo.GetByEmpNo(ctx, req.ParticipantNumber)
+	if err != nil {
+		if apperrors.IsNotFound(err) {
+			return nil, apperrors.ErrNotFound("employee number not found")
+		}
+		return nil, fmt.Errorf("validate employee number: %w", err)
+	}
+
+	existingByEmp, err := uc.participantRepo.GetByEmployeeNumber(ctx, tenant.ID, product.ID, req.ParticipantNumber)
+	if err != nil && !apperrors.IsNotFound(err) {
+		return nil, fmt.Errorf("check employee number: %w", err)
+	}
+	if existingByEmp != nil {
+		return nil, apperrors.ErrConflict("participant number is already used")
+	}
+
 	return uc.createNewSelfRegisteredParticipant(ctx, req, profile, tenant.ID, product.ID)
 }
 
@@ -249,8 +265,10 @@ func (uc *usecase) createNewSelfRegisteredParticipant(
 			KTPNumber:      &req.IdentityNumber,
 			EmployeeNumber: &req.ParticipantNumber,
 			PhoneNumber:    &req.PhoneNumber,
-			Status:         entity.ParticipantStatusDraft,
+			Status:         entity.ParticipantStatusApproved,
 			CreatedBy:      req.UserID,
+			ApprovedBy:     &req.UserID,
+			ApprovedAt:     &now,
 			Version:        1,
 			CreatedAt:      now,
 			UpdatedAt:      now,
@@ -275,11 +293,11 @@ func (uc *usecase) createNewSelfRegisteredParticipant(
 			return fmt.Errorf("create pension: %w", err)
 		}
 
-		reason := "self-registration"
+		reason := "auto-approved via employee verification"
 		history := &entity.ParticipantStatusHistory{
 			ParticipantID: newParticipant.ID,
 			FromStatus:    nil,
-			ToStatus:      string(entity.ParticipantStatusDraft),
+			ToStatus:      string(entity.ParticipantStatusApproved),
 			ChangedBy:     req.UserID,
 			Reason:        &reason,
 			ChangedAt:     now,
@@ -290,18 +308,18 @@ func (uc *usecase) createNewSelfRegisteredParticipant(
 			return fmt.Errorf("create status history: %w", err)
 		}
 
-		utr := buildUTR(req.UserID, tenantID, productID)
+		utr := buildAutoApprovedUTR(req.UserID, tenantID, productID, now)
 		if err := uc.utrRepo.Create(txCtx, utr); err != nil {
 			return fmt.Errorf("create user tenant registration: %w", err)
 		}
 
 		result = &SelfRegisterResponse{
 			IsLinked:           false,
-			RegistrationStatus: string(entity.UTRStatusPendingApproval),
+			RegistrationStatus: string(entity.UTRStatusActive),
 			TenantID:           tenantID,
 			Data: &SelfRegisterParticipantData{
 				ParticipantNumber: req.ParticipantNumber,
-				Status:            string(entity.ParticipantStatusDraft),
+				Status:            string(entity.ParticipantStatusApproved),
 				CreatedAt:         now,
 			},
 		}
@@ -322,5 +340,18 @@ func buildUTR(userID, tenantID, productID uuid.UUID) *entity.UserTenantRegistrat
 		ProductID:        &pid,
 		RegistrationType: "PARTICIPANT",
 		Status:           entity.UTRStatusPendingApproval,
+	}
+}
+
+func buildAutoApprovedUTR(userID, tenantID, productID uuid.UUID, now time.Time) *entity.UserTenantRegistration {
+	pid := productID
+	return &entity.UserTenantRegistration{
+		UserID:           userID,
+		TenantID:         tenantID,
+		ProductID:        &pid,
+		RegistrationType: "PARTICIPANT",
+		Status:           entity.UTRStatusActive,
+		ApprovedBy:       &userID,
+		ApprovedAt:       &now,
 	}
 }
