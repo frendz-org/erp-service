@@ -472,3 +472,15 @@ func (m *MockEmployeeDataRepository) GetByEmpNo(ctx context.Context, empNo strin
 	}
 	return args.Get(0).(*entity.EmployeeData), args.Error(1)
 }
+
+type MockCsiEmployeeRepository struct {
+	mock.Mock
+}
+
+func (m *MockCsiEmployeeRepository) GetByEmployeeNo(ctx context.Context, employeeNo string) (*entity.CsiEmployee, error) {
+	args := m.Called(ctx, employeeNo)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*entity.CsiEmployee), args.Error(1)
+}

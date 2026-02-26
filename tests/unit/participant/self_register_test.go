@@ -99,7 +99,7 @@ func TestSelfRegister_Success_NewParticipant(t *testing.T) {
 	utrRepo := &mockUserTenantRegistrationRepository{}
 	profileRepo := &mockUserProfileRepository{}
 	mdValidator := &mockMasterdataValidator{}
-	empDataRepo := &MockEmployeeDataRepository{}
+	csiEmpRepo := &MockCsiEmployeeRepository{}
 
 	mdValidator.On("ValidateItemCode", ctx, mock.MatchedBy(func(r *masterdata.ValidateCodeRequest) bool {
 		return r.CategoryCode == "TENANT" && r.ItemCode == req.Organization
@@ -113,8 +113,8 @@ func TestSelfRegister_Success_NewParticipant(t *testing.T) {
 		Return(nil, nil, apperrors.ErrNotFound("not found"))
 	utrRepo.On("GetByUserAndProduct", ctx, req.UserID, tenant.ID, product.ID, "PARTICIPANT").
 		Return(nil, apperrors.ErrNotFound("not found"))
-	empDataRepo.On("GetByEmpNo", ctx, req.ParticipantNumber).
-		Return(&entity.EmployeeData{ID: 1, EmpNo: req.ParticipantNumber, EmpName: "Test Employee"}, nil)
+	csiEmpRepo.On("GetByEmployeeNo", ctx, req.ParticipantNumber).
+		Return(&entity.CsiEmployee{CsiEmployeeID: 1, EmployeeNo: req.ParticipantNumber, EmployeeName: "Test Employee"}, nil)
 	partRepo.MockParticipantRepository.On("GetByEmployeeNumber", ctx, tenant.ID, product.ID, req.ParticipantNumber).
 		Return(nil, apperrors.ErrNotFound("not found"))
 
@@ -124,7 +124,7 @@ func TestSelfRegister_Success_NewParticipant(t *testing.T) {
 	statusHistoryRepo.On("Create", ctx, mock.AnythingOfType("*entity.ParticipantStatusHistory")).Return(nil)
 	utrRepo.On("Create", ctx, mock.AnythingOfType("*entity.UserTenantRegistration")).Return(nil)
 
-	uc := buildSelfRegisterUsecase(txMgr, partRepo, pensionRepo, statusHistoryRepo, tenantRepo, productRepo, configRepo, utrRepo, profileRepo, mdValidator, empDataRepo)
+	uc := buildSelfRegisterUsecase(txMgr, partRepo, pensionRepo, statusHistoryRepo, tenantRepo, productRepo, configRepo, utrRepo, profileRepo, mdValidator, csiEmpRepo)
 
 	resp, err := uc.SelfRegister(ctx, req)
 
@@ -153,7 +153,7 @@ func TestSelfRegister_Success_ResponseDataHasNoKTPNumber(t *testing.T) {
 	utrRepo := &mockUserTenantRegistrationRepository{}
 	profileRepo := &mockUserProfileRepository{}
 	mdValidator := &mockMasterdataValidator{}
-	empDataRepo := &MockEmployeeDataRepository{}
+	csiEmpRepo := &MockCsiEmployeeRepository{}
 
 	mdValidator.On("ValidateItemCode", ctx, mock.Anything).Return(&masterdata.ValidateCodeResponse{Valid: true}, nil)
 	tenantRepo.On("GetByCode", ctx, req.Organization).Return(tenant, nil)
@@ -164,8 +164,8 @@ func TestSelfRegister_Success_ResponseDataHasNoKTPNumber(t *testing.T) {
 		Return(nil, nil, apperrors.ErrNotFound("not found"))
 	utrRepo.On("GetByUserAndProduct", ctx, req.UserID, tenant.ID, product.ID, "PARTICIPANT").
 		Return(nil, apperrors.ErrNotFound("not found"))
-	empDataRepo.On("GetByEmpNo", ctx, req.ParticipantNumber).
-		Return(&entity.EmployeeData{ID: 1, EmpNo: req.ParticipantNumber, EmpName: "Test Employee"}, nil)
+	csiEmpRepo.On("GetByEmployeeNo", ctx, req.ParticipantNumber).
+		Return(&entity.CsiEmployee{CsiEmployeeID: 1, EmployeeNo: req.ParticipantNumber, EmployeeName: "Test Employee"}, nil)
 	partRepo.MockParticipantRepository.On("GetByEmployeeNumber", ctx, tenant.ID, product.ID, req.ParticipantNumber).
 		Return(nil, apperrors.ErrNotFound("not found"))
 
@@ -175,7 +175,7 @@ func TestSelfRegister_Success_ResponseDataHasNoKTPNumber(t *testing.T) {
 	statusHistoryRepo.On("Create", ctx, mock.AnythingOfType("*entity.ParticipantStatusHistory")).Return(nil)
 	utrRepo.On("Create", ctx, mock.AnythingOfType("*entity.UserTenantRegistration")).Return(nil)
 
-	uc := buildSelfRegisterUsecase(txMgr, partRepo, pensionRepo, statusHistoryRepo, tenantRepo, productRepo, configRepo, utrRepo, profileRepo, mdValidator, empDataRepo)
+	uc := buildSelfRegisterUsecase(txMgr, partRepo, pensionRepo, statusHistoryRepo, tenantRepo, productRepo, configRepo, utrRepo, profileRepo, mdValidator, csiEmpRepo)
 
 	resp, err := uc.SelfRegister(ctx, req)
 
@@ -646,7 +646,7 @@ func TestSelfRegister_UniqueConstraintViolation_OnCreate(t *testing.T) {
 	utrRepo := &mockUserTenantRegistrationRepository{}
 	profileRepo := &mockUserProfileRepository{}
 	mdValidator := &mockMasterdataValidator{}
-	empDataRepo := &MockEmployeeDataRepository{}
+	csiEmpRepo := &MockCsiEmployeeRepository{}
 
 	mdValidator.On("ValidateItemCode", ctx, mock.Anything).Return(&masterdata.ValidateCodeResponse{Valid: true}, nil)
 	tenantRepo.On("GetByCode", ctx, req.Organization).Return(tenant, nil)
@@ -657,15 +657,15 @@ func TestSelfRegister_UniqueConstraintViolation_OnCreate(t *testing.T) {
 		Return(nil, nil, apperrors.ErrNotFound("not found"))
 	utrRepo.On("GetByUserAndProduct", ctx, req.UserID, tenant.ID, product.ID, "PARTICIPANT").
 		Return(nil, apperrors.ErrNotFound("not found"))
-	empDataRepo.On("GetByEmpNo", ctx, req.ParticipantNumber).
-		Return(&entity.EmployeeData{ID: 1, EmpNo: req.ParticipantNumber, EmpName: "Test Employee"}, nil)
+	csiEmpRepo.On("GetByEmployeeNo", ctx, req.ParticipantNumber).
+		Return(&entity.CsiEmployee{CsiEmployeeID: 1, EmployeeNo: req.ParticipantNumber, EmployeeName: "Test Employee"}, nil)
 	partRepo.MockParticipantRepository.On("GetByEmployeeNumber", ctx, tenant.ID, product.ID, req.ParticipantNumber).
 		Return(nil, apperrors.ErrNotFound("not found"))
 
 	conflictErr := apperrors.ErrConflict("registration not eligible")
 	txMgr.On("WithTransaction", ctx, mock.Anything).Return(conflictErr)
 
-	uc := buildSelfRegisterUsecase(txMgr, partRepo, pensionRepo, statusHistoryRepo, tenantRepo, productRepo, configRepo, utrRepo, profileRepo, mdValidator, empDataRepo)
+	uc := buildSelfRegisterUsecase(txMgr, partRepo, pensionRepo, statusHistoryRepo, tenantRepo, productRepo, configRepo, utrRepo, profileRepo, mdValidator, csiEmpRepo)
 
 	resp, err := uc.SelfRegister(ctx, req)
 
@@ -695,7 +695,7 @@ func TestSelfRegister_TransactionRollback_OnUTRCreateFailure(t *testing.T) {
 	utrRepo := &mockUserTenantRegistrationRepository{}
 	profileRepo := &mockUserProfileRepository{}
 	mdValidator := &mockMasterdataValidator{}
-	empDataRepo := &MockEmployeeDataRepository{}
+	csiEmpRepo := &MockCsiEmployeeRepository{}
 
 	mdValidator.On("ValidateItemCode", ctx, mock.Anything).Return(&masterdata.ValidateCodeResponse{Valid: true}, nil)
 	tenantRepo.On("GetByCode", ctx, req.Organization).Return(tenant, nil)
@@ -706,15 +706,15 @@ func TestSelfRegister_TransactionRollback_OnUTRCreateFailure(t *testing.T) {
 		Return(nil, nil, apperrors.ErrNotFound("not found"))
 	utrRepo.On("GetByUserAndProduct", ctx, req.UserID, tenant.ID, product.ID, "PARTICIPANT").
 		Return(nil, apperrors.ErrNotFound("not found"))
-	empDataRepo.On("GetByEmpNo", ctx, req.ParticipantNumber).
-		Return(&entity.EmployeeData{ID: 1, EmpNo: req.ParticipantNumber, EmpName: "Test Employee"}, nil)
+	csiEmpRepo.On("GetByEmployeeNo", ctx, req.ParticipantNumber).
+		Return(&entity.CsiEmployee{CsiEmployeeID: 1, EmployeeNo: req.ParticipantNumber, EmployeeName: "Test Employee"}, nil)
 	partRepo.MockParticipantRepository.On("GetByEmployeeNumber", ctx, tenant.ID, product.ID, req.ParticipantNumber).
 		Return(nil, apperrors.ErrNotFound("not found"))
 
 	txErr := apperrors.ErrInternal("db error")
 	txMgr.On("WithTransaction", ctx, mock.Anything).Return(txErr)
 
-	uc := buildSelfRegisterUsecase(txMgr, partRepo, pensionRepo, statusHistoryRepo, tenantRepo, productRepo, configRepo, utrRepo, profileRepo, mdValidator, empDataRepo)
+	uc := buildSelfRegisterUsecase(txMgr, partRepo, pensionRepo, statusHistoryRepo, tenantRepo, productRepo, configRepo, utrRepo, profileRepo, mdValidator, csiEmpRepo)
 
 	resp, err := uc.SelfRegister(ctx, req)
 
