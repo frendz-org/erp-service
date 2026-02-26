@@ -949,6 +949,116 @@
               "body": "{\n    \"success\": false,\n    \"error\": \"ERR_UNAUTHORIZED\",\n    \"message\": \"missing authorization header\"\n}"
             }
           ]
+        },
+        {
+          "name": "Get Google OAuth URL",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag and auth_url', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  pm.expect(json.data).to.have.property('auth_url');",
+                  "  pm.expect(json.data.auth_url).to.be.a('string');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/auth/google",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "auth", "google"]
+            },
+            "description": "Returns the Google OAuth2 consent URL. Redirect the user to `data.auth_url` to initiate the Google login flow. No authentication required."
+          },
+          "response": [
+            {
+              "name": "200 - OAuth URL Generated",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Google OAuth URL generated\",\n    \"data\": {\n        \"auth_url\": \"https://accounts.google.com/o/oauth2/v2/auth?client_id=...&redirect_uri=...&response_type=code&scope=openid+email+profile&state=random-csrf-state\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Google OAuth Callback",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag and extracts tokens + user_id', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  if (json.data) {",
+                  "    if (json.data.access_token) { pm.collectionVariables.set('access_token', json.data.access_token); }",
+                  "    if (json.data.refresh_token) { pm.collectionVariables.set('refresh_token', json.data.refresh_token); }",
+                  "    if (json.data.user && json.data.user.id) { pm.collectionVariables.set('user_id', json.data.user.id); }",
+                  "  }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"code\": \"4/0AfJohXk...\",\n    \"state\": \"random-csrf-state\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/auth/google/callback",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "auth", "google", "callback"]
+            },
+            "description": "Exchanges the Google OAuth2 authorization code for JWT access and refresh tokens. No authentication required. The `code` is obtained from the Google OAuth consent screen redirect. The `state` must match the CSRF state from the URL returned by GET /auth/google."
+          },
+          "response": [
+            {
+              "name": "200 - Login Successful",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Login successful\",\n    \"data\": {\n        \"access_token\": \"eyJ...\",\n        \"refresh_token\": \"eyJ...\",\n        \"expires_in\": 900,\n        \"token_type\": \"Bearer\",\n        \"is_new_user\": false,\n        \"user\": {\n            \"id\": \"019500a2-...\",\n            \"email\": \"user@example.com\",\n            \"full_name\": \"John Doe\",\n            \"tenants\": []\n        }\n    }\n}"
+            },
+            {
+              "name": "400 - Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_VALIDATION\",\n    \"message\": \"Validation failed\",\n    \"errors\": [\n        { \"field\": \"Code\", \"message\": \"code is required\" }\n    ]\n}"
+            },
+            {
+              "name": "401 - Invalid or Expired Code",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_UNAUTHORIZED\",\n    \"message\": \"Failed to exchange authorization code\"\n}"
+            }
+          ]
         }
       ]
     },
@@ -2476,8 +2586,103 @@
     },
     {
       "name": "Participants",
-      "description": "Participant management. JWT + X-Tenant-ID + product-scoped. Base: /api/v1/saving/products/{productId}/participants",
+      "description": "Participant management. JWT + X-Tenant-ID + product-scoped. Base: /api/v1/saving/participants",
       "item": [
+        {
+          "name": "Get My Participant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag and extracts participant_id', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  if (json.data && json.data.id) { pm.collectionVariables.set('participant_id', json.data.id); }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/participants/me/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "participants", "me", ""]
+            },
+            "description": "Get the authenticated user's own participant record for the product derived from the tenant context."
+          },
+          "response": [
+            {
+              "name": "200 - My Participant Retrieved",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500f1-...\",\n        \"status\": \"DRAFT\",\n        \"full_name\": \"Budi Santoso\"\n    }\n}"
+            },
+            {
+              "name": "404 - Participant Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"Participant not found\",\n    \"code\": \"ERR_NOT_FOUND\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get My Status History",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/participants/me/status-history",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "participants", "me", "status-history"]
+            },
+            "description": "Get the authenticated user's participant status history."
+          },
+          "response": [
+            {
+              "name": "200 - Status History Retrieved",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": [\n        {\n            \"status\": \"DRAFT\",\n            \"changed_at\": \"2026-02-18T10:00:00Z\"\n        }\n    ]\n}"
+            }
+          ]
+        },
         {
           "name": "Self Register Participant",
           "event": [
@@ -2510,9 +2715,9 @@
               "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/iam/participants/self-register",
+              "raw": "{{base_url}}/api/v1/saving/participants/self-register",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "iam", "participants", "self-register"]
+              "path": ["api", "v1", "saving", "participants", "self-register"]
             },
             "description": "Self-register the authenticated user as a participant for the given product. Rate limited to 5 req/min. No X-Tenant-ID required — tenant derived from product_id."
           },
@@ -2576,9 +2781,9 @@
               "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/",
+              "raw": "{{base_url}}/api/v1/saving/participants/",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", ""]
+              "path": ["api", "v1", "saving", "participants", ""]
             },
             "description": "Create a new participant. Permission: participant:create"
           },
@@ -2635,9 +2840,9 @@
               { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/?page=1&per_page=10&sort_by=created_at&sort_order=desc",
+              "raw": "{{base_url}}/api/v1/saving/participants/?page=1&per_page=10&sort_by=created_at&sort_order=desc",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", ""],
+              "path": ["api", "v1", "saving", "participants", ""],
               "query": [
                 { "key": "page", "value": "1" },
                 { "key": "per_page", "value": "10" },
@@ -2686,9 +2891,9 @@
               { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}"]
             },
             "description": "Get participant by ID. Permission: participant:read"
           },
@@ -2743,9 +2948,9 @@
               "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/personal-data",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/personal-data",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "personal-data"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "personal-data"]
             },
             "description": "Update participant personal data. Permission: participant:update"
           },
@@ -2793,9 +2998,9 @@
               "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/identities",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/identities",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "identities"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "identities"]
             },
             "description": "Add or update identity document. Include id field to update existing. Permission: participant:update"
           },
@@ -2832,9 +3037,9 @@
               { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/identities/{{identity_id}}",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/identities/{{identity_id}}",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "identities", "{{identity_id}}"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "identities", "{{identity_id}}"]
             },
             "description": "Delete an identity document. Permission: participant:update"
           },
@@ -2882,9 +3087,9 @@
               "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/addresses",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/addresses",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "addresses"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "addresses"]
             },
             "description": "Add or update address. Permission: participant:update"
           },
@@ -2921,9 +3126,9 @@
               { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/addresses/{{address_id}}",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/addresses/{{address_id}}",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "addresses", "{{address_id}}"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "addresses", "{{address_id}}"]
             },
             "description": "Delete an address. Permission: participant:update"
           },
@@ -2971,9 +3176,9 @@
               "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/bank-accounts",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/bank-accounts",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "bank-accounts"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "bank-accounts"]
             },
             "description": "Add or update bank account. Permission: participant:update"
           },
@@ -3010,9 +3215,9 @@
               { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/bank-accounts/{{bank_account_id}}",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/bank-accounts/{{bank_account_id}}",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "bank-accounts", "{{bank_account_id}}"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "bank-accounts", "{{bank_account_id}}"]
             },
             "description": "Delete a bank account. Permission: participant:update"
           },
@@ -3060,9 +3265,9 @@
               "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/family-members",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/family-members",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "family-members"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "family-members"]
             },
             "description": "Add or update a family member. Permission: participant:update"
           },
@@ -3099,9 +3304,9 @@
               { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/family-members/{{family_member_id}}",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/family-members/{{family_member_id}}",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "family-members", "{{family_member_id}}"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "family-members", "{{family_member_id}}"]
             },
             "description": "Delete a family member. Permission: participant:update"
           },
@@ -3148,9 +3353,9 @@
               "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/employment",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/employment",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "employment"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "employment"]
             },
             "description": "Save or update employment information. Permission: participant:update"
           },
@@ -3197,9 +3402,9 @@
               "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/pension",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/pension",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "pension"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "pension"]
             },
             "description": "Save or update pension information. Permission: participant:update"
           },
@@ -3247,9 +3452,9 @@
               "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/beneficiaries",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/beneficiaries",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "beneficiaries"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "beneficiaries"]
             },
             "description": "Add or update a beneficiary. Permission: participant:update"
           },
@@ -3286,9 +3491,9 @@
               { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/beneficiaries/{{beneficiary_id}}",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/beneficiaries/{{beneficiary_id}}",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "beneficiaries", "{{beneficiary_id}}"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "beneficiaries", "{{beneficiary_id}}"]
             },
             "description": "Delete a beneficiary. Permission: participant:update"
           },
@@ -3336,9 +3541,9 @@
               ]
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/files",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/files",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "files"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "files"]
             },
             "description": "Upload a file for a participant. Allowed types: jpeg, png, gif, pdf. Max size: 5MB. Permission: participant:update"
           },
@@ -3387,9 +3592,9 @@
               { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/status-history",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/status-history",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "status-history"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "status-history"]
             },
             "description": "Get participant status change history. Permission: participant:read"
           },
@@ -3430,9 +3635,9 @@
               { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/submit",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/submit",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "submit"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "submit"]
             },
             "description": "Submit participant for approval. Moves DRAFT → PENDING_APPROVAL. Permission: participant:submit"
           },
@@ -3473,9 +3678,9 @@
               { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/approve",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/approve",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "approve"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "approve"]
             },
             "description": "Approve a participant. Moves PENDING_APPROVAL → APPROVED. Permission: participant:approve"
           },
@@ -3522,9 +3727,9 @@
               "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/reject",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/reject",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "reject"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "reject"]
             },
             "description": "Reject a participant with reason. Moves PENDING_APPROVAL → REJECTED. Permission: participant:reject. Reason: min 10, max 500 chars."
           },
@@ -3561,9 +3766,9 @@
               { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}"]
             },
             "description": "Soft-delete a participant. Permission: participant:delete"
           },
@@ -3582,7 +3787,7 @@
     },
     {
       "name": "Members",
-      "description": "Member management. JWT + X-Tenant-ID + product-scoped. Admin routes require TENANT_PRODUCT_ADMIN role. Base: /api/v1/saving/products/{productId}/members",
+      "description": "Member management. JWT + X-Tenant-ID + product-scoped. Admin routes require TENANT_PRODUCT_ADMIN role. Base: /api/v1/saving/members",
       "item": [
         {
           "name": "Register as Member",
@@ -3611,9 +3816,9 @@
               { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/members/register",
+              "raw": "{{base_url}}/api/v1/saving/members/self-register",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "members", "register"]
+              "path": ["api", "v1", "saving", "members", "self-register"]
             },
             "description": "Self-register as a member for a product. No request body required — identity derived from JWT. Creates a PENDING_APPROVAL registration."
           },
@@ -3645,6 +3850,66 @@
           ]
         },
         {
+          "name": "Get My Member",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag and extracts member_id', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  if (json.data && json.data.id) { pm.collectionVariables.set('member_id', json.data.id); }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/members/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "members", "me"]
+            },
+            "description": "Get the authenticated user's own member record for the product derived from the tenant context."
+          },
+          "response": [
+            {
+              "name": "200 - My Member Retrieved",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"user_id\": \"019500a2-...\",\n        \"status\": \"ACTIVE\",\n        \"role_code\": \"MEMBER\",\n        \"created_at\": \"2026-02-18T10:00:00Z\"\n    }\n}"
+            },
+            {
+              "name": "404 - Member Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"Member not found\"\n}"
+            },
+            {
+              "name": "401 - Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"missing authorization header\"\n}"
+            }
+          ]
+        },
+        {
           "name": "List Members (Admin)",
           "event": [
             {
@@ -3670,9 +3935,9 @@
               { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/members/?page=1&per_page=10&sort_by=created_at&sort_order=desc",
+              "raw": "{{base_url}}/api/v1/saving/members/?page=1&per_page=10&sort_by=created_at&sort_order=desc",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "members", ""],
+              "path": ["api", "v1", "saving", "members", ""],
               "query": [
                 { "key": "page", "value": "1" },
                 { "key": "per_page", "value": "10" },
@@ -3721,9 +3986,9 @@
               { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/members/{{member_id}}",
+              "raw": "{{base_url}}/api/v1/saving/members/{{member_id}}",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "members", "{{member_id}}"]
+              "path": ["api", "v1", "saving", "members", "{{member_id}}"]
             },
             "description": "Get member details. Requires TENANT_PRODUCT_ADMIN role."
           },
@@ -3778,9 +4043,9 @@
               "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/members/{{member_id}}/approve",
+              "raw": "{{base_url}}/api/v1/saving/members/{{member_id}}/approve",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "members", "{{member_id}}", "approve"]
+              "path": ["api", "v1", "saving", "members", "{{member_id}}", "approve"]
             },
             "description": "Approve a member registration and assign a role. Requires TENANT_PRODUCT_ADMIN role."
           },
@@ -3827,9 +4092,9 @@
               "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/members/{{member_id}}/reject",
+              "raw": "{{base_url}}/api/v1/saving/members/{{member_id}}/reject",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "members", "{{member_id}}", "reject"]
+              "path": ["api", "v1", "saving", "members", "{{member_id}}", "reject"]
             },
             "description": "Reject a member registration with reason. Requires TENANT_PRODUCT_ADMIN. Reason: min 10, max 500 chars."
           },
@@ -3876,9 +4141,9 @@
               "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/members/{{member_id}}/role",
+              "raw": "{{base_url}}/api/v1/saving/members/{{member_id}}/role",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "members", "{{member_id}}", "role"]
+              "path": ["api", "v1", "saving", "members", "{{member_id}}", "role"]
             },
             "description": "Change a member's role. Requires TENANT_PRODUCT_ADMIN role."
           },
@@ -3925,9 +4190,9 @@
               "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/members/{{member_id}}/deactivate",
+              "raw": "{{base_url}}/api/v1/saving/members/{{member_id}}/deactivate",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "members", "{{member_id}}", "deactivate"]
+              "path": ["api", "v1", "saving", "members", "{{member_id}}", "deactivate"]
             },
             "description": "Deactivate a member. Requires TENANT_PRODUCT_ADMIN role."
           },
@@ -3939,6 +4204,62 @@
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
               "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"status\": \"INACTIVE\"\n    }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Pension",
+      "description": "Pension summary endpoints. JWT required. Base: /api/v1/pension",
+      "item": [
+        {
+          "name": "Get Pension Amount Summary",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/pension/amount-summary",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "pension", "amount-summary"]
+            },
+            "description": "Get the pension amount summary for the authenticated user. JWT required."
+          },
+          "response": [
+            {
+              "name": "200 - Amount Summary Retrieved",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"total_amount\": 0,\n        \"currency\": \"IDR\"\n    }\n}"
+            },
+            {
+              "name": "401 - Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"missing authorization header\"\n}"
             }
           ]
         }
