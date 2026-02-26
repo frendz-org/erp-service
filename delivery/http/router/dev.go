@@ -15,4 +15,5 @@ func SetupDevRoutes(api fiber.Router, cfg *config.Config, devController *control
 	dev := api.Group("/dev")
 	dev.Delete("/users/:email", devController.ResetUserByEmail)
 	dev.Delete("/users/:email/sessions", devController.ResetUserSessionsByEmail)
+	dev.Post("/users/:email/assign-product-admin", devController.AssignProductAdmin)
 }

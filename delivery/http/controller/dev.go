@@ -137,6 +137,127 @@ func (d *DevController) ResetUserByEmail(c *fiber.Ctx) error {
 	}))
 }
 
+type AssignProductAdminRequest struct {
+	TenantCode  string `json:"tenant_code"`
+	ProductCode string `json:"product_code"`
+}
+
+func (d *DevController) AssignProductAdmin(c *fiber.Ctx) error {
+	rawEmail, _ := url.QueryUnescape(c.Params("email"))
+	email := strings.ToLower(strings.TrimSpace(rawEmail))
+	if email == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(response.ErrorResponse(
+			"INVALID_EMAIL", "email parameter is required",
+		))
+	}
+
+	var req AssignProductAdminRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(response.ErrorResponse(
+			"INVALID_BODY", "invalid request body",
+		))
+	}
+	if req.TenantCode == "" || req.ProductCode == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(response.ErrorResponse(
+			"MISSING_FIELDS", "tenant_code and product_code are required",
+		))
+	}
+
+	ctx := c.UserContext()
+
+	var userID string
+	if err := d.db.WithContext(ctx).
+		Raw("SELECT id FROM users WHERE LOWER(email) = ? AND deleted_at IS NULL", email).
+		Scan(&userID).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(response.ErrorResponse(
+			"DB_ERROR", "failed to look up user",
+		))
+	}
+	if userID == "" {
+		return c.Status(fiber.StatusNotFound).JSON(response.ErrorResponse(
+			"USER_NOT_FOUND", fmt.Sprintf("user with email %s not found", email),
+		))
+	}
+
+	var tenantID string
+	if err := d.db.WithContext(ctx).
+		Raw("SELECT id FROM tenants WHERE code = ? AND deleted_at IS NULL", req.TenantCode).
+		Scan(&tenantID).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(response.ErrorResponse(
+			"DB_ERROR", "failed to look up tenant",
+		))
+	}
+	if tenantID == "" {
+		return c.Status(fiber.StatusNotFound).JSON(response.ErrorResponse(
+			"TENANT_NOT_FOUND", fmt.Sprintf("tenant with code %s not found", req.TenantCode),
+		))
+	}
+
+	var productID string
+	if err := d.db.WithContext(ctx).
+		Raw("SELECT id FROM products WHERE tenant_id = ? AND code = ? AND deleted_at IS NULL", tenantID, req.ProductCode).
+		Scan(&productID).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(response.ErrorResponse(
+			"DB_ERROR", "failed to look up product",
+		))
+	}
+	if productID == "" {
+		return c.Status(fiber.StatusNotFound).JSON(response.ErrorResponse(
+			"PRODUCT_NOT_FOUND", fmt.Sprintf("product with code %s not found for tenant %s", req.ProductCode, req.TenantCode),
+		))
+	}
+
+	var roleID string
+	if err := d.db.WithContext(ctx).
+		Raw("SELECT id FROM roles WHERE product_id = ? AND code = ? AND deleted_at IS NULL", productID, "TENANT_PRODUCT_ADMIN").
+		Scan(&roleID).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(response.ErrorResponse(
+			"DB_ERROR", "failed to look up role",
+		))
+	}
+	if roleID == "" {
+		return c.Status(fiber.StatusNotFound).JSON(response.ErrorResponse(
+			"ROLE_NOT_FOUND", "TENANT_PRODUCT_ADMIN role not found for this product (not seeded?)",
+		))
+	}
+
+	var existingID string
+	if err := d.db.WithContext(ctx).
+		Raw(`SELECT id FROM user_role_assignments
+			 WHERE user_id = ? AND role_id = ? AND product_id = ?
+			 AND status = 'ACTIVE' AND deleted_at IS NULL`, userID, roleID, productID).
+		Scan(&existingID).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(response.ErrorResponse(
+			"DB_ERROR", "failed to check existing assignment",
+		))
+	}
+	if existingID != "" {
+		return c.JSON(response.SuccessResponse("TENANT_PRODUCT_ADMIN role already assigned", fiber.Map{
+			"email":            email,
+			"tenant_code":      req.TenantCode,
+			"product_code":     req.ProductCode,
+			"already_assigned": true,
+		}))
+	}
+
+	if err := d.db.WithContext(ctx).
+		Exec(`INSERT INTO user_role_assignments
+			  (id, user_id, role_id, product_id, branch_id, status, assigned_at, assigned_by, expires_at, created_at, updated_at)
+			  VALUES (gen_random_uuid(), ?, ?, ?, NULL, 'ACTIVE', NOW(), NULL, NULL, NOW(), NOW())`,
+			userID, roleID, productID).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(response.ErrorResponse(
+			"ASSIGNMENT_FAILED", fmt.Sprintf("failed to create assignment: %s", err.Error()),
+		))
+	}
+
+	return c.JSON(response.SuccessResponse("TENANT_PRODUCT_ADMIN role assigned", fiber.Map{
+		"email":            email,
+		"tenant_code":      req.TenantCode,
+		"product_code":     req.ProductCode,
+		"already_assigned": false,
+	}))
+}
+
 func (d *DevController) ResetUserSessionsByEmail(c *fiber.Ctx) error {
 	rawEmail, _ := url.QueryUnescape(c.Params("email"))
 	email := strings.ToLower(strings.TrimSpace(rawEmail))
