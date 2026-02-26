@@ -118,3 +118,16 @@ type RegistrationStatusResponse struct {
 	OTPAttemptsRemaining int       `json:"otp_attempts_remaining"`
 	ResendsRemaining     int       `json:"resends_remaining"`
 }
+
+type GoogleAuthURLResponse struct {
+	AuthURL string `json:"auth_url"`
+}
+
+type GoogleCallbackResponse struct {
+	AccessToken  string            `json:"access_token"`
+	RefreshToken string            `json:"refresh_token"`
+	ExpiresIn    int               `json:"expires_in"`
+	TokenType    string            `json:"token_type"`
+	IsNewUser    bool              `json:"is_new_user"`
+	User         LoginUserResponse `json:"user"`
+}

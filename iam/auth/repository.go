@@ -27,6 +27,8 @@ type UserProfileRepository interface {
 type UserAuthMethodRepository interface {
 	Create(ctx context.Context, authMethod *entity.UserAuthMethod) error
 	GetByUserID(ctx context.Context, userID uuid.UUID) (*entity.UserAuthMethod, error)
+	GetByUserIDAndMethodType(ctx context.Context, userID uuid.UUID, methodType string) (*entity.UserAuthMethod, error)
+	GetByCredentialField(ctx context.Context, methodType, jsonField, value string) (*entity.UserAuthMethod, error)
 	Update(ctx context.Context, authMethod *entity.UserAuthMethod) error
 }
 type UserSecurityStateRepository interface {
@@ -134,8 +136,14 @@ type TokenBlacklistStore interface {
 	GetUserBlacklistTimestamp(ctx context.Context, userID uuid.UUID) (*time.Time, error)
 }
 
+type OAuthStateStore interface {
+	StoreOAuthState(ctx context.Context, state string, ttl time.Duration) error
+	GetAndDeleteOAuthState(ctx context.Context, state string) (bool, error)
+}
+
 type InMemoryStore interface {
 	RegistrationSessionStore
 	LoginSessionStore
 	TokenBlacklistStore
+	OAuthStateStore
 }

@@ -61,3 +61,10 @@ type CompleteProfileRegistrationRequest struct {
 	DateOfBirth       string    `json:"date_of_birth" validate:"required,datetime=2006-01-02"`
 }
 
+type GoogleCallbackRequest struct {
+	Code      string `json:"code" validate:"required"`
+	State     string `json:"state" validate:"required"`
+	IPAddress string `json:"-"`
+	UserAgent string `json:"-"`
+}
+

@@ -28,8 +28,14 @@ type LoginFlow interface {
 	GetLoginStatus(ctx context.Context, req *GetLoginStatusRequest) (*LoginStatusResponse, error)
 }
 
+type GoogleOAuthFlow interface {
+	GetGoogleAuthURL(ctx context.Context) (*GoogleAuthURLResponse, error)
+	HandleGoogleCallback(ctx context.Context, req *GoogleCallbackRequest) (*GoogleCallbackResponse, error)
+}
+
 type Usecase interface {
 	SessionManager
 	RegistrationFlow
 	LoginFlow
+	GoogleOAuthFlow
 }
