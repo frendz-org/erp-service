@@ -2723,7 +2723,7 @@
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "saving", "participants", "self-register"]
             },
-            "description": "Self-register the authenticated user as a participant. Rate limited to 5 req/min. participant_number is validated against the employee_data table — returns 404 if not found, 409 if already claimed by another participant. On success for a new participant: registration_status=ACTIVE and data.status=APPROVED. For an existing unlinked participant: registration_status=PENDING_APPROVAL (HTTP 200)."
+            "description": "Self-register the authenticated user as a participant. Rate limited to 5 req/min. participant_number is validated against the csi_employees table — returns 404 if not found, 409 if already claimed by another participant. On success for a new participant: registration_status=ACTIVE and data.status=APPROVED. For an existing unlinked participant: registration_status=PENDING_APPROVAL (HTTP 200)."
           },
           "response": [
             {
