@@ -1651,7 +1651,7 @@ paths:
         Allows an authenticated user to self-register as a participant. Two paths exist:
 
         **New-participant path** (participant_number NOT already in the system):
-        - `participant_number` is validated against the `employee_data` table.
+        - `participant_number` is validated against the `csi_employees` table (`employee_no` column).
           Returns 404 if the employee number does not exist.
         - Returns 409 if the `participant_number` is already associated with another participant.
         - On success: creates a new participant with status `APPROVED` and a UTR with
@@ -1699,7 +1699,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
-          description: Employee number not found in employee data
+          description: Employee number not found in csi_employees
           content:
             application/json:
               schema:
