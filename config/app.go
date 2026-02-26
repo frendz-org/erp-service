@@ -81,6 +81,16 @@ type MasterdataConfig struct {
 	CacheTTLTree       time.Duration `mapstructure:"cache_ttl_tree"`
 }
 
+type GoogleOAuthConfig struct {
+	ClientID     string `mapstructure:"client_id"`
+	ClientSecret string `mapstructure:"client_secret"`
+	RedirectURL  string `mapstructure:"redirect_url"`
+}
+
+func (c *GoogleOAuthConfig) IsEnabled() bool {
+	return c.ClientID != "" && c.ClientSecret != ""
+}
+
 func (c *AppConfig) IsDevelopment() bool {
 	return c.Environment == "development"
 }

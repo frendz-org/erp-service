@@ -86,6 +86,7 @@ type AuthMethodType string
 const (
 	AuthMethodPassword AuthMethodType = "PASSWORD"
 	AuthMethodPIN      AuthMethodType = "PIN"
+	AuthMethodGoogle   AuthMethodType = "GOOGLE"
 	AuthMethodSSO      AuthMethodType = "SSO"
 )
 
@@ -142,6 +143,38 @@ func (m *UserAuthMethod) GetPasswordHash() string {
 		return ""
 	}
 	return data.PasswordHash
+}
+
+type GoogleCredentialData struct {
+	GoogleID      string `json:"google_id"`
+	Email         string `json:"email"`
+	EmailVerified bool   `json:"email_verified"`
+	Name          string `json:"name,omitempty"`
+	Picture       string `json:"picture,omitempty"`
+}
+
+func NewGoogleAuthMethod(userID uuid.UUID, data GoogleCredentialData) *UserAuthMethod {
+	credJSON, err := json.Marshal(data)
+	if err != nil {
+		panic(fmt.Sprintf("NewGoogleAuthMethod: failed to marshal credential data: %v", err))
+	}
+	now := time.Now()
+	return &UserAuthMethod{
+		UserID:         userID,
+		MethodType:     string(AuthMethodGoogle),
+		CredentialData: credJSON,
+		IsActive:       true,
+		CreatedAt:      now,
+		UpdatedAt:      now,
+	}
+}
+
+func (m *UserAuthMethod) GetGoogleData() (*GoogleCredentialData, error) {
+	var data GoogleCredentialData
+	if err := json.Unmarshal(m.CredentialData, &data); err != nil {
+		return nil, err
+	}
+	return &data, nil
 }
 
 type UserSecurityState struct {

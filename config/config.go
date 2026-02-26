@@ -9,15 +9,16 @@ import (
 )
 
 type Config struct {
-	App        AppConfig        `mapstructure:"app"`
-	Server     ServerConfig     `mapstructure:"server"`
-	Infra      InfraConfig      `mapstructure:"infra"`
-	JWT        JWTConfig        `mapstructure:"jwt"`
-	Log        LogConfig        `mapstructure:"log"`
-	Email      EmailConfig      `mapstructure:"email"`
-	OTP        OTPConfig        `mapstructure:"otp"`
-	Password   PasswordConfig   `mapstructure:"password"`
-	Masterdata MasterdataConfig `mapstructure:"masterdata"`
+	App         AppConfig         `mapstructure:"app"`
+	Server      ServerConfig      `mapstructure:"server"`
+	Infra       InfraConfig       `mapstructure:"infra"`
+	JWT         JWTConfig         `mapstructure:"jwt"`
+	Log         LogConfig         `mapstructure:"log"`
+	Email       EmailConfig       `mapstructure:"email"`
+	OTP         OTPConfig         `mapstructure:"otp"`
+	Password    PasswordConfig    `mapstructure:"password"`
+	Masterdata  MasterdataConfig  `mapstructure:"masterdata"`
+	GoogleOAuth GoogleOAuthConfig `mapstructure:"google_oauth"`
 }
 
 func Load() (*Config, error) {
@@ -124,6 +125,10 @@ func bindEnvVariables() {
 	_ = viper.BindEnv("masterdata.cache_ttl_categories", "MASTERDATA_CACHE_TTL_CATEGORIES")
 	_ = viper.BindEnv("masterdata.cache_ttl_items", "MASTERDATA_CACHE_TTL_ITEMS")
 	_ = viper.BindEnv("masterdata.cache_ttl_tree", "MASTERDATA_CACHE_TTL_TREE")
+
+	_ = viper.BindEnv("google_oauth.client_id", "GOOGLE_OAUTH_CLIENT_ID")
+	_ = viper.BindEnv("google_oauth.client_secret", "GOOGLE_OAUTH_CLIENT_SECRET")
+	_ = viper.BindEnv("google_oauth.redirect_url", "GOOGLE_OAUTH_REDIRECT_URL")
 }
 
 func setDefaults() {

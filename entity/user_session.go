@@ -17,7 +17,8 @@ const (
 type UserSessionLoginMethod string
 
 const (
-	UserSessionLoginMethodEmailOTP UserSessionLoginMethod = "EMAIL_OTP"
+	UserSessionLoginMethodEmailOTP    UserSessionLoginMethod = "EMAIL_OTP"
+	UserSessionLoginMethodGoogleOAuth UserSessionLoginMethod = "GOOGLE_OAUTH"
 )
 
 type UserSession struct {
