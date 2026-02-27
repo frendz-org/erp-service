@@ -86,6 +86,10 @@ type CsiLedgerHistoryReader interface {
 	GetCsiLedgerHistory(ctx context.Context, req *CsiLedgerHistoryRequest) ([]CsiLedgerHistoryResponse, error)
 }
 
+type CsiBalanceOverTimeReader interface {
+	GetBalanceOverTime(ctx context.Context, req *BalanceOverTimeRequest) ([]BalanceOverTimeResponse, error)
+}
+
 type Usecase interface {
 	ParticipantReader
 	ParticipantWriter
@@ -101,4 +105,5 @@ type Usecase interface {
 	ParticipantRegistration
 	CsiAmountSummaryReader
 	CsiLedgerHistoryReader
+	CsiBalanceOverTimeReader
 }

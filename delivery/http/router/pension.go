@@ -13,4 +13,5 @@ func SetupPensionRoutes(api fiber.Router, ctrl *controller.PensionController, cs
 	pension.Get("/amount-summary", ctrl.GetAmountSummary)
 	pension.Get("/csi-amount-summary", csiCtrl.GetCsiAmountSummary)
 	pension.Get("/csi-ledger-history", csiCtrl.GetCsiLedgerHistory)
+	pension.Get("/balance-over-time", csiCtrl.GetBalanceOverTime)
 }

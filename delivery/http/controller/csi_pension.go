@@ -12,6 +12,7 @@ import (
 type CsiPensionUsecase interface {
 	participant.CsiAmountSummaryReader
 	participant.CsiLedgerHistoryReader
+	participant.CsiBalanceOverTimeReader
 }
 
 type CsiPensionController struct {
@@ -115,6 +116,70 @@ func (ctrl *CsiPensionController) GetCsiLedgerHistory(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"success": true,
 		"data":    history,
+	})
+}
+
+func (ctrl *CsiPensionController) GetBalanceOverTime(c *fiber.Ctx) error {
+	userID, err := middleware.GetUserID(c)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"success": false,
+			"error":   "unauthorized",
+		})
+	}
+
+	granularity := c.Query("granularity", "yearly")
+	if granularity != "monthly" && granularity != "yearly" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"success": false,
+			"error":   "granularity must be 'monthly' or 'yearly'",
+		})
+	}
+
+	var yearFrom, yearTo *int
+	if v := c.Query("year_from"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 1900 || n > 2100 {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"success": false,
+				"error":   "invalid year_from parameter",
+			})
+		}
+		yearFrom = &n
+	}
+	if v := c.Query("year_to"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 1900 || n > 2100 {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"success": false,
+				"error":   "invalid year_to parameter",
+			})
+		}
+		yearTo = &n
+	}
+	if yearFrom != nil && yearTo != nil && *yearFrom > *yearTo {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"success": false,
+			"error":   "year_from must be less than or equal to year_to",
+		})
+	}
+
+	results, err := ctrl.usecase.GetBalanceOverTime(c.UserContext(), &participant.BalanceOverTimeRequest{
+		UserID:      userID,
+		Granularity: granularity,
+		YearFrom:    yearFrom,
+		YearTo:      yearTo,
+	})
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"success": false,
+			"error":   "failed to get balance over time",
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"data":    results,
 	})
 }
 

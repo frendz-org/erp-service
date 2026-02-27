@@ -163,7 +163,14 @@ type CsiLedgerPeriodFilter struct {
 	YearTo        *int
 }
 
+type CsiLedgerMonthlyBalance struct {
+	YearPeriod  int
+	MonthPeriod int
+	Balance     float64
+}
+
 type CsiLedgerRepository interface {
+	GetMonthlyBalances(ctx context.Context, csiEmployeeID int, yearFrom *int, yearTo *int) ([]CsiLedgerMonthlyBalance, error)
 	GetLatestPeriod(ctx context.Context, csiEmployeeID int) (yearPeriod int, monthPeriod int, err error)
 	GetAmountsByItemID(ctx context.Context, csiEmployeeID int, upToYear int, upToMonth int) ([]CsiLedgerItemAmount, error)
 	CountDistinctPeriods(ctx context.Context, filter *CsiLedgerPeriodFilter) (int64, error)

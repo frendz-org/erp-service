@@ -278,6 +278,13 @@ type CsiLedgerHistoryRequest struct {
 	YearTo   *int      `json:"-"`
 }
 
+type BalanceOverTimeRequest struct {
+	UserID      uuid.UUID `json:"-"`
+	Granularity string    `json:"-"`
+	YearFrom    *int      `json:"-"`
+	YearTo      *int      `json:"-"`
+}
+
 type SelfRegisterRequest struct {
 	UserID            uuid.UUID `json:"-"`
 	Organization      string    `json:"organization"       validate:"required,min=6,max=50"`

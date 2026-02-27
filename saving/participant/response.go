@@ -259,6 +259,21 @@ type CsiLedgerPaginationResponse struct {
 	TotalPages   int   `json:"total_pages"`
 }
 
+type BalanceOverTimeResponse struct {
+	TenantID    uuid.UUID                  `json:"tenant_id"`
+	TenantName  string                     `json:"tenant_name"`
+	User        string                     `json:"user"`
+	Granularity string                     `json:"granularity"`
+	DataPoints  []BalanceOverTimeDataPoint `json:"data_points"`
+}
+
+type BalanceOverTimeDataPoint struct {
+	PeriodLabel string `json:"period_label"`
+	Year        int    `json:"year"`
+	Month       *int   `json:"month,omitempty"`
+	Balance     int64  `json:"balance"`
+}
+
 type SelfRegisterParticipantData struct {
 	ParticipantNumber string    `json:"participant_number"`
 	Status            string    `json:"status"`

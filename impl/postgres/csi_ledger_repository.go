@@ -117,6 +117,49 @@ func (r *csiLedgerRepository) GetLedgersByPeriods(ctx context.Context, csiEmploy
 	return results, nil
 }
 
+func (r *csiLedgerRepository) GetMonthlyBalances(ctx context.Context, csiEmployeeID int, yearFrom *int, yearTo *int) ([]participant.CsiLedgerMonthlyBalance, error) {
+	var results []participant.CsiLedgerMonthlyBalance
+
+	// CTE approach: compute full cumulative from all-time data, then filter output by year range.
+	// This ensures the cumulative balance is correct even when yearFrom filters the returned rows.
+	query := `
+		WITH monthly_totals AS (
+			SELECT year_period, month_period,
+				SUM(amount_trans) AS period_amount
+			FROM csi_ledgers
+			WHERE csi_employee_id = ?
+			GROUP BY year_period, month_period
+		),
+		cumulative AS (
+			SELECT year_period, month_period,
+				SUM(period_amount) OVER (ORDER BY year_period, month_period) AS balance
+			FROM monthly_totals
+		)
+		SELECT year_period, month_period, balance
+		FROM cumulative
+		WHERE 1=1`
+
+	args := []interface{}{csiEmployeeID}
+
+	if yearFrom != nil {
+		query += " AND year_period >= ?"
+		args = append(args, *yearFrom)
+	}
+	if yearTo != nil {
+		query += " AND year_period <= ?"
+		args = append(args, *yearTo)
+	}
+
+	query += " ORDER BY year_period, month_period"
+
+	err := r.getDB(ctx).Raw(query, args...).Scan(&results).Error
+	if err != nil {
+		return nil, translateError(err, "csi ledger")
+	}
+
+	return results, nil
+}
+
 func (r *csiLedgerRepository) GetCumulativeBalance(ctx context.Context, csiEmployeeID int, upToYear int, upToMonth int) (float64, error) {
 	var balance float64
 	err := r.getDB(ctx).Model(&entity.CsiLedger{}).
