@@ -102,6 +102,14 @@ func (m *MockParticipantRepository) GetByUserAndTenantProduct(ctx context.Contex
 	return args.Get(0).(*entity.Participant), args.Error(1)
 }
 
+func (m *MockParticipantRepository) ListByUserID(ctx context.Context, userID uuid.UUID) ([]*entity.Participant, error) {
+	args := m.Called(ctx, userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*entity.Participant), args.Error(1)
+}
+
 type MockParticipantIdentityRepository struct {
 	mock.Mock
 }

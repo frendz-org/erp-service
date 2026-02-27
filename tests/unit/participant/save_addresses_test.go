@@ -37,7 +37,7 @@ func makeAddressUsecase() (participant.Usecase, *MockTransactionManager, *MockPa
 		statusHistoryRepo,
 		new(MockFileStorageAdapter),
 		new(MockFileRepository),
-		nil, nil, nil, nil, nil, nil, nil,
+		nil, nil, nil, nil, nil, nil, nil, nil,
 	)
 	return uc, txMgr, participantRepo, addressRepo, statusHistoryRepo
 }

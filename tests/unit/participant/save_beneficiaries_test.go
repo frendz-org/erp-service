@@ -38,7 +38,7 @@ func makeBeneficiaryUsecase() (participant.Usecase, *MockTransactionManager, *Mo
 		new(MockParticipantStatusHistoryRepository),
 		new(MockFileStorageAdapter),
 		fileRepo,
-		nil, nil, nil, nil, nil, nil, nil,
+		nil, nil, nil, nil, nil, nil, nil, nil,
 	)
 	return uc, txMgr, participantRepo, beneficiaryRepo, familyMemberRepo, fileRepo
 }

@@ -38,7 +38,7 @@ func makeUploadUsecase() (participant.Usecase, *MockParticipantRepository, *Mock
 		new(MockParticipantStatusHistoryRepository),
 		fileStorage,
 		fileRepo,
-		nil, nil, nil, nil, nil, nil, nil,
+		nil, nil, nil, nil, nil, nil, nil, nil,
 	)
 	return uc, participantRepo, fileRepo, fileStorage
 }

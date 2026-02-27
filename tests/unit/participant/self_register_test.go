@@ -78,6 +78,7 @@ func minimalSelfRegisterUsecase(
 		up,
 		md,
 		nil,
+		nil,
 	)
 }
 

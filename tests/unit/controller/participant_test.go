@@ -228,6 +228,22 @@ func (m *MockParticipantUsecase) GetMyStatusHistory(ctx context.Context, req *pa
 	return args.Get(0).([]participant.StatusHistoryResponse), args.Error(1)
 }
 
+func (m *MockParticipantUsecase) GetCsiAmountSummary(ctx context.Context, req *participant.CsiAmountSummaryRequest) ([]participant.CsiAmountSummaryResponse, error) {
+	args := m.Called(ctx, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]participant.CsiAmountSummaryResponse), args.Error(1)
+}
+
+func (m *MockParticipantUsecase) GetCsiLedgerHistory(ctx context.Context, req *participant.CsiLedgerHistoryRequest) ([]participant.CsiLedgerHistoryResponse, error) {
+	args := m.Called(ctx, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]participant.CsiLedgerHistoryResponse), args.Error(1)
+}
+
 func setupParticipantApp(uc *MockParticipantUsecase, userID uuid.UUID) *fiber.App {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
