@@ -15,26 +15,26 @@ import (
 
 type PensionController struct {
 	platformDB *gorm.DB
-	prodDB     *gorm.DB
+	// prodDB     *gorm.DB
 }
 
-func NewPensionController(platformDB, prodDB *gorm.DB) *PensionController {
+func NewPensionController(platformDB *gorm.DB) *PensionController {
 	return &PensionController{
 		platformDB: platformDB,
-		prodDB:     prodDB,
+		// prodDB:     prodDB,
 	}
 }
 
 type pensionTransaction struct {
-	ID              int        `gorm:"column:id;primaryKey"`
-	TransactionDate time.Time  `gorm:"column:transaction_date"`
-	Code            string     `gorm:"column:code"`
-	EmpNo           string     `gorm:"column:emp_no"`
-	Amount          float64    `gorm:"column:amount"`
-	Transaction     string     `gorm:"column:transaction"`
-	Status          *bool      `gorm:"column:status"`
-	EmpNoOld        *string    `gorm:"column:emp_no_old"`
-	ROI             *float64   `gorm:"column:roi"`
+	ID              int       `gorm:"column:id;primaryKey"`
+	TransactionDate time.Time `gorm:"column:transaction_date"`
+	Code            string    `gorm:"column:code"`
+	EmpNo           string    `gorm:"column:emp_no"`
+	Amount          float64   `gorm:"column:amount"`
+	Transaction     string    `gorm:"column:transaction"`
+	Status          *bool     `gorm:"column:status"`
+	EmpNoOld        *string   `gorm:"column:emp_no_old"`
+	ROI             *float64  `gorm:"column:roi"`
 }
 
 func (pensionTransaction) TableName() string {
@@ -110,7 +110,7 @@ func (ctrl *PensionController) resolveUser(c *fiber.Ctx, userID uuid.UUID) (stri
 func (ctrl *PensionController) calculatePensionSummary(empNo string) (int64, float64, error) {
 	// Step 1: Find latest transaction date
 	var latestDate *time.Time
-	q := ctrl.prodDB.Model(&pensionTransaction{})
+	q := ctrl.platformDB.Model(&pensionTransaction{})
 	if empNo != "" {
 		q = q.Where("emp_no = ?", empNo)
 	}
@@ -124,7 +124,7 @@ func (ctrl *PensionController) calculatePensionSummary(empNo string) (int64, flo
 
 	// Step 2: Calculate total saldo (cumulative up to latest date)
 	var totalSaldoRaw float64
-	q2 := ctrl.prodDB.Model(&pensionTransaction{}).
+	q2 := ctrl.platformDB.Model(&pensionTransaction{}).
 		Where("transaction_date <= ?", *latestDate)
 	if empNo != "" {
 		q2 = q2.Where("emp_no = ?", empNo)
@@ -136,7 +136,7 @@ func (ctrl *PensionController) calculatePensionSummary(empNo string) (int64, flo
 	// Step 3: Calculate last month saldo
 	oneMonthBefore := latestDate.AddDate(0, -1, 0)
 	var lastMonthSaldo float64
-	q3 := ctrl.prodDB.Model(&pensionTransaction{}).
+	q3 := ctrl.platformDB.Model(&pensionTransaction{}).
 		Where("transaction_date <= ?", oneMonthBefore)
 	if empNo != "" {
 		q3 = q3.Where("emp_no = ?", empNo)
