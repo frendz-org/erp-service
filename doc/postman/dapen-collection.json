@@ -4311,6 +4311,162 @@
               "body": "{\n    \"success\": false,\n    \"error\": \"missing authorization header\"\n}"
             }
           ]
+        },
+        {
+          "name": "Get CSI Amount Summary",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  pm.expect(json.data).to.have.property('total_saldo');",
+                  "  pm.expect(json.data).to.have.property('items');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/pension/csi-amount-summary",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "pension", "csi-amount-summary"]
+            },
+            "description": "Get the CSI pension amount summary for the authenticated user. Returns total saldo, growth percentage, and breakdown by CSI item. JWT required."
+          },
+          "response": [
+            {
+              "name": "200 - CSI Amount Summary Retrieved",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"tenant_id\": \"019500a1-0000-7000-8000-000000000001\",\n        \"tenant_name\": \"PT Contoh Perusahaan\",\n        \"user\": \"Budi Santoso\",\n        \"total_saldo\": 25000000,\n        \"growth_percentage\": 5.25,\n        \"latest_period\": \"2025-12\",\n        \"items\": [\n            {\n                \"csi_item_id\": 1,\n                \"name\": \"Iuran Peserta\",\n                \"amount\": 12500000,\n                \"percentage\": 50.0\n            },\n            {\n                \"csi_item_id\": 2,\n                \"name\": \"Iuran Pemberi Kerja\",\n                \"amount\": 12500000,\n                \"percentage\": 50.0\n            }\n        ]\n    }\n}"
+            },
+            {
+              "name": "401 - Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"unauthorized\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get CSI Ledger History",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag and pagination', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  pm.expect(json.data).to.have.property('periods');",
+                  "  pm.expect(json.data).to.have.property('pagination');",
+                  "  pm.expect(json.data.pagination).to.have.property('page');",
+                  "  pm.expect(json.data.pagination).to.have.property('per_page');",
+                  "  pm.expect(json.data.pagination).to.have.property('total_records');",
+                  "  pm.expect(json.data.pagination).to.have.property('total_pages');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/pension/csi-ledger-history?page=1&per_page=12",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "pension", "csi-ledger-history"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "per_page",
+                  "value": "12",
+                  "description": "Records per page (default: 12, max: 120)"
+                },
+                {
+                  "key": "year_from",
+                  "value": "",
+                  "description": "Filter from year (optional, 1900–2100)",
+                  "disabled": true
+                },
+                {
+                  "key": "year_to",
+                  "value": "",
+                  "description": "Filter to year (optional, 1900–2100)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get paginated monthly CSI ledger transaction history for the authenticated user. Results are grouped by period (year+month). Supports optional year range filter. JWT required.\n\n**Query Parameters:**\n- `page` (integer, default 1) — page number\n- `per_page` (integer, default 12, max 120) — records per page\n- `year_from` (integer, optional, 1900–2100) — filter start year\n- `year_to` (integer, optional, 1900–2100) — filter end year"
+          },
+          "response": [
+            {
+              "name": "200 - Ledger History Retrieved",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"tenant_id\": \"019500a1-0000-7000-8000-000000000001\",\n        \"tenant_name\": \"PT Contoh Perusahaan\",\n        \"user\": \"Budi Santoso\",\n        \"periods\": [\n            {\n                \"year_period\": 2025,\n                \"month_period\": 12,\n                \"period_label\": \"Desember 2025\",\n                \"items\": [\n                    {\n                        \"csi_item_id\": 1,\n                        \"name\": \"Iuran Peserta\",\n                        \"amount\": 500000\n                    },\n                    {\n                        \"csi_item_id\": 2,\n                        \"name\": \"Iuran Pemberi Kerja\",\n                        \"amount\": 500000\n                    }\n                ],\n                \"period_total\": 1000000,\n                \"cumulative_balance\": 25000000\n            },\n            {\n                \"year_period\": 2025,\n                \"month_period\": 11,\n                \"period_label\": \"November 2025\",\n                \"items\": [\n                    {\n                        \"csi_item_id\": 1,\n                        \"name\": \"Iuran Peserta\",\n                        \"amount\": 500000\n                    },\n                    {\n                        \"csi_item_id\": 2,\n                        \"name\": \"Iuran Pemberi Kerja\",\n                        \"amount\": 500000\n                    }\n                ],\n                \"period_total\": 1000000,\n                \"cumulative_balance\": 24000000\n            }\n        ],\n        \"pagination\": {\n            \"page\": 1,\n            \"per_page\": 12,\n            \"total_records\": 36,\n            \"total_pages\": 3\n        }\n    }\n}"
+            },
+            {
+              "name": "400 - Invalid year_from",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"invalid year_from parameter\"\n}"
+            },
+            {
+              "name": "400 - Invalid year_to",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"invalid year_to parameter\"\n}"
+            },
+            {
+              "name": "400 - year_from greater than year_to",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"year_from must be less than or equal to year_to\"\n}"
+            },
+            {
+              "name": "401 - Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"unauthorized\"\n}"
+            }
+          ]
         }
       ]
     },
