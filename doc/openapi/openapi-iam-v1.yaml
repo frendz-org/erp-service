@@ -3004,6 +3004,96 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /api/v1/pension/csi-amount-summary:
+    get:
+      tags: [Pension]
+      summary: Get CSI pension amount summary
+      description: |
+        Returns the authenticated user's CSI pension balance summary, including total saldo,
+        month-over-month growth percentage, a breakdown by CSI item, and the latest period label.
+
+        The user's employee number is resolved from their participant record via the CSI employees
+        table. Data is read from the `csi_ledgers` table.
+      operationId: getCsiAmountSummary
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: CSI pension amount summary returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CsiAmountSummaryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/pension/csi-ledger-history:
+    get:
+      tags: [Pension]
+      summary: Get CSI ledger transaction history
+      description: |
+        Returns a paginated monthly transaction history from the `csi_ledgers` table for the
+        authenticated user. Results are grouped by year/month period and include a per-period
+        breakdown by CSI item along with cumulative running balance.
+
+        Supports optional year range filtering via `year_from` and `year_to` query parameters.
+        Both must be integers in the range 1900–2100. If both are provided, `year_from` must be
+        less than or equal to `year_to`.
+
+        Pagination defaults: `page=1`, `per_page=12` (max 120).
+      operationId: getCsiLedgerHistory
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          description: Page number (1-based). Defaults to 1.
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: per_page
+          in: query
+          required: false
+          description: Number of periods per page. Defaults to 12, maximum 120.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 120
+            default: 12
+        - name: year_from
+          in: query
+          required: false
+          description: Filter periods from this year (inclusive). Must be between 1900 and 2100.
+          schema:
+            type: integer
+            minimum: 1900
+            maximum: 2100
+        - name: year_to
+          in: query
+          required: false
+          description: Filter periods up to this year (inclusive). Must be between 1900 and 2100.
+          schema:
+            type: integer
+            minimum: 1900
+            maximum: 2100
+      responses:
+        '200':
+          description: CSI ledger history returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CsiLedgerHistoryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
 # ==========================================
 # COMPONENTS
 # ==========================================
@@ -5763,3 +5853,139 @@ components:
               format: double
               description: Month-over-month growth percentage, rounded to 2 decimal places
               example: 3.25
+
+    CsiAmountSummaryResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            tenant_id:
+              type: string
+              format: uuid
+              description: UUID of the tenant resolved for the authenticated user
+            tenant_name:
+              type: string
+              description: Display name of the resolved tenant
+            user:
+              type: string
+              description: Full name of the authenticated user
+            total_saldo:
+              type: integer
+              format: int64
+              description: Cumulative CSI pension balance (integer, no decimals)
+            growth_percentage:
+              type: number
+              format: double
+              description: Month-over-month growth percentage, rounded to 2 decimal places
+            latest_period:
+              type: string
+              description: Human-readable label for the most recent period (e.g. "January 2025")
+            items:
+              type: array
+              description: Breakdown of the total saldo by CSI item type
+              items:
+                $ref: '#/components/schemas/CsiAmountSummaryItem'
+
+    CsiAmountSummaryItem:
+      type: object
+      properties:
+        csi_item_id:
+          type: integer
+          description: CSI item identifier
+        name:
+          type: string
+          description: Display name of the CSI item
+        amount:
+          type: integer
+          format: int64
+          description: Amount for this item (integer, no decimals)
+        percentage:
+          type: number
+          format: double
+          description: This item's share of the total saldo as a percentage
+
+    CsiLedgerHistoryResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            tenant_id:
+              type: string
+              format: uuid
+              description: UUID of the tenant resolved for the authenticated user
+            tenant_name:
+              type: string
+              description: Display name of the resolved tenant
+            user:
+              type: string
+              description: Full name of the authenticated user
+            periods:
+              type: array
+              description: List of monthly periods with transaction breakdowns, ordered by period descending
+              items:
+                $ref: '#/components/schemas/CsiLedgerPeriodResponse'
+            pagination:
+              $ref: '#/components/schemas/CsiLedgerPaginationResponse'
+
+    CsiLedgerPeriodResponse:
+      type: object
+      properties:
+        year_period:
+          type: integer
+          description: Four-digit year of the period
+        month_period:
+          type: integer
+          description: Month number of the period (1–12)
+        period_label:
+          type: string
+          description: Human-readable period label (e.g. "January 2025")
+        items:
+          type: array
+          description: Breakdown of transactions for this period by CSI item type
+          items:
+            $ref: '#/components/schemas/CsiLedgerPeriodItem'
+        period_total:
+          type: integer
+          format: int64
+          description: Sum of all item amounts for this period
+        cumulative_balance:
+          type: integer
+          format: int64
+          description: Running cumulative balance up to and including this period
+
+    CsiLedgerPeriodItem:
+      type: object
+      properties:
+        csi_item_id:
+          type: integer
+          description: CSI item identifier
+        name:
+          type: string
+          description: Display name of the CSI item
+        amount:
+          type: integer
+          format: int64
+          description: Transaction amount for this item in this period
+
+    CsiLedgerPaginationResponse:
+      type: object
+      properties:
+        page:
+          type: integer
+          description: Current page number (1-based)
+        per_page:
+          type: integer
+          description: Number of periods per page
+        total_records:
+          type: integer
+          format: int64
+          description: Total number of monthly period records matching the filter
+        total_pages:
+          type: integer
+          description: Total number of pages
