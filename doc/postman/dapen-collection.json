@@ -2821,7 +2821,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"full_name\": \"Budi Santoso\"\n}",
+              "raw": "{\n    \"full_name\": \"Budi Santoso\",\n    \"ktp_number\": \"3174012345678901\",\n    \"employee_number\": \"EMP-001\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {
@@ -3099,7 +3099,7 @@
           ]
         },
         {
-          "name": "Save Address",
+          "name": "Save Addresses",
           "event": [
             {
               "listen": "test",
@@ -3111,7 +3111,7 @@
                   "pm.test('Response has success flag and extracts address_id', function () {",
                   "  var json = pm.response.json();",
                   "  pm.expect(json.success).to.be.true;",
-                  "  if (json.data && json.data.id) { pm.collectionVariables.set('address_id', json.data.id); }",
+                  "  if (json.data && json.data[0] && json.data[0].id) { pm.collectionVariables.set('address_id', json.data[0].id); }",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -3127,7 +3127,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"address_type\": \"HOME\",\n    \"country_code\": \"ID\",\n    \"province_code\": \"JKT\",\n    \"city_code\": \"JKT_PUSAT\",\n    \"postal_code\": \"10110\",\n    \"address_line\": \"Jl. Sudirman No. 1\",\n    \"is_primary\": true\n}",
+              "raw": "{\n    \"addresses\": [\n        {\n            \"address_type\": \"HOME\",\n            \"country_code\": \"ID\",\n            \"province_code\": \"JKT\",\n            \"city_code\": \"JKT_PUSAT\",\n            \"postal_code\": \"10110\",\n            \"address_line\": \"Jl. Sudirman No. 1\",\n            \"is_primary\": true\n        }\n    ]\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {
@@ -3135,16 +3135,16 @@
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "addresses"]
             },
-            "description": "Add or update address. Permission: participant:update"
+            "description": "Upsert addresses for a participant. Sends a full array — existing items with an id are updated, items without id are created. Permission: participant:update"
           },
           "response": [
             {
-              "name": "200 - Address Saved",
+              "name": "200 - Addresses Saved",
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500f3-...\",\n        \"address_type\": \"HOME\",\n        \"is_primary\": true,\n        \"version\": 1\n    }\n}"
+              "body": "{\n    \"success\": true,\n    \"data\": [\n        {\n            \"id\": \"019500f3-...\",\n            \"address_type\": \"HOME\",\n            \"is_primary\": true,\n            \"version\": 1\n        }\n    ]\n}"
             }
           ]
         },
@@ -3277,7 +3277,7 @@
           ]
         },
         {
-          "name": "Save Family Member",
+          "name": "Save Family Members",
           "event": [
             {
               "listen": "test",
@@ -3289,7 +3289,7 @@
                   "pm.test('Response has success flag and extracts family_member_id', function () {",
                   "  var json = pm.response.json();",
                   "  pm.expect(json.success).to.be.true;",
-                  "  if (json.data && json.data.id) { pm.collectionVariables.set('family_member_id', json.data.id); }",
+                  "  if (json.data && json.data[0] && json.data[0].id) { pm.collectionVariables.set('family_member_id', json.data[0].id); }",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -3305,7 +3305,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"full_name\": \"Siti Rahayu\",\n    \"relationship_type\": \"SPOUSE\",\n    \"is_dependent\": true\n}",
+              "raw": "{\n    \"family_members\": [\n        {\n            \"full_name\": \"Siti Rahayu\",\n            \"relationship_type\": \"SPOUSE\",\n            \"is_dependent\": true\n        }\n    ]\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {
@@ -3313,16 +3313,16 @@
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "family-members"]
             },
-            "description": "Add or update a family member. Permission: participant:update"
+            "description": "Upsert family members for a participant. Sends a full array — existing items with an id are updated, items without id are created. Permission: participant:update"
           },
           "response": [
             {
-              "name": "200 - Family Member Saved",
+              "name": "200 - Family Members Saved",
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500f5-...\",\n        \"full_name\": \"Siti Rahayu\",\n        \"relationship_type\": \"SPOUSE\",\n        \"is_dependent\": true,\n        \"version\": 1\n    }\n}"
+              "body": "{\n    \"success\": true,\n    \"data\": [\n        {\n            \"id\": \"019500f5-...\",\n            \"full_name\": \"Siti Rahayu\",\n            \"relationship_type\": \"SPOUSE\",\n            \"is_dependent\": true,\n            \"version\": 1\n        }\n    ]\n}"
             }
           ]
         },
@@ -3442,7 +3442,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"pension_number\": \"PEN-001\",\n    \"pension_type\": \"DPLK\",\n    \"contribution_amount\": 500000,\n    \"start_date\": \"2015-01-15T00:00:00Z\"\n}",
+              "raw": "{\n    \"participant_number\": \"PEN-001\",\n    \"pension_category\": \"DPLK\",\n    \"pension_status\": \"ACTIVE\",\n    \"effective_date\": \"2015-01-15T00:00:00Z\",\n    \"projected_retirement_date\": \"2055-01-15T00:00:00Z\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {
@@ -3459,12 +3459,12 @@
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500f8-...\",\n        \"pension_number\": \"PEN-001\",\n        \"pension_type\": \"DPLK\",\n        \"contribution_amount\": 500000,\n        \"version\": 1\n    }\n}"
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500f8-...\",\n        \"participant_number\": \"PEN-001\",\n        \"pension_category\": \"DPLK\",\n        \"pension_status\": \"ACTIVE\",\n        \"effective_date\": \"2015-01-15T00:00:00Z\",\n        \"projected_retirement_date\": \"2055-01-15T00:00:00Z\",\n        \"version\": 1\n    }\n}"
             }
           ]
         },
         {
-          "name": "Save Beneficiary",
+          "name": "Save Beneficiaries",
           "event": [
             {
               "listen": "test",
@@ -3476,7 +3476,7 @@
                   "pm.test('Response has success flag and extracts beneficiary_id', function () {",
                   "  var json = pm.response.json();",
                   "  pm.expect(json.success).to.be.true;",
-                  "  if (json.data && json.data.id) { pm.collectionVariables.set('beneficiary_id', json.data.id); }",
+                  "  if (json.data && json.data[0] && json.data[0].id) { pm.collectionVariables.set('beneficiary_id', json.data[0].id); }",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -3492,7 +3492,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"family_member_id\": \"{{family_member_id}}\",\n    \"account_number\": \"1234567890\"\n}",
+              "raw": "{\n    \"beneficiaries\": [\n        {\n            \"family_member_id\": \"{{family_member_id}}\",\n            \"account_number\": \"1234567890\"\n        }\n    ]\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {
@@ -3500,16 +3500,16 @@
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "beneficiaries"]
             },
-            "description": "Add or update a beneficiary. Permission: participant:update"
+            "description": "Upsert beneficiaries for a participant. Sends a full array — existing items with an id are updated, items without id are created. Permission: participant:update"
           },
           "response": [
             {
-              "name": "200 - Beneficiary Saved",
+              "name": "200 - Beneficiaries Saved",
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500f7-...\",\n        \"family_member_id\": \"019500f5-...\",\n        \"account_number\": \"1234567890\",\n        \"version\": 1\n    }\n}"
+              "body": "{\n    \"success\": true,\n    \"data\": [\n        {\n            \"id\": \"019500f7-...\",\n            \"family_member_id\": \"019500f5-...\",\n            \"account_number\": \"1234567890\",\n            \"version\": 1\n        }\n    ]\n}"
             }
           ]
         },
