@@ -30,9 +30,11 @@ type ParticipantRepository interface {
 	GetByKTPNumber(ctx context.Context, tenantID, productID uuid.UUID, ktpNumber string) (*entity.Participant, error)
 	GetByEmployeeNumber(ctx context.Context, tenantID, productID uuid.UUID, employeeNumber string) (*entity.Participant, error)
 	GetByUserAndTenantProduct(ctx context.Context, userID, tenantID, productID uuid.UUID) (*entity.Participant, error)
+	ListByUserID(ctx context.Context, userID uuid.UUID) ([]*entity.Participant, error)
 }
 
 type TenantRepository interface {
+	GetByID(ctx context.Context, id uuid.UUID) (*entity.Tenant, error)
 	GetByCode(ctx context.Context, code string) (*entity.Tenant, error)
 }
 
@@ -136,4 +138,36 @@ type EmployeeDataRepository interface {
 
 type CsiEmployeeRepository interface {
 	GetByEmployeeNo(ctx context.Context, employeeNo string) (*entity.CsiEmployee, error)
+}
+
+type CsiLedgerItemAmount struct {
+	CsiItemID   int
+	TotalAmount float64
+}
+
+type CsiLedgerPeriod struct {
+	YearPeriod  int
+	MonthPeriod int
+}
+
+type CsiLedgerRow struct {
+	YearPeriod  int
+	MonthPeriod int
+	CsiItemID   int
+	AmountTrans float64
+}
+
+type CsiLedgerPeriodFilter struct {
+	CsiEmployeeID int
+	YearFrom      *int
+	YearTo        *int
+}
+
+type CsiLedgerRepository interface {
+	GetLatestPeriod(ctx context.Context, csiEmployeeID int) (yearPeriod int, monthPeriod int, err error)
+	GetAmountsByItemID(ctx context.Context, csiEmployeeID int, upToYear int, upToMonth int) ([]CsiLedgerItemAmount, error)
+	CountDistinctPeriods(ctx context.Context, filter *CsiLedgerPeriodFilter) (int64, error)
+	GetDistinctPeriods(ctx context.Context, filter *CsiLedgerPeriodFilter, offset int, limit int) ([]CsiLedgerPeriod, error)
+	GetLedgersByPeriods(ctx context.Context, csiEmployeeID int, periods []CsiLedgerPeriod) ([]CsiLedgerRow, error)
+	GetCumulativeBalance(ctx context.Context, csiEmployeeID int, upToYear int, upToMonth int) (float64, error)
 }

@@ -64,11 +64,6 @@ func NewServer(cfg *config.Config) *Server {
 		log.Fatal("failed to connect to postgres:", err)
 	}
 
-	postgresProdDB, err := infrastructure.NewPostgresProd(zapLogger)
-	if err != nil {
-		log.Fatal("failed to connect to postgres prod:", err)
-	}
-
 	redisClient, err := infrastructure.NewRedis(cfg.Infra.Redis)
 	if err != nil {
 		log.Fatal("failed to connect to redis:", err)
@@ -99,6 +94,7 @@ func NewServer(cfg *config.Config) *Server {
 
 	memberRepo := postgres.NewMemberRepository(postgresDB)
 	csiEmployeeRepo := postgres.NewCsiEmployeeRepository(postgresDB)
+	csiLedgerRepo := postgres.NewCsiLedgerRepository(postgresDB)
 	participantRepo := postgres.NewParticipantRepository(postgresDB)
 	participantIdentityRepo := postgres.NewParticipantIdentityRepository(postgresDB)
 	participantAddressRepo := postgres.NewParticipantAddressRepository(postgresDB)
@@ -202,6 +198,7 @@ func NewServer(cfg *config.Config) *Server {
 		userProfileRepo,
 		masterdataUsecase,
 		csiEmployeeRepo,
+		csiLedgerRepo,
 	)
 
 	healthController := controller.NewHealthController(cfg)
@@ -212,7 +209,8 @@ func NewServer(cfg *config.Config) *Server {
 	memberController := controller.NewMemberController(memberUsecase)
 	participantController := controller.NewParticipantController(participantUsecase)
 	devController := controller.NewDevController(postgresDB, inMemoryStore)
-	pensionController := controller.NewPensionController(postgresDB, postgresProdDB)
+	pensionController := controller.NewPensionController(postgresDB)
+	csiPensionController := controller.NewCsiPensionController(participantUsecase)
 
 	fileCleanupUC := files.NewUsecase(fileRepo, fileStorage, txManager, zapLogger, files.DefaultConfig())
 	fileWorker := worker.NewWorker(fileCleanupUC, zapLogger)
@@ -264,7 +262,7 @@ func NewServer(cfg *config.Config) *Server {
 	router.SetupParticipantRoutes(saving, participantController, jwtMiddleware, frendzSavingMW, cfg)
 	router.SetupMemberRoutes(saving, memberController, jwtMiddleware, frendzSavingMW)
 
-	router.SetupPensionRoutes(v1, pensionController, jwtMiddleware)
+	router.SetupPensionRoutes(v1, pensionController, csiPensionController, jwtMiddleware)
 
 	router.SetupDevRoutes(v1, cfg, devController)
 

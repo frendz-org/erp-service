@@ -147,6 +147,17 @@ func (r *participantRepository) Update(ctx context.Context, participant *entity.
 	return nil
 }
 
+func (r *participantRepository) ListByUserID(ctx context.Context, userID uuid.UUID) ([]*entity.Participant, error) {
+	var participants []*entity.Participant
+	err := r.getDB(ctx).
+		Where("user_id = ? AND deleted_at IS NULL", userID).
+		Find(&participants).Error
+	if err != nil {
+		return nil, translateError(err, "participant")
+	}
+	return participants, nil
+}
+
 func (r *participantRepository) SoftDelete(ctx context.Context, id uuid.UUID) error {
 	err := r.getDB(ctx).Model(&entity.Participant{}).
 		Where("id = ? AND deleted_at IS NULL", id).

@@ -212,6 +212,53 @@ type MyParticipantResponse struct {
 	RegistrationStatus string `json:"registration_status"`
 }
 
+type CsiAmountSummaryResponse struct {
+	TenantID         uuid.UUID              `json:"tenant_id"`
+	TenantName       string                 `json:"tenant_name"`
+	User             string                 `json:"user"`
+	TotalSaldo       int64                  `json:"total_saldo"`
+	GrowthPercentage float64                `json:"growth_percentage"`
+	Items            []CsiAmountSummaryItem `json:"items"`
+	LatestPeriod     string                 `json:"latest_period"`
+}
+
+type CsiAmountSummaryItem struct {
+	CsiItemID  int     `json:"csi_item_id"`
+	Name       string  `json:"name"`
+	Amount     int64   `json:"amount"`
+	Percentage float64 `json:"percentage"`
+}
+
+type CsiLedgerHistoryResponse struct {
+	TenantID   uuid.UUID                   `json:"tenant_id"`
+	TenantName string                      `json:"tenant_name"`
+	User       string                      `json:"user"`
+	Periods    []CsiLedgerPeriodResponse   `json:"periods"`
+	Pagination CsiLedgerPaginationResponse `json:"pagination"`
+}
+
+type CsiLedgerPeriodResponse struct {
+	YearPeriod        int                   `json:"year_period"`
+	MonthPeriod       int                   `json:"month_period"`
+	PeriodLabel       string                `json:"period_label"`
+	Items             []CsiLedgerPeriodItem `json:"items"`
+	PeriodTotal       int64                 `json:"period_total"`
+	CumulativeBalance int64                 `json:"cumulative_balance"`
+}
+
+type CsiLedgerPeriodItem struct {
+	CsiItemID int    `json:"csi_item_id"`
+	Name      string `json:"name"`
+	Amount    int64  `json:"amount"`
+}
+
+type CsiLedgerPaginationResponse struct {
+	Page         int   `json:"page"`
+	PerPage      int   `json:"per_page"`
+	TotalRecords int64 `json:"total_records"`
+	TotalPages   int   `json:"total_pages"`
+}
+
 type SelfRegisterParticipantData struct {
 	ParticipantNumber string    `json:"participant_number"`
 	Status            string    `json:"status"`

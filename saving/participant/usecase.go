@@ -78,6 +78,14 @@ type ParticipantRegistration interface {
 	SelfRegister(ctx context.Context, req *SelfRegisterRequest) (*SelfRegisterResponse, error)
 }
 
+type CsiAmountSummaryReader interface {
+	GetCsiAmountSummary(ctx context.Context, req *CsiAmountSummaryRequest) ([]CsiAmountSummaryResponse, error)
+}
+
+type CsiLedgerHistoryReader interface {
+	GetCsiLedgerHistory(ctx context.Context, req *CsiLedgerHistoryRequest) ([]CsiLedgerHistoryResponse, error)
+}
+
 type Usecase interface {
 	ParticipantReader
 	ParticipantWriter
@@ -91,4 +99,6 @@ type Usecase interface {
 	FileUploader
 	ParticipantWorkflow
 	ParticipantRegistration
+	CsiAmountSummaryReader
+	CsiLedgerHistoryReader
 }
