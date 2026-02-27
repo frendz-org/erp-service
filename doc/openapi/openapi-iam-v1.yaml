@@ -3094,6 +3094,66 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /api/v1/pension/balance-over-time:
+    get:
+      tags: [Pension]
+      summary: Get CSI pension balance over time
+      description: |
+        Returns the authenticated user's CSI pension balance trend over time, grouped by the
+        requested granularity (`monthly` or `yearly`).
+
+        For `yearly` granularity, each data point represents the last recorded monthly balance
+        within that year. For `monthly` granularity, each data point represents a single month's
+        cumulative balance.
+
+        Supports optional year range filtering via `year_from` and `year_to` query parameters.
+        Both must be integers in the range 1900–2100. If both are provided, `year_from` must be
+        less than or equal to `year_to`.
+
+        The response is an array — one entry per participant record linked to the authenticated user.
+        Data is read from the `csi_ledgers` table via the CSI employees lookup.
+      operationId: getBalanceOverTime
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: granularity
+          in: query
+          required: false
+          description: Time granularity for grouping data points. Defaults to `yearly`.
+          schema:
+            type: string
+            enum: [monthly, yearly]
+            default: yearly
+        - name: year_from
+          in: query
+          required: false
+          description: Filter data from this year (inclusive). Must be between 1900 and 2100.
+          schema:
+            type: integer
+            minimum: 1900
+            maximum: 2100
+        - name: year_to
+          in: query
+          required: false
+          description: Filter data up to this year (inclusive). Must be between 1900 and 2100.
+          schema:
+            type: integer
+            minimum: 1900
+            maximum: 2100
+      responses:
+        '200':
+          description: Balance over time returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BalanceOverTimeListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
 # ==========================================
 # COMPONENTS
 # ==========================================
@@ -6007,3 +6067,60 @@ components:
         total_pages:
           type: integer
           description: Total number of pages
+
+    BalanceOverTimeListResponse:
+      type: object
+      description: |
+        Response for GET /api/v1/pension/balance-over-time.
+        The `data` field is an array — one entry per participant record linked to the user.
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/BalanceOverTimeResponse'
+
+    BalanceOverTimeResponse:
+      type: object
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+          description: UUID of the tenant resolved for this participant record
+        tenant_name:
+          type: string
+          description: Display name of the resolved tenant
+        user:
+          type: string
+          description: Full name of the authenticated user
+        granularity:
+          type: string
+          enum: [monthly, yearly]
+          description: Granularity used for grouping the data points
+        data_points:
+          type: array
+          description: Ordered list of balance data points for the requested granularity
+          items:
+            $ref: '#/components/schemas/BalanceOverTimeDataPoint'
+
+    BalanceOverTimeDataPoint:
+      type: object
+      properties:
+        period_label:
+          type: string
+          description: |
+            Human-readable period label.
+            For `yearly` granularity: four-digit year string (e.g. "2024").
+            For `monthly` granularity: YYYY-MM formatted string (e.g. "2024-03").
+        year:
+          type: integer
+          description: Four-digit year of the data point
+        month:
+          type: integer
+          description: Month number (1–12). Present only when granularity is `monthly`.
+          nullable: true
+        balance:
+          type: integer
+          format: int64
+          description: Cumulative CSI pension balance for this period (integer, no decimals)
