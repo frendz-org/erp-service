@@ -126,9 +126,9 @@ func bindEnvVariables() {
 	_ = viper.BindEnv("masterdata.cache_ttl_items", "MASTERDATA_CACHE_TTL_ITEMS")
 	_ = viper.BindEnv("masterdata.cache_ttl_tree", "MASTERDATA_CACHE_TTL_TREE")
 
-	_ = viper.BindEnv("google_oauth.client_id", "GOOGLE_OAUTH_CLIENT_ID")
-	_ = viper.BindEnv("google_oauth.client_secret", "GOOGLE_OAUTH_CLIENT_SECRET")
-	_ = viper.BindEnv("google_oauth.redirect_url", "GOOGLE_OAUTH_REDIRECT_URL")
+	_ = viper.BindEnv("google_oauth.client_id", "GOOGLE_CLIENT_ID")
+	_ = viper.BindEnv("google_oauth.client_secret", "GOOGLE_CLIENT_SECRET")
+	_ = viper.BindEnv("google_oauth.redirect_url", "GOOGLE_REDIRECT_URL")
 }
 
 func setDefaults() {

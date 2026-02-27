@@ -12,6 +12,10 @@ import (
 func SetupAuthRoutes(api fiber.Router, cfg *config.Config, authController *controller.AuthController, blacklistStore auth.TokenBlacklistStore) {
 	api.Post("/auth/refresh-token", authController.RefreshToken)
 
+	google := api.Group("/auth/google")
+	google.Get("", authController.GoogleLogin)
+	google.Post("/callback", authController.GoogleCallback)
+
 	auth := api.Group("/auth")
 	auth.Use(middleware.JWTAuth(cfg, blacklistStore))
 	auth.Post("/logout", authController.Logout)
@@ -30,8 +34,4 @@ func SetupAuthRoutes(api fiber.Router, cfg *config.Config, authController *contr
 	login.Post("/:id/verify-otp", authController.VerifyLoginOTP)
 	login.Post("/:id/resend-otp", authController.ResendLoginOTP)
 	login.Get("/:id/status", authController.GetLoginStatus)
-
-	google := api.Group("/auth/google")
-	google.Get("", authController.GoogleLogin)
-	google.Post("/callback", authController.GoogleCallback)
 }
