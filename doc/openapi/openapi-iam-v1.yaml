@@ -5856,38 +5856,48 @@ components:
 
     CsiAmountSummaryResponse:
       type: object
+      description: |
+        Response for GET /api/v1/pension/csi-amount-summary.
+        The `data` field is an array — one entry per participant record linked to the user.
       properties:
         success:
           type: boolean
         data:
-          type: object
-          properties:
-            tenant_id:
-              type: string
-              format: uuid
-              description: UUID of the tenant resolved for the authenticated user
-            tenant_name:
-              type: string
-              description: Display name of the resolved tenant
-            user:
-              type: string
-              description: Full name of the authenticated user
-            total_saldo:
-              type: integer
-              format: int64
-              description: Cumulative CSI pension balance (integer, no decimals)
-            growth_percentage:
-              type: number
-              format: double
-              description: Month-over-month growth percentage, rounded to 2 decimal places
-            latest_period:
-              type: string
-              description: Human-readable label for the most recent period (e.g. "January 2025")
-            items:
-              type: array
-              description: Breakdown of the total saldo by CSI item type
-              items:
-                $ref: '#/components/schemas/CsiAmountSummaryItem'
+          type: array
+          items:
+            $ref: '#/components/schemas/CsiAmountSummaryData'
+
+    CsiAmountSummaryData:
+      type: object
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+          description: UUID of the tenant resolved for this participant record
+        tenant_name:
+          type: string
+          description: Display name of the resolved tenant
+        user:
+          type: string
+          description: Full name of the authenticated user
+        total_saldo:
+          type: integer
+          format: int64
+          description: Cumulative CSI pension balance (integer, no decimals)
+        growth_percentage:
+          type: number
+          format: double
+          description: Month-over-month growth percentage, rounded to 2 decimal places
+        latest_period:
+          type: string
+          description: |
+            Most recent period with data, formatted as YYYY-MM (e.g. "2025-01").
+            Empty string if no ledger data exists for this participant.
+        items:
+          type: array
+          description: Breakdown of the total saldo by CSI item type
+          items:
+            $ref: '#/components/schemas/CsiAmountSummaryItem'
 
     CsiAmountSummaryItem:
       type: object
@@ -5909,29 +5919,37 @@ components:
 
     CsiLedgerHistoryResponse:
       type: object
+      description: |
+        Response for GET /api/v1/pension/csi-ledger-history.
+        The `data` field is an array — one entry per participant record linked to the user.
       properties:
         success:
           type: boolean
         data:
-          type: object
-          properties:
-            tenant_id:
-              type: string
-              format: uuid
-              description: UUID of the tenant resolved for the authenticated user
-            tenant_name:
-              type: string
-              description: Display name of the resolved tenant
-            user:
-              type: string
-              description: Full name of the authenticated user
-            periods:
-              type: array
-              description: List of monthly periods with transaction breakdowns, ordered by period descending
-              items:
-                $ref: '#/components/schemas/CsiLedgerPeriodResponse'
-            pagination:
-              $ref: '#/components/schemas/CsiLedgerPaginationResponse'
+          type: array
+          items:
+            $ref: '#/components/schemas/CsiLedgerHistoryData'
+
+    CsiLedgerHistoryData:
+      type: object
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+          description: UUID of the tenant resolved for this participant record
+        tenant_name:
+          type: string
+          description: Display name of the resolved tenant
+        user:
+          type: string
+          description: Full name of the authenticated user
+        periods:
+          type: array
+          description: List of monthly periods with transaction breakdowns, ordered by period descending
+          items:
+            $ref: '#/components/schemas/CsiLedgerPeriodResponse'
+        pagination:
+          $ref: '#/components/schemas/CsiLedgerPaginationResponse'
 
     CsiLedgerPeriodResponse:
       type: object
@@ -5944,7 +5962,7 @@ components:
           description: Month number of the period (1–12)
         period_label:
           type: string
-          description: Human-readable period label (e.g. "January 2025")
+          description: Period label formatted as YYYY-MM (e.g. "2025-01")
         items:
           type: array
           description: Breakdown of transactions for this period by CSI item type
