@@ -25,11 +25,16 @@ func (uc *usecase) GetBalanceOverTime(ctx context.Context, req *BalanceOverTimeR
 		return []BalanceOverTimeResponse{buildEmptyBalanceOverTime(fullName, "", "", req.Granularity)}, nil
 	}
 
-	var responses []BalanceOverTimeResponse
+	responses := make([]BalanceOverTimeResponse, 0, len(participants))
 	for _, p := range participants {
 		tenantName := ""
 		tenant, tErr := uc.tenantRepo.GetByID(ctx, p.TenantID)
-		if tErr == nil {
+		if tErr != nil {
+			if !apperrors.IsNotFound(tErr) {
+				return nil, fmt.Errorf("failed to resolve tenant: %w", tErr)
+			}
+
+		} else {
 			tenantName = tenant.Name
 		}
 
@@ -70,10 +75,15 @@ func (uc *usecase) buildBalanceOverTime(ctx context.Context, fullName, tenantID,
 
 	var dataPoints []BalanceOverTimeDataPoint
 
-	if req.Granularity == "monthly" {
+	switch req.Granularity {
+	case "monthly":
 		dataPoints = buildMonthlyDataPoints(monthlyBalances)
-	} else {
+	case "quarterly":
+		dataPoints = buildQuarterlyDataPoints(monthlyBalances)
+	case "yearly":
 		dataPoints = buildYearlyDataPoints(monthlyBalances)
+	default:
+		return nil, apperrors.ErrBadRequest(fmt.Sprintf("unsupported granularity: %q", req.Granularity))
 	}
 
 	return &BalanceOverTimeResponse{
@@ -99,17 +109,49 @@ func buildMonthlyDataPoints(balances []CsiLedgerMonthlyBalance) []BalanceOverTim
 	return points
 }
 
+func buildQuarterlyDataPoints(balances []CsiLedgerMonthlyBalance) []BalanceOverTimeDataPoint {
+	type quarterKey struct {
+		year    int
+		quarter int
+	}
+
+	initialCap := len(balances)/3 + 1
+	quarterBalance := make(map[quarterKey]int64, initialCap)
+	keys := make([]quarterKey, 0, initialCap)
+
+	for _, b := range balances {
+		q := (b.MonthPeriod-1)/3 + 1
+		k := quarterKey{year: b.YearPeriod, quarter: q}
+		if _, exists := quarterBalance[k]; !exists {
+			keys = append(keys, k)
+		}
+
+		quarterBalance[k] = int64(math.Round(b.Balance))
+	}
+
+	points := make([]BalanceOverTimeDataPoint, 0, len(keys))
+	for _, k := range keys {
+		q := k.quarter
+		points = append(points, BalanceOverTimeDataPoint{
+			PeriodLabel: fmt.Sprintf("%d-Q%d", k.year, k.quarter),
+			Year:        k.year,
+			Quarter:     &q,
+			Balance:     quarterBalance[k],
+		})
+	}
+	return points
+}
+
 func buildYearlyDataPoints(balances []CsiLedgerMonthlyBalance) []BalanceOverTimeDataPoint {
-	// For yearly: take the last month's balance for each year (highest month_period).
-	// Data is already sorted by year_period ASC, month_period ASC from the repository.
-	yearBalance := make(map[int]int64)
-	var years []int
+	initialCap := len(balances)/12 + 1
+	yearBalance := make(map[int]int64, initialCap)
+	years := make([]int, 0, initialCap)
 
 	for _, b := range balances {
 		if _, exists := yearBalance[b.YearPeriod]; !exists {
 			years = append(years, b.YearPeriod)
 		}
-		// Overwrite with each subsequent month — last write is the latest month in that year.
+
 		yearBalance[b.YearPeriod] = int64(math.Round(b.Balance))
 	}
 

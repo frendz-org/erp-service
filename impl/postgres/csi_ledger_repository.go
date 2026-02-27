@@ -120,8 +120,6 @@ func (r *csiLedgerRepository) GetLedgersByPeriods(ctx context.Context, csiEmploy
 func (r *csiLedgerRepository) GetMonthlyBalances(ctx context.Context, csiEmployeeID int, yearFrom *int, yearTo *int) ([]participant.CsiLedgerMonthlyBalance, error) {
 	var results []participant.CsiLedgerMonthlyBalance
 
-	// CTE approach: compute full cumulative from all-time data, then filter output by year range.
-	// This ensures the cumulative balance is correct even when yearFrom filters the returned rows.
 	query := `
 		WITH monthly_totals AS (
 			SELECT year_period, month_period,

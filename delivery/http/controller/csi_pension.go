@@ -129,10 +129,10 @@ func (ctrl *CsiPensionController) GetBalanceOverTime(c *fiber.Ctx) error {
 	}
 
 	granularity := c.Query("granularity", "yearly")
-	if granularity != "monthly" && granularity != "yearly" {
+	if granularity != "monthly" && granularity != "quarterly" && granularity != "yearly" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"success": false,
-			"error":   "granularity must be 'monthly' or 'yearly'",
+			"error":   "granularity must be 'monthly', 'quarterly', or 'yearly'",
 		})
 	}
 

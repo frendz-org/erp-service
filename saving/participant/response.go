@@ -271,6 +271,7 @@ type BalanceOverTimeDataPoint struct {
 	PeriodLabel string `json:"period_label"`
 	Year        int    `json:"year"`
 	Month       *int   `json:"month,omitempty"`
+	Quarter     *int   `json:"quarter,omitempty"`
 	Balance     int64  `json:"balance"`
 }
 
