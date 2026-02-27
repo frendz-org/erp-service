@@ -56,6 +56,8 @@ func (uc *usecase) InitiateLogin(
 		return nil, errors.New("INVALID_CREDENTIALS", "Invalid email or password.", http.StatusUnauthorized)
 	}
 
+	uc.upgradePasswordHashIfNeeded(ctx, authMethod, req.Password)
+
 	otp, otpHash, err := uc.generateOTP()
 	if err != nil {
 		return nil, errors.ErrInternal("failed to generate OTP").WithError(err)

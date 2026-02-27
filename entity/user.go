@@ -145,6 +145,20 @@ func (m *UserAuthMethod) GetPasswordHash() string {
 	return data.PasswordHash
 }
 
+func (m *UserAuthMethod) SetPasswordHash(newHash string) error {
+	data, err := m.GetPasswordData()
+	if err != nil {
+		return err
+	}
+	data.PasswordHash = newHash
+	credJSON, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	m.CredentialData = credJSON
+	return nil
+}
+
 type GoogleCredentialData struct {
 	GoogleID      string `json:"google_id"`
 	Email         string `json:"email"`

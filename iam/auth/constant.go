@@ -33,3 +33,7 @@ const (
 	LoginRateLimitPerHour     = 5
 	LoginRateLimitWindow      = 60
 )
+
+const (
+	BcryptTargetCost = 12
+)
