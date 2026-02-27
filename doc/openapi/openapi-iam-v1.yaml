@@ -3100,11 +3100,12 @@ paths:
       summary: Get CSI pension balance over time
       description: |
         Returns the authenticated user's CSI pension balance trend over time, grouped by the
-        requested granularity (`monthly` or `yearly`).
+        requested granularity (`monthly`, `quarterly`, or `yearly`).
 
         For `yearly` granularity, each data point represents the last recorded monthly balance
-        within that year. For `monthly` granularity, each data point represents a single month's
-        cumulative balance.
+        within that year. For `quarterly` granularity, each data point represents the last
+        recorded monthly balance within that calendar quarter (Q1–Q4). For `monthly` granularity,
+        each data point represents a single month's cumulative balance.
 
         Supports optional year range filtering via `year_from` and `year_to` query parameters.
         Both must be integers in the range 1900–2100. If both are provided, `year_from` must be
@@ -3122,7 +3123,7 @@ paths:
           description: Time granularity for grouping data points. Defaults to `yearly`.
           schema:
             type: string
-            enum: [monthly, yearly]
+            enum: [monthly, quarterly, yearly]
             default: yearly
         - name: year_from
           in: query
@@ -6096,7 +6097,7 @@ components:
           description: Full name of the authenticated user
         granularity:
           type: string
-          enum: [monthly, yearly]
+          enum: [monthly, quarterly, yearly]
           description: Granularity used for grouping the data points
         data_points:
           type: array
@@ -6112,6 +6113,7 @@ components:
           description: |
             Human-readable period label.
             For `yearly` granularity: four-digit year string (e.g. "2024").
+            For `quarterly` granularity: YYYY-Q{n} formatted string (e.g. "2024-Q1").
             For `monthly` granularity: YYYY-MM formatted string (e.g. "2024-03").
         year:
           type: integer
@@ -6119,6 +6121,12 @@ components:
         month:
           type: integer
           description: Month number (1–12). Present only when granularity is `monthly`.
+          nullable: true
+        quarter:
+          type: integer
+          description: Quarter number (1–4). Present only when granularity is `quarterly`.
+          minimum: 1
+          maximum: 4
           nullable: true
         balance:
           type: integer
