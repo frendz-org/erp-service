@@ -4506,7 +4506,7 @@
                 {
                   "key": "granularity",
                   "value": "yearly",
-                  "description": "Aggregation granularity: 'monthly' or 'yearly' (default: yearly)"
+                  "description": "Aggregation granularity: 'monthly', 'quarterly', or 'yearly' (default: yearly)"
                 },
                 {
                   "key": "year_from",
@@ -4522,7 +4522,7 @@
                 }
               ]
             },
-            "description": "Get the authenticated user's CSI pension balance over time, aggregated by yearly (default) or monthly granularity. Supports optional year range filter. JWT required.\n\n**Query Parameters:**\n- `granularity` (string, default 'yearly') — 'monthly' or 'yearly'\n- `year_from` (integer, optional, 1900–2100) — filter start year\n- `year_to` (integer, optional, 1900–2100) — filter end year"
+            "description": "Get the authenticated user's CSI pension balance over time, aggregated by yearly (default), monthly, or quarterly granularity. Supports optional year range filter. JWT required.\n\n**Query Parameters:**\n- `granularity` (string, default 'yearly') — 'monthly', 'quarterly', or 'yearly'\n- `year_from` (integer, optional, 1900–2100) — filter start year\n- `year_to` (integer, optional, 1900–2100) — filter end year"
           },
           "response": [
             {
@@ -4547,7 +4547,7 @@
               "code": 400,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n    \"success\": false,\n    \"error\": \"granularity must be 'monthly' or 'yearly'\"\n}"
+              "body": "{\n    \"success\": false,\n    \"error\": \"granularity must be 'monthly', 'quarterly', or 'yearly'\"\n}"
             },
             {
               "name": "400 - Invalid year_from",
@@ -4572,6 +4572,110 @@
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
               "body": "{\n    \"success\": false,\n    \"error\": \"year_from must be less than or equal to year_to\"\n}"
+            },
+            {
+              "name": "401 - Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"unauthorized\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Balance Over Time (Quarterly)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag and quarterly data_points', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  pm.expect(json.data).to.be.an('array');",
+                  "  if (json.data.length > 0) {",
+                  "    pm.expect(json.data[0]).to.have.property('granularity');",
+                  "    pm.expect(json.data[0].granularity).to.equal('quarterly');",
+                  "    pm.expect(json.data[0]).to.have.property('data_points');",
+                  "    pm.expect(json.data[0].data_points).to.be.an('array');",
+                  "    if (json.data[0].data_points.length > 0) {",
+                  "      pm.expect(json.data[0].data_points[0]).to.have.property('period_label');",
+                  "      pm.expect(json.data[0].data_points[0]).to.have.property('balance');",
+                  "    }",
+                  "  }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/pension/balance-over-time?granularity=quarterly",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "pension", "balance-over-time"],
+              "query": [
+                {
+                  "key": "granularity",
+                  "value": "quarterly",
+                  "description": "Aggregation granularity: 'monthly', 'quarterly', or 'yearly' (default: yearly)"
+                },
+                {
+                  "key": "year_from",
+                  "value": "",
+                  "description": "Filter from year (optional, 1900–2100)",
+                  "disabled": true
+                },
+                {
+                  "key": "year_to",
+                  "value": "",
+                  "description": "Filter to year (optional, 1900–2100)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get the authenticated user's CSI pension balance over time, aggregated by quarterly granularity. Each data point represents a calendar quarter (Q1–Q4) using the last month's balance in that quarter. Supports optional year range filter. JWT required.\n\n**Query Parameters:**\n- `granularity` (string) — 'quarterly'\n- `year_from` (integer, optional, 1900–2100) — filter start year\n- `year_to` (integer, optional, 1900–2100) — filter end year"
+          },
+          "response": [
+            {
+              "name": "200 - Balance Over Time (Quarterly)",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": [\n        {\n            \"tenant_id\": \"019500a1-0000-7000-8000-000000000001\",\n            \"tenant_name\": \"PT Contoh Perusahaan\",\n            \"user\": \"Budi Santoso\",\n            \"granularity\": \"quarterly\",\n            \"data_points\": [\n                {\n                    \"period_label\": \"2024-Q1\",\n                    \"year\": 2024,\n                    \"quarter\": 1,\n                    \"balance\": 19500000\n                },\n                {\n                    \"period_label\": \"2024-Q2\",\n                    \"year\": 2024,\n                    \"quarter\": 2,\n                    \"balance\": 20500000\n                },\n                {\n                    \"period_label\": \"2024-Q3\",\n                    \"year\": 2024,\n                    \"quarter\": 3,\n                    \"balance\": 21500000\n                },\n                {\n                    \"period_label\": \"2024-Q4\",\n                    \"year\": 2024,\n                    \"quarter\": 4,\n                    \"balance\": 22000000\n                },\n                {\n                    \"period_label\": \"2025-Q1\",\n                    \"year\": 2025,\n                    \"quarter\": 1,\n                    \"balance\": 23000000\n                },\n                {\n                    \"period_label\": \"2025-Q2\",\n                    \"year\": 2025,\n                    \"quarter\": 2,\n                    \"balance\": 24000000\n                },\n                {\n                    \"period_label\": \"2025-Q3\",\n                    \"year\": 2025,\n                    \"quarter\": 3,\n                    \"balance\": 25000000\n                }\n            ]\n        }\n    ]\n}"
+            },
+            {
+              "name": "400 - Invalid granularity",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"granularity must be 'monthly', 'quarterly', or 'yearly'\"\n}"
+            },
+            {
+              "name": "400 - Invalid year_from",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"invalid year_from parameter\"\n}"
+            },
+            {
+              "name": "400 - Invalid year_to",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"invalid year_to parameter\"\n}"
             },
             {
               "name": "401 - Unauthorized",
