@@ -25,7 +25,8 @@
     { "key": "bank_account_id", "value": "", "type": "string" },
     { "key": "family_member_id", "value": "", "type": "string" },
     { "key": "beneficiary_id", "value": "", "type": "string" },
-    { "key": "test_email", "value": "", "type": "string" }
+    { "key": "test_email", "value": "", "type": "string" },
+    { "key": "transfer_code", "value": "", "type": "string" }
   ],
   "item": [
     {
@@ -1057,6 +1058,215 @@
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
               "body": "{\n    \"success\": false,\n    \"error\": \"ERR_UNAUTHORIZED\",\n    \"message\": \"Failed to exchange authorization code\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Transfer Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Response has success flag and extracts transfer code', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  pm.expect(json.data).to.have.property('code');",
+                  "  pm.expect(json.data.code).to.be.a('string');",
+                  "  if (json.data && json.data.code) {",
+                  "    pm.collectionVariables.set('transfer_code', json.data.code);",
+                  "  }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"product_code\": \"PRODUCT_B\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/auth/transfer-token",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "auth", "transfer-token"]
+            },
+            "description": "Creates a one-time transfer code scoped to the specified product. The code is a 64-character hex string valid for a short TTL. Use the Exchange Transfer Token endpoint to trade it for JWT tokens on the target product."
+          },
+          "response": [
+            {
+              "name": "201 - Transfer Token Created",
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Transfer token created\",\n    \"data\": {\n        \"code\": \"a3f8c1d9e2b7f04512ab6789cd012345ef6789ab012345cd6789ef0123456789\",\n        \"expires_in\": 60\n    }\n}"
+            },
+            {
+              "name": "400 - Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_VALIDATION\",\n    \"message\": \"Validation failed\",\n    \"errors\": [\n        { \"field\": \"ProductCode\", \"message\": \"product_code is required\" }\n    ]\n}"
+            },
+            {
+              "name": "401 - Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_UNAUTHORIZED\",\n    \"message\": \"missing authorization header\"\n}"
+            },
+            {
+              "name": "404 - Product Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_NOT_FOUND\",\n    \"message\": \"product not found\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Exchange Transfer Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag and extracts tokens', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  if (json.data) {",
+                  "    if (json.data.access_token) { pm.collectionVariables.set('access_token', json.data.access_token); }",
+                  "    if (json.data.refresh_token) { pm.collectionVariables.set('refresh_token', json.data.refresh_token); }",
+                  "    if (json.data.user && json.data.user.id) { pm.collectionVariables.set('user_id', json.data.user.id); }",
+                  "  }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"code\": \"{{transfer_code}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/auth/transfer-token/exchange",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "auth", "transfer-token", "exchange"]
+            },
+            "description": "Exchanges a one-time 64-character transfer code for JWT access and refresh tokens on the target product. No authentication required — the transfer code itself is the credential. The code is single-use and expires after a short TTL."
+          },
+          "response": [
+            {
+              "name": "200 - Tokens Issued",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Transfer token exchanged\",\n    \"data\": {\n        \"access_token\": \"eyJ...\",\n        \"refresh_token\": \"eyJ...\",\n        \"expires_in\": 900,\n        \"token_type\": \"Bearer\",\n        \"user\": {\n            \"id\": \"019500a2-...\",\n            \"email\": \"user@example.com\",\n            \"full_name\": \"John Doe\",\n            \"tenants\": []\n        }\n    }\n}"
+            },
+            {
+              "name": "400 - Validation Error (code missing or wrong length)",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_VALIDATION\",\n    \"message\": \"Validation failed\",\n    \"errors\": [\n        { \"field\": \"Code\", \"message\": \"code must be exactly 64 characters\" }\n    ]\n}"
+            },
+            {
+              "name": "401 - Invalid or Expired Code",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_UNAUTHORIZED\",\n    \"message\": \"invalid or expired transfer code\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Logout Tree",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"refresh_token\": \"{{refresh_token}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/auth/logout-tree",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "auth", "logout-tree"]
+            },
+            "description": "Logs out the entire session tree rooted at the provided refresh token. Blacklists the current access token JTI, revokes the refresh token, and invalidates all sessions that were spawned from the same root session (e.g. transfer-token children). JWT required."
+          },
+          "response": [
+            {
+              "name": "200 - Session Tree Logged Out",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Session tree logged out successfully\",\n    \"data\": null\n}"
+            },
+            {
+              "name": "400 - Validation Error (refresh_token missing)",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_VALIDATION\",\n    \"message\": \"Validation failed\",\n    \"errors\": [\n        { \"field\": \"RefreshToken\", \"message\": \"refresh_token is required\" }\n    ]\n}"
+            },
+            {
+              "name": "401 - Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_UNAUTHORIZED\",\n    \"message\": \"missing authorization header\"\n}"
             }
           ]
         }
