@@ -51,5 +51,10 @@ func (uc *usecase) RejectMember(ctx context.Context, req *RejectRequest) (*Membe
 		return nil, emailErr
 	}
 
-	return mapToDetailResponse(reg, profile, email, nil, nil), nil
+	m, mErr := uc.memberRepo.GetByRegistrationID(ctx, reg.ID)
+	if mErr != nil && !errors.IsNotFound(mErr) {
+		return nil, mErr
+	}
+
+	return mapToDetailResponse(reg, profile, email, nil, nil, m), nil
 }

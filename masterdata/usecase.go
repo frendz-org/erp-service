@@ -24,6 +24,7 @@ type ItemUseCase interface {
 	UpdateItem(ctx context.Context, id uuid.UUID, req *UpdateItemRequest) (*ItemResponse, error)
 	DeleteItem(ctx context.Context, id uuid.UUID) error
 	GetItemChildren(ctx context.Context, parentID uuid.UUID) ([]*ItemResponse, error)
+	GetItemChildrenByCode(ctx context.Context, itemCode string) ([]*ItemResponse, error)
 	GetItemTree(ctx context.Context, categoryCode string, tenantID *uuid.UUID) ([]*ItemResponse, error)
 	ListItemsByParent(ctx context.Context, categoryCode string, parentCode string, tenantID *uuid.UUID) ([]*ItemResponse, error)
 	GetItemDefault(ctx context.Context, categoryCode string, tenantID *uuid.UUID) (*ItemResponse, error)

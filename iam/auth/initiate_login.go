@@ -10,6 +10,7 @@ import (
 	"erp-service/pkg/errors"
 
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func (uc *usecase) InitiateLogin(
@@ -36,12 +37,29 @@ func (uc *usecase) InitiateLogin(
 
 	user, err := uc.UserRepo.GetByEmail(ctx, email)
 	if err != nil {
-		return dummyOTPResponse(email), nil
+		if errors.IsNotFound(err) {
+			return nil, errors.New("INVALID_CREDENTIALS", "Invalid email or password.", http.StatusUnauthorized)
+		}
+		return nil, errors.ErrInternal("failed to look up user").WithError(err)
 	}
 
 	if !user.IsActive() {
+		return nil, errors.New("INVALID_CREDENTIALS", "Invalid email or password.", http.StatusUnauthorized)
+	}
+
+	authMethod, err := uc.UserAuthMethodRepo.GetByUserID(ctx, user.ID)
+	if err != nil || authMethod == nil {
 		return dummyOTPResponse(email), nil
 	}
+	passwordHash := authMethod.GetPasswordHash()
+	if passwordHash == "" {
+		return dummyOTPResponse(email), nil
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(req.Password)); err != nil {
+		return nil, errors.New("INVALID_CREDENTIALS", "Invalid email or password.", http.StatusUnauthorized)
+	}
+
+	uc.upgradePasswordHashIfNeeded(ctx, authMethod, req.Password)
 
 	otp, otpHash, err := uc.generateOTP()
 	if err != nil {

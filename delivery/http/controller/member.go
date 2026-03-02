@@ -23,7 +23,7 @@ func NewMemberController(uc member.Usecase) *MemberController {
 	}
 }
 
-func (ctrl *MemberController) Register(c *fiber.Ctx) error {
+func (ctrl *MemberController) GetMe(c *fiber.Ctx) error {
 	tenantID, err := middleware.GetTenantIDFromContext(c)
 	if err != nil {
 		appErr := errors.GetAppError(err)
@@ -51,10 +51,56 @@ func (ctrl *MemberController) Register(c *fiber.Ctx) error {
 		})
 	}
 
-	req := &member.RegisterRequest{
+	result, err := ctrl.usecase.GetMyMember(c.UserContext(), &member.GetMyMemberRequest{
+		UserID:    userClaims.UserID,
 		TenantID:  tenantID,
 		ProductID: productID,
-		UserID:    userClaims.UserID,
+	})
+	if err != nil {
+		appErr := errors.GetAppError(err)
+		return c.Status(appErr.HTTPStatus).JSON(fiber.Map{
+			"success": false,
+			"error":   appErr.Message,
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"data":    presenter.MapMyMemberResponse(result),
+	})
+}
+
+func (ctrl *MemberController) Register(c *fiber.Ctx) error {
+	userClaims, err := middleware.GetMultiTenantClaims(c)
+	if err != nil {
+		appErr := errors.GetAppError(err)
+		return c.Status(appErr.HTTPStatus).JSON(fiber.Map{
+			"success": false,
+			"error":   appErr.Message,
+		})
+	}
+
+	var body struct {
+		Organization      string `json:"organization" validate:"required"`
+		ParticipantNumber string `json:"participant_number" validate:"required"`
+		IdentityNumber    string `json:"identity_number" validate:"required"`
+	}
+	if err := c.BodyParser(&body); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"success": false,
+			"error":   "invalid request body",
+		})
+	}
+
+	if err := validate.Struct(&body); err != nil {
+		return errors.ErrValidationWithFields(convertValidationErrors(err.(validator.ValidationErrors)))
+	}
+
+	req := &member.RegisterRequest{
+		UserID:            userClaims.UserID,
+		Organization:      body.Organization,
+		ParticipantNumber: body.ParticipantNumber,
+		IdentityNumber:    body.IdentityNumber,
 	}
 
 	result, err := ctrl.usecase.RegisterMember(c.UserContext(), req)

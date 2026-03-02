@@ -89,7 +89,7 @@ func TestRefreshToken(t *testing.T) {
 					Status: entity.UserStatusActive,
 				}, nil)
 
-				mockTenantReg.On("ListActiveByUserID", mock.Anything, userID).Return([]entity.UserTenantRegistration{}, nil)
+				mockTenantReg.On("ListByUserIDForClaims", mock.Anything, userID).Return([]entity.UserTenantRegistration{}, nil)
 				mockUserRole.On("ListActiveByUserID", mock.Anything, userID, (*uuid.UUID)(nil)).Return([]entity.UserRole{}, nil)
 
 				session := &entity.UserSession{
@@ -226,7 +226,7 @@ func TestRefreshToken(t *testing.T) {
 					Status: entity.UserStatusActive,
 				}, nil)
 
-				mockTenantReg.On("ListActiveByUserID", mock.Anything, userID).Return([]entity.UserTenantRegistration{}, nil)
+				mockTenantReg.On("ListByUserIDForClaims", mock.Anything, userID).Return([]entity.UserTenantRegistration{}, nil)
 				mockUserRole.On("ListActiveByUserID", mock.Anything, userID, (*uuid.UUID)(nil)).Return([]entity.UserRole{}, nil)
 
 				session := &entity.UserSession{
@@ -336,7 +336,7 @@ func TestRefreshToken(t *testing.T) {
 					Email:  "test@example.com",
 					Status: entity.UserStatusActive,
 				}, nil)
-				mockTenantReg.On("ListActiveByUserID", mock.Anything, userID).Return([]entity.UserTenantRegistration{}, nil)
+				mockTenantReg.On("ListByUserIDForClaims", mock.Anything, userID).Return([]entity.UserTenantRegistration{}, nil)
 				mockUserRole.On("ListActiveByUserID", mock.Anything, userID, (*uuid.UUID)(nil)).Return([]entity.UserRole{}, nil)
 
 				mockSession.On("GetByRefreshTokenID", mock.Anything, refreshTokenID).Return(nil, errors.ErrNotFound("no session"))
@@ -384,7 +384,7 @@ func TestRefreshToken(t *testing.T) {
 					Email:  "test@example.com",
 					Status: entity.UserStatusActive,
 				}, nil)
-				mockTenantReg.On("ListActiveByUserID", mock.Anything, userID).Return([]entity.UserTenantRegistration{}, nil)
+				mockTenantReg.On("ListByUserIDForClaims", mock.Anything, userID).Return([]entity.UserTenantRegistration{}, nil)
 				mockUserRole.On("ListActiveByUserID", mock.Anything, userID, (*uuid.UUID)(nil)).Return([]entity.UserRole{}, nil)
 
 				mockSession.On("GetByRefreshTokenID", mock.Anything, refreshTokenID).Return(nil, errors.ErrNotFound("no session"))

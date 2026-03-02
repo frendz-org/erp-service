@@ -59,6 +59,7 @@ type ItemRepository interface {
 	Update(ctx context.Context, item *entity.MasterdataItem) error
 	Delete(ctx context.Context, id uuid.UUID) error
 
+	GetByCodeOnly(ctx context.Context, code string) (*entity.MasterdataItem, error)
 	GetChildren(ctx context.Context, parentID uuid.UUID) ([]*entity.MasterdataItem, error)
 	GetTree(ctx context.Context, categoryCode string, tenantID *uuid.UUID) ([]*entity.MasterdataItem, error)
 	ListByParent(ctx context.Context, categoryCode string, parentCode string, tenantID *uuid.UUID) ([]*entity.MasterdataItem, error)

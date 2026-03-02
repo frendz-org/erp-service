@@ -121,6 +121,43 @@ func (m *MockAuthUsecase) GetLoginStatus(ctx context.Context, req *auth.GetLogin
 	return args.Get(0).(*auth.LoginStatusResponse), args.Error(1)
 }
 
+func (m *MockAuthUsecase) GetGoogleAuthURL(ctx context.Context) (*auth.GoogleAuthURLResponse, error) {
+	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*auth.GoogleAuthURLResponse), args.Error(1)
+}
+
+func (m *MockAuthUsecase) HandleGoogleCallback(ctx context.Context, req *auth.GoogleCallbackRequest) (*auth.GoogleCallbackResponse, error) {
+	args := m.Called(ctx, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*auth.GoogleCallbackResponse), args.Error(1)
+}
+
+func (m *MockAuthUsecase) CreateTransferToken(ctx context.Context, req *auth.CreateTransferTokenRequest) (*auth.CreateTransferTokenResponse, error) {
+	args := m.Called(ctx, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*auth.CreateTransferTokenResponse), args.Error(1)
+}
+
+func (m *MockAuthUsecase) ExchangeTransferToken(ctx context.Context, req *auth.ExchangeTransferTokenRequest) (*auth.ExchangeTransferTokenResponse, error) {
+	args := m.Called(ctx, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*auth.ExchangeTransferTokenResponse), args.Error(1)
+}
+
+func (m *MockAuthUsecase) LogoutTree(ctx context.Context, req *auth.LogoutTreeRequest) error {
+	args := m.Called(ctx, req)
+	return args.Error(0)
+}
+
 func setupTestApp() *fiber.App {
 	return fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {

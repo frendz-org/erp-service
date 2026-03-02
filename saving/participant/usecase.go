@@ -18,6 +18,8 @@ type ParticipantReader interface {
 	GetParticipant(ctx context.Context, req *GetParticipantRequest) (*ParticipantResponse, error)
 	ListParticipants(ctx context.Context, req *ListParticipantsRequest) (*ListParticipantsResponse, error)
 	GetStatusHistory(ctx context.Context, req *GetParticipantRequest) ([]StatusHistoryResponse, error)
+	GetMyParticipant(ctx context.Context, req *GetMyParticipantRequest) (*MyParticipantResponse, error)
+	GetMyStatusHistory(ctx context.Context, req *GetMyParticipantRequest) ([]StatusHistoryResponse, error)
 }
 
 type ParticipantWriter interface {
@@ -76,6 +78,18 @@ type ParticipantRegistration interface {
 	SelfRegister(ctx context.Context, req *SelfRegisterRequest) (*SelfRegisterResponse, error)
 }
 
+type CsiAmountSummaryReader interface {
+	GetCsiAmountSummary(ctx context.Context, req *CsiAmountSummaryRequest) ([]CsiAmountSummaryResponse, error)
+}
+
+type CsiLedgerHistoryReader interface {
+	GetCsiLedgerHistory(ctx context.Context, req *CsiLedgerHistoryRequest) ([]CsiLedgerHistoryResponse, error)
+}
+
+type CsiBalanceOverTimeReader interface {
+	GetBalanceOverTime(ctx context.Context, req *BalanceOverTimeRequest) ([]BalanceOverTimeResponse, error)
+}
+
 type Usecase interface {
 	ParticipantReader
 	ParticipantWriter
@@ -89,4 +103,7 @@ type Usecase interface {
 	FileUploader
 	ParticipantWorkflow
 	ParticipantRegistration
+	CsiAmountSummaryReader
+	CsiLedgerHistoryReader
+	CsiBalanceOverTimeReader
 }

@@ -27,6 +27,8 @@ type UserProfileRepository interface {
 type UserAuthMethodRepository interface {
 	Create(ctx context.Context, authMethod *entity.UserAuthMethod) error
 	GetByUserID(ctx context.Context, userID uuid.UUID) (*entity.UserAuthMethod, error)
+	GetByUserIDAndMethodType(ctx context.Context, userID uuid.UUID, methodType string) (*entity.UserAuthMethod, error)
+	GetByCredentialField(ctx context.Context, methodType, jsonField, value string) (*entity.UserAuthMethod, error)
 	Update(ctx context.Context, authMethod *entity.UserAuthMethod) error
 }
 type UserSecurityStateRepository interface {
@@ -55,6 +57,7 @@ type RefreshTokenRepository interface {
 	Revoke(ctx context.Context, id uuid.UUID, reason string) error
 	RevokeAllByUserID(ctx context.Context, userID uuid.UUID, reason string) error
 	RevokeByFamily(ctx context.Context, tokenFamily uuid.UUID, reason string) error
+	RevokeByIDs(ctx context.Context, ids []uuid.UUID, reason string) error
 }
 type UserRoleRepository interface {
 	Create(ctx context.Context, userRole *entity.UserRole) error
@@ -96,10 +99,13 @@ type UserSessionRepository interface {
 	UpdateRefreshTokenID(ctx context.Context, sessionID uuid.UUID, refreshTokenID uuid.UUID) error
 	Revoke(ctx context.Context, id uuid.UUID) error
 	RevokeAllByUserID(ctx context.Context, userID uuid.UUID) error
+	GetDescendantSessionIDs(ctx context.Context, rootSessionID uuid.UUID) ([]uuid.UUID, error)
+	RevokeByIDs(ctx context.Context, ids []uuid.UUID) error
 }
 
 type UserTenantRegistrationRepository interface {
 	ListActiveByUserID(ctx context.Context, userID uuid.UUID) ([]entity.UserTenantRegistration, error)
+	ListByUserIDForClaims(ctx context.Context, userID uuid.UUID) ([]entity.UserTenantRegistration, error)
 }
 
 type ProductsByTenantRepository interface {
@@ -133,8 +139,21 @@ type TokenBlacklistStore interface {
 	GetUserBlacklistTimestamp(ctx context.Context, userID uuid.UUID) (*time.Time, error)
 }
 
+type OAuthStateStore interface {
+	StoreOAuthState(ctx context.Context, state string, ttl time.Duration) error
+	GetAndDeleteOAuthState(ctx context.Context, state string) (bool, error)
+}
+
+type TransferTokenStore interface {
+	StoreTransferToken(ctx context.Context, code string, data []byte, ttl time.Duration) error
+	GetAndDeleteTransferToken(ctx context.Context, code string) ([]byte, error)
+	IncrementTransferTokenRateLimit(ctx context.Context, userID uuid.UUID, window time.Duration) (int64, error)
+}
+
 type InMemoryStore interface {
 	RegistrationSessionStore
 	LoginSessionStore
 	TokenBlacklistStore
+	OAuthStateStore
+	TransferTokenStore
 }

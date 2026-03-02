@@ -283,14 +283,21 @@ func (mc *MasterdataController) DeleteItem(c *fiber.Ctx) error {
 	return c.JSON(response.SuccessResponse("Item deleted successfully", nil))
 }
 
-func (mc *MasterdataController) GetItemChildren(c *fiber.Ctx) error {
-	idStr := c.Params("id")
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		return errors.ErrBadRequest("Invalid item ID format")
+func (mc *MasterdataController) GetItemChildrenByCode(c *fiber.Ctx) error {
+	param := c.Params("id")
+	if param == "" {
+		return errors.ErrBadRequest("Item ID or code is required")
 	}
 
-	resp, err := mc.usecase.GetItemChildren(c.Context(), id)
+	var resp []*masterdata.ItemResponse
+	var err error
+
+	if id, parseErr := uuid.Parse(param); parseErr == nil {
+		resp, err = mc.usecase.GetItemChildren(c.Context(), id)
+	} else {
+		resp, err = mc.usecase.GetItemChildrenByCode(c.Context(), param)
+	}
+
 	if err != nil {
 		return err
 	}

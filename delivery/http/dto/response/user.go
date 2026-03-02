@@ -6,6 +6,11 @@ import (
 	"github.com/google/uuid"
 )
 
+type GenderResponse struct {
+	Code string `json:"code"`
+	Name string `json:"name"`
+}
+
 type UserResponse struct {
 	ID          uuid.UUID          `json:"id"`
 	Email       string             `json:"email"`
@@ -14,6 +19,7 @@ type UserResponse struct {
 	FullName    string             `json:"full_name"`
 	PhoneNumber *string            `json:"phone_number,omitempty"`
 	DateOfBirth *string            `json:"date_of_birth,omitempty"`
+	Gender      *GenderResponse    `json:"gender,omitempty"`
 	Address     *string            `json:"address,omitempty"`
 	Status      string             `json:"status"`
 	IsActive    bool               `json:"is_active"`

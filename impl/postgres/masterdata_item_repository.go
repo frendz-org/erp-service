@@ -133,6 +133,17 @@ func (r *masterdataItemRepository) GetByCode(ctx context.Context, categoryID uui
 	return &item, nil
 }
 
+func (r *masterdataItemRepository) GetByCodeOnly(ctx context.Context, code string) (*entity.MasterdataItem, error) {
+	var item entity.MasterdataItem
+	err := r.getDB(ctx).
+		Where("code = ? AND deleted_at IS NULL", code).
+		First(&item).Error
+	if err != nil {
+		return nil, translateError(err, "masterdata_item")
+	}
+	return &item, nil
+}
+
 func (r *masterdataItemRepository) ValidateCode(ctx context.Context, categoryCode string, itemCode string, tenantID *uuid.UUID) (bool, error) {
 	var count int64
 	query := r.getDB(ctx).

@@ -7,10 +7,11 @@ import (
 )
 
 type LoginProductResponse struct {
-	ProductID   uuid.UUID `json:"product_id"`
-	ProductCode string    `json:"product_code"`
-	Roles       []string  `json:"roles,omitempty"`
-	Permissions []string  `json:"permissions,omitempty"`
+	ProductID         uuid.UUID `json:"product_id"`
+	ProductCode       string    `json:"product_code"`
+	RegistrationTypes []string  `json:"registration_types,omitempty"`
+	Roles             []string  `json:"roles,omitempty"`
+	Permissions       []string  `json:"permissions,omitempty"`
 }
 
 type LoginTenantResponse struct {
@@ -75,4 +76,17 @@ type LoginStatusResponse struct {
 	ResendsRemaining  int       `json:"resends_remaining"`
 	ExpiresAt         time.Time `json:"expires_at"`
 	CooldownRemaining int       `json:"cooldown_remaining,omitempty"`
+}
+
+type GoogleAuthURLResponse struct {
+	AuthURL string `json:"auth_url"`
+}
+
+type GoogleCallbackResponse struct {
+	AccessToken  string            `json:"access_token"`
+	RefreshToken string            `json:"refresh_token"`
+	ExpiresIn    int               `json:"expires_in"`
+	TokenType    string            `json:"token_type"`
+	IsNewUser    bool              `json:"is_new_user"`
+	User         LoginUserResponse `json:"user"`
 }

@@ -29,9 +29,12 @@ type ParticipantRepository interface {
 	GetByKTPAndPensionNumber(ctx context.Context, ktpNumber, pensionNumber string, tenantID, productID uuid.UUID) (*entity.Participant, *entity.ParticipantPension, error)
 	GetByKTPNumber(ctx context.Context, tenantID, productID uuid.UUID, ktpNumber string) (*entity.Participant, error)
 	GetByEmployeeNumber(ctx context.Context, tenantID, productID uuid.UUID, employeeNumber string) (*entity.Participant, error)
+	GetByUserAndTenantProduct(ctx context.Context, userID, tenantID, productID uuid.UUID) (*entity.Participant, error)
+	ListByUserID(ctx context.Context, userID uuid.UUID) ([]*entity.Participant, error)
 }
 
 type TenantRepository interface {
+	GetByID(ctx context.Context, id uuid.UUID) (*entity.Tenant, error)
 	GetByCode(ctx context.Context, code string) (*entity.Tenant, error)
 }
 
@@ -127,4 +130,51 @@ type FileRepository interface {
 type ParticipantStatusHistoryRepository interface {
 	Create(ctx context.Context, history *entity.ParticipantStatusHistory) error
 	ListByParticipantID(ctx context.Context, participantID uuid.UUID) ([]*entity.ParticipantStatusHistory, error)
+}
+
+type EmployeeDataRepository interface {
+	GetByEmpNo(ctx context.Context, empNo string) (*entity.EmployeeData, error)
+}
+
+type CsiEmployeeRepository interface {
+	GetByEmployeeNo(ctx context.Context, employeeNo string) (*entity.CsiEmployee, error)
+}
+
+type CsiLedgerItemAmount struct {
+	CsiItemID   int
+	TotalAmount float64
+}
+
+type CsiLedgerPeriod struct {
+	YearPeriod  int
+	MonthPeriod int
+}
+
+type CsiLedgerRow struct {
+	YearPeriod  int
+	MonthPeriod int
+	CsiItemID   int
+	AmountTrans float64
+}
+
+type CsiLedgerPeriodFilter struct {
+	CsiEmployeeID int
+	YearFrom      *int
+	YearTo        *int
+}
+
+type CsiLedgerMonthlyBalance struct {
+	YearPeriod  int
+	MonthPeriod int
+	Balance     float64
+}
+
+type CsiLedgerRepository interface {
+	GetMonthlyBalances(ctx context.Context, csiEmployeeID int, yearFrom *int, yearTo *int) ([]CsiLedgerMonthlyBalance, error)
+	GetLatestPeriod(ctx context.Context, csiEmployeeID int) (yearPeriod int, monthPeriod int, err error)
+	GetAmountsByItemID(ctx context.Context, csiEmployeeID int, upToYear int, upToMonth int) ([]CsiLedgerItemAmount, error)
+	CountDistinctPeriods(ctx context.Context, filter *CsiLedgerPeriodFilter) (int64, error)
+	GetDistinctPeriods(ctx context.Context, filter *CsiLedgerPeriodFilter, offset int, limit int) ([]CsiLedgerPeriod, error)
+	GetLedgersByPeriods(ctx context.Context, csiEmployeeID int, periods []CsiLedgerPeriod) ([]CsiLedgerRow, error)
+	GetCumulativeBalance(ctx context.Context, csiEmployeeID int, upToYear int, upToMonth int) (float64, error)
 }

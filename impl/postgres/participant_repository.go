@@ -120,6 +120,17 @@ func (r *participantRepository) GetByEmployeeNumber(ctx context.Context, tenantI
 	return &participant, nil
 }
 
+func (r *participantRepository) GetByUserAndTenantProduct(ctx context.Context, userID, tenantID, productID uuid.UUID) (*entity.Participant, error) {
+	var p entity.Participant
+	err := r.getDB(ctx).
+		Where("user_id = ? AND tenant_id = ? AND product_id = ? AND deleted_at IS NULL", userID, tenantID, productID).
+		First(&p).Error
+	if err != nil {
+		return nil, translateError(err, "participant")
+	}
+	return &p, nil
+}
+
 func (r *participantRepository) Update(ctx context.Context, participant *entity.Participant) error {
 	oldVersion := participant.Version
 	participant.Version = oldVersion + 1
@@ -134,6 +145,17 @@ func (r *participantRepository) Update(ctx context.Context, participant *entity.
 		return apperrors.ErrConflict("participant was modified by another request")
 	}
 	return nil
+}
+
+func (r *participantRepository) ListByUserID(ctx context.Context, userID uuid.UUID) ([]*entity.Participant, error) {
+	var participants []*entity.Participant
+	err := r.getDB(ctx).
+		Where("user_id = ? AND deleted_at IS NULL", userID).
+		Find(&participants).Error
+	if err != nil {
+		return nil, translateError(err, "participant")
+	}
+	return participants, nil
 }
 
 func (r *participantRepository) SoftDelete(ctx context.Context, id uuid.UUID) error {

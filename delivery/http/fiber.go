@@ -9,8 +9,8 @@ import (
 	"erp-service/delivery/http/middleware"
 	"erp-service/delivery/http/router"
 	"erp-service/delivery/worker"
-	"erp-service/iam/auth"
 	"erp-service/files"
+	"erp-service/iam/auth"
 	"erp-service/iam/product"
 	"erp-service/iam/role"
 	"erp-service/iam/user"
@@ -49,9 +49,9 @@ func NewServer(cfg *config.Config) *Server {
 	})
 
 	app := fiber.New(fiber.Config{
-		JSONEncoder: json.Marshal,
-		JSONDecoder: json.Unmarshal,
-		AppName:     cfg.App.Name,
+		JSONEncoder:  json.Marshal,
+		JSONDecoder:  json.Unmarshal,
+		AppName:      cfg.App.Name,
 		BodyLimit:    6 * 1024 * 1024,
 		ReadTimeout:  cfg.Server.ReadTimeout,
 		WriteTimeout: cfg.Server.WriteTimeout,
@@ -92,6 +92,9 @@ func NewServer(cfg *config.Config) *Server {
 
 	productRegConfigRepo := postgres.NewProductRegistrationConfigRepository(postgresDB)
 
+	memberRepo := postgres.NewMemberRepository(postgresDB)
+	csiEmployeeRepo := postgres.NewCsiEmployeeRepository(postgresDB)
+	csiLedgerRepo := postgres.NewCsiLedgerRepository(postgresDB)
 	participantRepo := postgres.NewParticipantRepository(postgresDB)
 	participantIdentityRepo := postgres.NewParticipantIdentityRepository(postgresDB)
 	participantAddressRepo := postgres.NewParticipantAddressRepository(postgresDB)
@@ -155,6 +158,7 @@ func NewServer(cfg *config.Config) *Server {
 		tenantRepo,
 		roleRepo,
 		userRoleRepo,
+		masterdataUsecase,
 	)
 
 	memberUsecase := member.NewUsecase(
@@ -167,6 +171,10 @@ func NewServer(cfg *config.Config) *Server {
 		productRegConfigRepo,
 		userProfileRepo,
 		authUserRepo,
+		memberRepo,
+		csiEmployeeRepo,
+		tenantRepo,
+		masterdataUsecase,
 	)
 	participantUsecase := participant.NewUsecase(
 		cfg,
@@ -189,6 +197,8 @@ func NewServer(cfg *config.Config) *Server {
 		userTenantRegRepo,
 		userProfileRepo,
 		masterdataUsecase,
+		csiEmployeeRepo,
+		csiLedgerRepo,
 	)
 
 	healthController := controller.NewHealthController(cfg)
@@ -198,6 +208,9 @@ func NewServer(cfg *config.Config) *Server {
 	masterdataController := controller.NewMasterdataController(cfg, masterdataUsecase)
 	memberController := controller.NewMemberController(memberUsecase)
 	participantController := controller.NewParticipantController(participantUsecase)
+	devController := controller.NewDevController(postgresDB, inMemoryStore)
+	pensionController := controller.NewPensionController(postgresDB)
+	csiPensionController := controller.NewCsiPensionController(participantUsecase)
 
 	fileCleanupUC := files.NewUsecase(fileRepo, fileStorage, txManager, zapLogger, files.DefaultConfig())
 	fileWorker := worker.NewWorker(fileCleanupUC, zapLogger)
@@ -213,20 +226,22 @@ func NewServer(cfg *config.Config) *Server {
 	mw.Setup(app)
 
 	api := app.Group("/api")
-	api.Use(limiter.New(limiter.Config{
-		Max:               10,
-		Expiration:        1 * time.Minute,
-		LimiterMiddleware: limiter.SlidingWindow{},
-		KeyGenerator: func(c *fiber.Ctx) string {
-			return c.IP()
-		},
-		LimitReached: func(c *fiber.Ctx) error {
-			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
-				"success": false,
-				"error":   "too many requests, please try again later",
-			})
-		},
-	}))
+	if cfg.IsProduction() {
+		api.Use(limiter.New(limiter.Config{
+			Max:               10,
+			Expiration:        1 * time.Minute,
+			LimiterMiddleware: limiter.SlidingWindow{},
+			KeyGenerator: func(c *fiber.Ctx) string {
+				return c.IP()
+			},
+			LimitReached: func(c *fiber.Ctx) error {
+				return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+					"success": false,
+					"error":   "too many requests, please try again later",
+				})
+			},
+		}))
+	}
 	v1 := api.Group("/v1")
 
 	router.SetupHealthRoutes(v1, healthController)
@@ -244,8 +259,12 @@ func NewServer(cfg *config.Config) *Server {
 	frendzSavingMW := middleware.ExtractFrendzSavingProduct(productUsecase)
 
 	saving := v1.Group("/saving")
-	router.SetupParticipantRoutes(saving, participantController, jwtMiddleware, frendzSavingMW)
+	router.SetupParticipantRoutes(saving, participantController, jwtMiddleware, frendzSavingMW, cfg)
 	router.SetupMemberRoutes(saving, memberController, jwtMiddleware, frendzSavingMW)
+
+	router.SetupPensionRoutes(v1, pensionController, csiPensionController, jwtMiddleware)
+
+	router.SetupDevRoutes(v1, cfg, devController)
 
 	return server
 }

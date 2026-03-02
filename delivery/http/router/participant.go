@@ -3,6 +3,7 @@ package router
 import (
 	"time"
 
+	"erp-service/config"
 	"erp-service/delivery/http/controller"
 	"erp-service/delivery/http/middleware"
 
@@ -30,10 +31,49 @@ func selfRegRateLimit() fiber.Handler {
 	})
 }
 
-func SetupParticipantRoutes(api fiber.Router, ctrl *controller.ParticipantController, jwtMiddleware fiber.Handler, frendzSavingMW fiber.Handler) {
+func meRateLimit() fiber.Handler {
+	return limiter.New(limiter.Config{
+		Max:        15,
+		Expiration: 1 * time.Minute,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			if uid, ok := c.Locals("userID").(string); ok && uid != "" {
+				return "me:" + uid
+			}
+			return "me:" + c.IP()
+		},
+		LimitReached: func(c *fiber.Ctx) error {
+			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+				"success": false,
+				"error":   "too many requests",
+				"code":    "ERR_TOO_MANY_REQUESTS",
+			})
+		},
+	})
+}
+
+func SetupParticipantRoutes(api fiber.Router, ctrl *controller.ParticipantController, jwtMiddleware fiber.Handler, frendzSavingMW fiber.Handler, cfg *config.Config) {
+	isDev := cfg.IsDevelopment()
+
 	selfReg := api.Group("/participants")
 	selfReg.Use(jwtMiddleware)
-	selfReg.Post("/self-register", selfRegRateLimit(), ctrl.SelfRegister)
+	if isDev {
+		selfReg.Post("/self-register", ctrl.SelfRegister)
+	} else {
+		selfReg.Post("/self-register", selfRegRateLimit(), ctrl.SelfRegister)
+	}
+
+	me := api.Group("/participants/me")
+	me.Use(jwtMiddleware)
+	me.Use(middleware.ExtractTenantContext())
+	me.Use(frendzSavingMW)
+	if isDev {
+		me.Get("/", ctrl.GetMe)
+		me.Get("/status-history", ctrl.GetMyStatusHistory)
+	} else {
+		meLimiter := meRateLimit()
+		me.Get("/", meLimiter, ctrl.GetMe)
+		me.Get("/status-history", meLimiter, ctrl.GetMyStatusHistory)
+	}
 
 	participants := api.Group("/participants")
 	participants.Use(jwtMiddleware)

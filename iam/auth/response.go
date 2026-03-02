@@ -18,10 +18,11 @@ type UserResponse struct {
 }
 
 type ProductResponse struct {
-	ProductID   uuid.UUID `json:"product_id"`
-	ProductCode string    `json:"product_code"`
-	Roles       []string  `json:"roles,omitempty"`
-	Permissions []string  `json:"permissions,omitempty"`
+	ProductID         uuid.UUID `json:"product_id"`
+	ProductCode       string    `json:"product_code"`
+	RegistrationTypes []string  `json:"registration_types,omitempty"`
+	Roles             []string  `json:"roles,omitempty"`
+	Permissions       []string  `json:"permissions,omitempty"`
 }
 
 type TenantResponse struct {
@@ -116,4 +117,30 @@ type RegistrationStatusResponse struct {
 	ExpiresAt            time.Time `json:"expires_at"`
 	OTPAttemptsRemaining int       `json:"otp_attempts_remaining"`
 	ResendsRemaining     int       `json:"resends_remaining"`
+}
+
+type GoogleAuthURLResponse struct {
+	AuthURL string `json:"auth_url"`
+}
+
+type GoogleCallbackResponse struct {
+	AccessToken  string            `json:"access_token"`
+	RefreshToken string            `json:"refresh_token"`
+	ExpiresIn    int               `json:"expires_in"`
+	TokenType    string            `json:"token_type"`
+	IsNewUser    bool              `json:"is_new_user"`
+	User         LoginUserResponse `json:"user"`
+}
+
+type CreateTransferTokenResponse struct {
+	Code      string `json:"code"`
+	ExpiresIn int    `json:"expires_in"`
+}
+
+type ExchangeTransferTokenResponse struct {
+	AccessToken  string            `json:"access_token"`
+	RefreshToken string            `json:"refresh_token"`
+	ExpiresIn    int               `json:"expires_in"`
+	TokenType    string            `json:"token_type"`
+	User         LoginUserResponse `json:"user"`
 }

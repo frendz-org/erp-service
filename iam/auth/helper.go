@@ -6,9 +6,11 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"math/big"
+	"strconv"
 	"strings"
 	"time"
 
+	"erp-service/entity"
 	"erp-service/pkg/errors"
 	"erp-service/pkg/logger"
 
@@ -42,6 +44,52 @@ func (uc *usecase) sendEmailAsync(ctx context.Context, fn func(ctx context.Conte
 			Reason:  "email concurrency limit reached",
 		})
 	}
+}
+
+func (uc *usecase) upgradePasswordHashIfNeeded(ctx context.Context, authMethod *entity.UserAuthMethod, plainPassword string) {
+	currentHash := authMethod.GetPasswordHash()
+	cost, err := bcrypt.Cost([]byte(currentHash))
+	if err != nil || cost >= BcryptTargetCost {
+		return
+	}
+
+	newHash, err := bcrypt.GenerateFromPassword([]byte(plainPassword), BcryptTargetCost)
+	if err != nil {
+		uc.AuditLogger.Log(ctx, logger.AuditEvent{
+			Domain:  "auth",
+			Action:  "bcrypt_upgrade_hash_failed",
+			Success: false,
+			Reason:  err.Error(),
+		})
+		return
+	}
+
+	if err := authMethod.SetPasswordHash(string(newHash)); err != nil {
+		uc.AuditLogger.Log(ctx, logger.AuditEvent{
+			Domain:  "auth",
+			Action:  "bcrypt_upgrade_set_failed",
+			Success: false,
+			Reason:  err.Error(),
+		})
+		return
+	}
+
+	if err := uc.UserAuthMethodRepo.Update(ctx, authMethod); err != nil {
+		uc.AuditLogger.Log(ctx, logger.AuditEvent{
+			Domain:  "auth",
+			Action:  "bcrypt_upgrade_save_failed",
+			Success: false,
+			Reason:  err.Error(),
+		})
+		return
+	}
+
+	uc.AuditLogger.Log(ctx, logger.AuditEvent{
+		Domain:  "auth",
+		Action:  "bcrypt_hash_upgraded",
+		Success: true,
+		Reason:  "password hash upgraded from cost " + strconv.Itoa(cost) + " to cost " + strconv.Itoa(BcryptTargetCost),
+	})
 }
 
 func (uc *usecase) validatePassword(password string) error {

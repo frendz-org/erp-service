@@ -25,7 +25,8 @@
     { "key": "bank_account_id", "value": "", "type": "string" },
     { "key": "family_member_id", "value": "", "type": "string" },
     { "key": "beneficiary_id", "value": "", "type": "string" },
-    { "key": "test_email", "value": "", "type": "string" }
+    { "key": "test_email", "value": "", "type": "string" },
+    { "key": "transfer_code", "value": "", "type": "string" }
   ],
   "item": [
     {
@@ -939,6 +940,325 @@
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
               "body": "{\n    \"success\": true,\n    \"message\": \"All sessions logged out successfully\"\n}"
+            },
+            {
+              "name": "401 - Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_UNAUTHORIZED\",\n    \"message\": \"missing authorization header\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Google OAuth URL",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag and auth_url', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  pm.expect(json.data).to.have.property('auth_url');",
+                  "  pm.expect(json.data.auth_url).to.be.a('string');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/auth/google",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "auth", "google"]
+            },
+            "description": "Returns the Google OAuth2 consent URL. Redirect the user to `data.auth_url` to initiate the Google login flow. No authentication required."
+          },
+          "response": [
+            {
+              "name": "200 - OAuth URL Generated",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Google OAuth URL generated\",\n    \"data\": {\n        \"auth_url\": \"https://accounts.google.com/o/oauth2/v2/auth?client_id=...&redirect_uri=...&response_type=code&scope=openid+email+profile&state=random-csrf-state\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Google OAuth Callback",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag and extracts tokens + user_id', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  if (json.data) {",
+                  "    if (json.data.access_token) { pm.collectionVariables.set('access_token', json.data.access_token); }",
+                  "    if (json.data.refresh_token) { pm.collectionVariables.set('refresh_token', json.data.refresh_token); }",
+                  "    if (json.data.user && json.data.user.id) { pm.collectionVariables.set('user_id', json.data.user.id); }",
+                  "  }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"code\": \"4/0AfJohXk...\",\n    \"state\": \"random-csrf-state\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/auth/google/callback",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "auth", "google", "callback"]
+            },
+            "description": "Exchanges the Google OAuth2 authorization code for JWT access and refresh tokens. No authentication required. The `code` is obtained from the Google OAuth consent screen redirect. The `state` must match the CSRF state from the URL returned by GET /auth/google."
+          },
+          "response": [
+            {
+              "name": "200 - Login Successful",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Login successful\",\n    \"data\": {\n        \"access_token\": \"eyJ...\",\n        \"refresh_token\": \"eyJ...\",\n        \"expires_in\": 900,\n        \"token_type\": \"Bearer\",\n        \"is_new_user\": false,\n        \"user\": {\n            \"id\": \"019500a2-...\",\n            \"email\": \"user@example.com\",\n            \"full_name\": \"John Doe\",\n            \"tenants\": []\n        }\n    }\n}"
+            },
+            {
+              "name": "400 - Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_VALIDATION\",\n    \"message\": \"Validation failed\",\n    \"errors\": [\n        { \"field\": \"Code\", \"message\": \"code is required\" }\n    ]\n}"
+            },
+            {
+              "name": "401 - Invalid or Expired Code",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_UNAUTHORIZED\",\n    \"message\": \"Failed to exchange authorization code\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Transfer Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Response has success flag and extracts transfer code', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  pm.expect(json.data).to.have.property('code');",
+                  "  pm.expect(json.data.code).to.be.a('string');",
+                  "  if (json.data && json.data.code) {",
+                  "    pm.collectionVariables.set('transfer_code', json.data.code);",
+                  "  }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"product_code\": \"PRODUCT_B\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/auth/transfer-token",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "auth", "transfer-token"]
+            },
+            "description": "Creates a one-time transfer code scoped to the specified product. The code is a 64-character hex string valid for a short TTL. Use the Exchange Transfer Token endpoint to trade it for JWT tokens on the target product."
+          },
+          "response": [
+            {
+              "name": "201 - Transfer Token Created",
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Transfer token created\",\n    \"data\": {\n        \"code\": \"a3f8c1d9e2b7f04512ab6789cd012345ef6789ab012345cd6789ef0123456789\",\n        \"expires_in\": 60\n    }\n}"
+            },
+            {
+              "name": "400 - Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_VALIDATION\",\n    \"message\": \"Validation failed\",\n    \"errors\": [\n        { \"field\": \"ProductCode\", \"message\": \"product_code is required\" }\n    ]\n}"
+            },
+            {
+              "name": "401 - Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_UNAUTHORIZED\",\n    \"message\": \"missing authorization header\"\n}"
+            },
+            {
+              "name": "404 - Product Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_NOT_FOUND\",\n    \"message\": \"product not found\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Exchange Transfer Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag and extracts tokens', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  if (json.data) {",
+                  "    if (json.data.access_token) { pm.collectionVariables.set('access_token', json.data.access_token); }",
+                  "    if (json.data.refresh_token) { pm.collectionVariables.set('refresh_token', json.data.refresh_token); }",
+                  "    if (json.data.user && json.data.user.id) { pm.collectionVariables.set('user_id', json.data.user.id); }",
+                  "  }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"code\": \"{{transfer_code}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/auth/transfer-token/exchange",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "auth", "transfer-token", "exchange"]
+            },
+            "description": "Exchanges a one-time 64-character transfer code for JWT access and refresh tokens on the target product. No authentication required — the transfer code itself is the credential. The code is single-use and expires after a short TTL."
+          },
+          "response": [
+            {
+              "name": "200 - Tokens Issued",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Transfer token exchanged\",\n    \"data\": {\n        \"access_token\": \"eyJ...\",\n        \"refresh_token\": \"eyJ...\",\n        \"expires_in\": 900,\n        \"token_type\": \"Bearer\",\n        \"user\": {\n            \"id\": \"019500a2-...\",\n            \"email\": \"user@example.com\",\n            \"full_name\": \"John Doe\",\n            \"tenants\": []\n        }\n    }\n}"
+            },
+            {
+              "name": "400 - Validation Error (code missing or wrong length)",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_VALIDATION\",\n    \"message\": \"Validation failed\",\n    \"errors\": [\n        { \"field\": \"Code\", \"message\": \"code must be exactly 64 characters\" }\n    ]\n}"
+            },
+            {
+              "name": "401 - Invalid or Expired Code",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_UNAUTHORIZED\",\n    \"message\": \"invalid or expired transfer code\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Logout Tree",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"refresh_token\": \"{{refresh_token}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/auth/logout-tree",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "auth", "logout-tree"]
+            },
+            "description": "Logs out the entire session tree rooted at the provided refresh token. Blacklists the current access token JTI, revokes the refresh token, and invalidates all sessions that were spawned from the same root session (e.g. transfer-token children). JWT required."
+          },
+          "response": [
+            {
+              "name": "200 - Session Tree Logged Out",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Session tree logged out successfully\",\n    \"data\": null\n}"
+            },
+            {
+              "name": "400 - Validation Error (refresh_token missing)",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_VALIDATION\",\n    \"message\": \"Validation failed\",\n    \"errors\": [\n        { \"field\": \"RefreshToken\", \"message\": \"refresh_token is required\" }\n    ]\n}"
             },
             {
               "name": "401 - Unauthorized",
@@ -2476,8 +2796,103 @@
     },
     {
       "name": "Participants",
-      "description": "Participant management. JWT + X-Tenant-ID + product-scoped. Base: /api/v1/saving/products/{productId}/participants",
+      "description": "Participant management. JWT + X-Tenant-ID + product-scoped. Base: /api/v1/saving/participants",
       "item": [
+        {
+          "name": "Get My Participant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag and extracts participant_id', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  if (json.data && json.data.id) { pm.collectionVariables.set('participant_id', json.data.id); }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/participants/me/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "participants", "me", ""]
+            },
+            "description": "Get the authenticated user's own participant record for the product derived from the tenant context."
+          },
+          "response": [
+            {
+              "name": "200 - My Participant Retrieved",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500f1-...\",\n        \"status\": \"DRAFT\",\n        \"full_name\": \"Budi Santoso\"\n    }\n}"
+            },
+            {
+              "name": "404 - Participant Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"Participant not found\",\n    \"code\": \"ERR_NOT_FOUND\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get My Status History",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/participants/me/status-history",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "participants", "me", "status-history"]
+            },
+            "description": "Get the authenticated user's participant status history."
+          },
+          "response": [
+            {
+              "name": "200 - Status History Retrieved",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": [\n        {\n            \"status\": \"DRAFT\",\n            \"changed_at\": \"2026-02-18T10:00:00Z\"\n        }\n    ]\n}"
+            }
+          ]
+        },
         {
           "name": "Self Register Participant",
           "event": [
@@ -2485,13 +2900,17 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status code is 201', function () {",
-                  "  pm.response.to.have.status(201);",
+                  "pm.test('Status code is 2xx', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
                   "});",
-                  "pm.test('Response has success flag and extracts participant_id', function () {",
+                  "pm.test('Response has success flag and correct registration_status', function () {",
                   "  var json = pm.response.json();",
                   "  pm.expect(json.success).to.be.true;",
-                  "  if (json.data && json.data.id) { pm.collectionVariables.set('participant_id', json.data.id); }",
+                  "  pm.expect(json.data).to.be.an('object');",
+                  "  pm.expect(json.data.participant_number).to.be.a('string');",
+                  "  // New participant path: registration_status is ACTIVE, data.status is APPROVED",
+                  "  // Linked path: registration_status is PENDING_APPROVAL",
+                  "  pm.expect(json.registration_status).to.be.oneOf(['ACTIVE', 'PENDING_APPROVAL']);",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -2506,24 +2925,40 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"product_id\": \"{{product_id}}\"\n}",
+              "raw": "{\n    \"organization\": \"TENANT_001\",\n    \"identity_number\": \"3201010101800001\",\n    \"participant_number\": \"EMP00001\",\n    \"phone_number\": \"+628123456789\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/iam/participants/self-register",
+              "raw": "{{base_url}}/api/v1/saving/participants/self-register",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "iam", "participants", "self-register"]
+              "path": ["api", "v1", "saving", "participants", "self-register"]
             },
-            "description": "Self-register the authenticated user as a participant for the given product. Rate limited to 5 req/min. No X-Tenant-ID required — tenant derived from product_id."
+            "description": "Self-register the authenticated user as a participant. Rate limited to 5 req/min. participant_number is validated against the csi_employees table — returns 404 if not found, 409 if already claimed by another participant. On success for a new participant: registration_status=ACTIVE and data.status=APPROVED. For an existing unlinked participant: registration_status=PENDING_APPROVAL (HTTP 200)."
           },
           "response": [
             {
-              "name": "201 - Self Registered",
+              "name": "201 - New Participant Self Registered (ACTIVE)",
               "status": "Created",
               "code": 201,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500f1-...\",\n        \"product_id\": \"019500a1-...\",\n        \"user_id\": \"019500a2-...\",\n        \"status\": \"DRAFT\",\n        \"created_at\": \"2026-02-18T10:00:00Z\"\n    }\n}"
+              "body": "{\n    \"success\": true,\n    \"is_linked\": false,\n    \"registration_status\": \"ACTIVE\",\n    \"tenant_id\": \"019500a0-0000-7000-0000-000000000001\",\n    \"data\": {\n        \"participant_number\": \"EMP00001\",\n        \"status\": \"APPROVED\",\n        \"created_at\": \"2026-02-26T10:00:00Z\"\n    }\n}"
+            },
+            {
+              "name": "200 - Existing Participant Linked (PENDING_APPROVAL)",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"is_linked\": true,\n    \"registration_status\": \"PENDING_APPROVAL\",\n    \"tenant_id\": \"019500a0-0000-7000-0000-000000000001\",\n    \"data\": {\n        \"participant_number\": \"EMP00001\",\n        \"status\": \"APPROVED\",\n        \"created_at\": \"2025-12-01T08:00:00Z\"\n    }\n}"
+            },
+            {
+              "name": "400 - Validation Error (invalid fields)",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"validation failed\",\n    \"code\": \"ERR_VALIDATION\",\n    \"details\": [\n        { \"field\": \"participant_number\", \"message\": \"must be 3 uppercase letters followed by 5-8 digits, or exactly 8 digits\" },\n        { \"field\": \"phone_number\", \"message\": \"must be a valid Indonesian phone number (e.g. +628xxx or 08xxx)\" }\n    ]\n}"
             },
             {
               "name": "401 - Unauthorized",
@@ -2532,6 +2967,30 @@
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
               "body": "{\n    \"success\": false,\n    \"error\": \"missing authorization header\",\n    \"code\": \"ERR_UNAUTHORIZED\"\n}"
+            },
+            {
+              "name": "404 - Employee Number Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"employee number not found\",\n    \"code\": \"ERR_NOT_FOUND\"\n}"
+            },
+            {
+              "name": "409 - Participant Number Already Used",
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"participant number is already used\",\n    \"code\": \"ERR_CONFLICT\"\n}"
+            },
+            {
+              "name": "409 - Registration Not Eligible (already registered)",
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"registration not eligible\",\n    \"code\": \"ERR_CONFLICT\"\n}"
             },
             {
               "name": "429 - Too Many Requests",
@@ -2572,13 +3031,13 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"full_name\": \"Budi Santoso\"\n}",
+              "raw": "{\n    \"full_name\": \"Budi Santoso\",\n    \"ktp_number\": \"3174012345678901\",\n    \"employee_number\": \"EMP-001\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/",
+              "raw": "{{base_url}}/api/v1/saving/participants/",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", ""]
+              "path": ["api", "v1", "saving", "participants", ""]
             },
             "description": "Create a new participant. Permission: participant:create"
           },
@@ -2635,9 +3094,9 @@
               { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/?page=1&per_page=10&sort_by=created_at&sort_order=desc",
+              "raw": "{{base_url}}/api/v1/saving/participants/?page=1&per_page=10&sort_by=created_at&sort_order=desc",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", ""],
+              "path": ["api", "v1", "saving", "participants", ""],
               "query": [
                 { "key": "page", "value": "1" },
                 { "key": "per_page", "value": "10" },
@@ -2686,9 +3145,9 @@
               { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}"]
             },
             "description": "Get participant by ID. Permission: participant:read"
           },
@@ -2743,9 +3202,9 @@
               "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/personal-data",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/personal-data",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "personal-data"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "personal-data"]
             },
             "description": "Update participant personal data. Permission: participant:update"
           },
@@ -2793,9 +3252,9 @@
               "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/identities",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/identities",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "identities"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "identities"]
             },
             "description": "Add or update identity document. Include id field to update existing. Permission: participant:update"
           },
@@ -2832,9 +3291,9 @@
               { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/identities/{{identity_id}}",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/identities/{{identity_id}}",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "identities", "{{identity_id}}"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "identities", "{{identity_id}}"]
             },
             "description": "Delete an identity document. Permission: participant:update"
           },
@@ -2850,7 +3309,7 @@
           ]
         },
         {
-          "name": "Save Address",
+          "name": "Save Addresses",
           "event": [
             {
               "listen": "test",
@@ -2862,7 +3321,7 @@
                   "pm.test('Response has success flag and extracts address_id', function () {",
                   "  var json = pm.response.json();",
                   "  pm.expect(json.success).to.be.true;",
-                  "  if (json.data && json.data.id) { pm.collectionVariables.set('address_id', json.data.id); }",
+                  "  if (json.data && json.data[0] && json.data[0].id) { pm.collectionVariables.set('address_id', json.data[0].id); }",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -2878,24 +3337,24 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"address_type\": \"HOME\",\n    \"country_code\": \"ID\",\n    \"province_code\": \"JKT\",\n    \"city_code\": \"JKT_PUSAT\",\n    \"postal_code\": \"10110\",\n    \"address_line\": \"Jl. Sudirman No. 1\",\n    \"is_primary\": true\n}",
+              "raw": "{\n    \"addresses\": [\n        {\n            \"address_type\": \"HOME\",\n            \"country_code\": \"ID\",\n            \"province_code\": \"JKT\",\n            \"city_code\": \"JKT_PUSAT\",\n            \"postal_code\": \"10110\",\n            \"address_line\": \"Jl. Sudirman No. 1\",\n            \"is_primary\": true\n        }\n    ]\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/addresses",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/addresses",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "addresses"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "addresses"]
             },
-            "description": "Add or update address. Permission: participant:update"
+            "description": "Upsert addresses for a participant. Sends a full array — existing items with an id are updated, items without id are created. Permission: participant:update"
           },
           "response": [
             {
-              "name": "200 - Address Saved",
+              "name": "200 - Addresses Saved",
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500f3-...\",\n        \"address_type\": \"HOME\",\n        \"is_primary\": true,\n        \"version\": 1\n    }\n}"
+              "body": "{\n    \"success\": true,\n    \"data\": [\n        {\n            \"id\": \"019500f3-...\",\n            \"address_type\": \"HOME\",\n            \"is_primary\": true,\n            \"version\": 1\n        }\n    ]\n}"
             }
           ]
         },
@@ -2921,9 +3380,9 @@
               { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/addresses/{{address_id}}",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/addresses/{{address_id}}",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "addresses", "{{address_id}}"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "addresses", "{{address_id}}"]
             },
             "description": "Delete an address. Permission: participant:update"
           },
@@ -2971,9 +3430,9 @@
               "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/bank-accounts",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/bank-accounts",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "bank-accounts"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "bank-accounts"]
             },
             "description": "Add or update bank account. Permission: participant:update"
           },
@@ -3010,9 +3469,9 @@
               { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/bank-accounts/{{bank_account_id}}",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/bank-accounts/{{bank_account_id}}",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "bank-accounts", "{{bank_account_id}}"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "bank-accounts", "{{bank_account_id}}"]
             },
             "description": "Delete a bank account. Permission: participant:update"
           },
@@ -3028,7 +3487,7 @@
           ]
         },
         {
-          "name": "Save Family Member",
+          "name": "Save Family Members",
           "event": [
             {
               "listen": "test",
@@ -3040,7 +3499,7 @@
                   "pm.test('Response has success flag and extracts family_member_id', function () {",
                   "  var json = pm.response.json();",
                   "  pm.expect(json.success).to.be.true;",
-                  "  if (json.data && json.data.id) { pm.collectionVariables.set('family_member_id', json.data.id); }",
+                  "  if (json.data && json.data[0] && json.data[0].id) { pm.collectionVariables.set('family_member_id', json.data[0].id); }",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -3056,24 +3515,24 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"full_name\": \"Siti Rahayu\",\n    \"relationship_type\": \"SPOUSE\",\n    \"is_dependent\": true\n}",
+              "raw": "{\n    \"family_members\": [\n        {\n            \"full_name\": \"Siti Rahayu\",\n            \"relationship_type\": \"SPOUSE\",\n            \"is_dependent\": true\n        }\n    ]\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/family-members",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/family-members",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "family-members"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "family-members"]
             },
-            "description": "Add or update a family member. Permission: participant:update"
+            "description": "Upsert family members for a participant. Sends a full array — existing items with an id are updated, items without id are created. Permission: participant:update"
           },
           "response": [
             {
-              "name": "200 - Family Member Saved",
+              "name": "200 - Family Members Saved",
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500f5-...\",\n        \"full_name\": \"Siti Rahayu\",\n        \"relationship_type\": \"SPOUSE\",\n        \"is_dependent\": true,\n        \"version\": 1\n    }\n}"
+              "body": "{\n    \"success\": true,\n    \"data\": [\n        {\n            \"id\": \"019500f5-...\",\n            \"full_name\": \"Siti Rahayu\",\n            \"relationship_type\": \"SPOUSE\",\n            \"is_dependent\": true,\n            \"version\": 1\n        }\n    ]\n}"
             }
           ]
         },
@@ -3099,9 +3558,9 @@
               { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/family-members/{{family_member_id}}",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/family-members/{{family_member_id}}",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "family-members", "{{family_member_id}}"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "family-members", "{{family_member_id}}"]
             },
             "description": "Delete a family member. Permission: participant:update"
           },
@@ -3148,9 +3607,9 @@
               "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/employment",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/employment",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "employment"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "employment"]
             },
             "description": "Save or update employment information. Permission: participant:update"
           },
@@ -3193,13 +3652,13 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"pension_number\": \"PEN-001\",\n    \"pension_type\": \"DPLK\",\n    \"contribution_amount\": 500000,\n    \"start_date\": \"2015-01-15T00:00:00Z\"\n}",
+              "raw": "{\n    \"participant_number\": \"PEN-001\",\n    \"pension_category\": \"DPLK\",\n    \"pension_status\": \"ACTIVE\",\n    \"effective_date\": \"2015-01-15T00:00:00Z\",\n    \"projected_retirement_date\": \"2055-01-15T00:00:00Z\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/pension",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/pension",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "pension"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "pension"]
             },
             "description": "Save or update pension information. Permission: participant:update"
           },
@@ -3210,12 +3669,12 @@
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500f8-...\",\n        \"pension_number\": \"PEN-001\",\n        \"pension_type\": \"DPLK\",\n        \"contribution_amount\": 500000,\n        \"version\": 1\n    }\n}"
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500f8-...\",\n        \"participant_number\": \"PEN-001\",\n        \"pension_category\": \"DPLK\",\n        \"pension_status\": \"ACTIVE\",\n        \"effective_date\": \"2015-01-15T00:00:00Z\",\n        \"projected_retirement_date\": \"2055-01-15T00:00:00Z\",\n        \"version\": 1\n    }\n}"
             }
           ]
         },
         {
-          "name": "Save Beneficiary",
+          "name": "Save Beneficiaries",
           "event": [
             {
               "listen": "test",
@@ -3227,7 +3686,7 @@
                   "pm.test('Response has success flag and extracts beneficiary_id', function () {",
                   "  var json = pm.response.json();",
                   "  pm.expect(json.success).to.be.true;",
-                  "  if (json.data && json.data.id) { pm.collectionVariables.set('beneficiary_id', json.data.id); }",
+                  "  if (json.data && json.data[0] && json.data[0].id) { pm.collectionVariables.set('beneficiary_id', json.data[0].id); }",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -3243,24 +3702,24 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"family_member_id\": \"{{family_member_id}}\",\n    \"account_number\": \"1234567890\"\n}",
+              "raw": "{\n    \"beneficiaries\": [\n        {\n            \"family_member_id\": \"{{family_member_id}}\",\n            \"account_number\": \"1234567890\"\n        }\n    ]\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/beneficiaries",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/beneficiaries",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "beneficiaries"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "beneficiaries"]
             },
-            "description": "Add or update a beneficiary. Permission: participant:update"
+            "description": "Upsert beneficiaries for a participant. Sends a full array — existing items with an id are updated, items without id are created. Permission: participant:update"
           },
           "response": [
             {
-              "name": "200 - Beneficiary Saved",
+              "name": "200 - Beneficiaries Saved",
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500f7-...\",\n        \"family_member_id\": \"019500f5-...\",\n        \"account_number\": \"1234567890\",\n        \"version\": 1\n    }\n}"
+              "body": "{\n    \"success\": true,\n    \"data\": [\n        {\n            \"id\": \"019500f7-...\",\n            \"family_member_id\": \"019500f5-...\",\n            \"account_number\": \"1234567890\",\n            \"version\": 1\n        }\n    ]\n}"
             }
           ]
         },
@@ -3286,9 +3745,9 @@
               { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/beneficiaries/{{beneficiary_id}}",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/beneficiaries/{{beneficiary_id}}",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "beneficiaries", "{{beneficiary_id}}"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "beneficiaries", "{{beneficiary_id}}"]
             },
             "description": "Delete a beneficiary. Permission: participant:update"
           },
@@ -3336,9 +3795,9 @@
               ]
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/files",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/files",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "files"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "files"]
             },
             "description": "Upload a file for a participant. Allowed types: jpeg, png, gif, pdf. Max size: 5MB. Permission: participant:update"
           },
@@ -3387,9 +3846,9 @@
               { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/status-history",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/status-history",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "status-history"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "status-history"]
             },
             "description": "Get participant status change history. Permission: participant:read"
           },
@@ -3430,9 +3889,9 @@
               { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/submit",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/submit",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "submit"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "submit"]
             },
             "description": "Submit participant for approval. Moves DRAFT → PENDING_APPROVAL. Permission: participant:submit"
           },
@@ -3473,9 +3932,9 @@
               { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/approve",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/approve",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "approve"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "approve"]
             },
             "description": "Approve a participant. Moves PENDING_APPROVAL → APPROVED. Permission: participant:approve"
           },
@@ -3522,9 +3981,9 @@
               "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}/reject",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}/reject",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}", "reject"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}", "reject"]
             },
             "description": "Reject a participant with reason. Moves PENDING_APPROVAL → REJECTED. Permission: participant:reject. Reason: min 10, max 500 chars."
           },
@@ -3561,9 +4020,9 @@
               { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/participants/{{participant_id}}",
+              "raw": "{{base_url}}/api/v1/saving/participants/{{participant_id}}",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "participants", "{{participant_id}}"]
+              "path": ["api", "v1", "saving", "participants", "{{participant_id}}"]
             },
             "description": "Soft-delete a participant. Permission: participant:delete"
           },
@@ -3582,7 +4041,7 @@
     },
     {
       "name": "Members",
-      "description": "Member management. JWT + X-Tenant-ID + product-scoped. Admin routes require TENANT_PRODUCT_ADMIN role. Base: /api/v1/saving/products/{productId}/members",
+      "description": "Member management. Self-register requires JWT only (tenant/product resolved from organization code). All other routes require JWT + X-Tenant-ID + product-scoped. Admin routes require TENANT_PRODUCT_ADMIN role. Base: /api/v1/saving/members",
       "item": [
         {
           "name": "Register as Member",
@@ -3607,15 +4066,20 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}" },
-              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
             ],
-            "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/members/register",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "members", "register"]
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"organization\": \"TENANT_001\",\n    \"participant_number\": \"ABC12345\",\n    \"identity_number\": \"3201011234560001\"\n}",
+              "options": { "raw": { "language": "json" } }
             },
-            "description": "Self-register as a member for a product. No request body required — identity derived from JWT. Creates a PENDING_APPROVAL registration."
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/members/self-register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "members", "self-register"]
+            },
+            "description": "Self-register as a member. Tenant and product are resolved from the organization code in the request body. Requires Authorization Bearer token. Creates a PENDING_APPROVAL registration."
           },
           "response": [
             {
@@ -3624,7 +4088,7 @@
               "code": 201,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"status\": \"PENDING_APPROVAL\",\n        \"registration_type\": \"MEMBER\",\n        \"created_at\": \"2026-02-18T10:00:00Z\"\n    }\n}"
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"tenant_id\": \"019500a1-...\",\n        \"status\": \"PENDING_APPROVAL\",\n        \"registration_type\": \"MEMBER\",\n        \"participant_number\": \"ABC12345\",\n        \"identity_number\": \"3201011234560001\",\n        \"organization_code\": \"TENANT_001\",\n        \"full_name\": \"Budi Santoso\",\n        \"created_at\": \"2026-02-18T10:00:00Z\"\n    }\n}"
             },
             {
               "name": "401 - Unauthorized",
@@ -3641,6 +4105,66 @@
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
               "body": "{\n    \"success\": false,\n    \"error\": \"Member already registered for this product\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get My Member",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag and extracts member_id', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  if (json.data && json.data.id) { pm.collectionVariables.set('member_id', json.data.id); }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/saving/members/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "saving", "members", "me"]
+            },
+            "description": "Get the authenticated user's own member record for the product derived from the tenant context."
+          },
+          "response": [
+            {
+              "name": "200 - My Member Retrieved",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"user_id\": \"019500a2-...\",\n        \"first_name\": \"Budi\",\n        \"last_name\": \"Santoso\",\n        \"email\": \"user@example.com\",\n        \"status\": \"ACTIVE\",\n        \"registration_type\": \"MEMBER\",\n        \"role_code\": \"MEMBER\",\n        \"role_name\": \"Member\",\n        \"participant_number\": \"ABC12345\",\n        \"identity_number\": \"3201011234560001\",\n        \"organization_code\": \"TENANT_001\",\n        \"created_at\": \"2026-02-18T10:00:00Z\",\n        \"updated_at\": \"2026-02-18T10:00:00Z\"\n    }\n}"
+            },
+            {
+              "name": "404 - Member Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"Member not found\"\n}"
+            },
+            {
+              "name": "401 - Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"missing authorization header\"\n}"
             }
           ]
         },
@@ -3670,9 +4194,9 @@
               { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/members/?page=1&per_page=10&sort_by=created_at&sort_order=desc",
+              "raw": "{{base_url}}/api/v1/saving/members/?page=1&per_page=10&sort_by=created_at&sort_order=desc",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "members", ""],
+              "path": ["api", "v1", "saving", "members", ""],
               "query": [
                 { "key": "page", "value": "1" },
                 { "key": "per_page", "value": "10" },
@@ -3691,7 +4215,7 @@
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"members\": [\n            {\n                \"id\": \"019500g1-...\",\n                \"user_id\": \"019500a2-...\",\n                \"first_name\": \"Budi\",\n                \"last_name\": \"Santoso\",\n                \"email\": \"user@example.com\",\n                \"status\": \"PENDING_APPROVAL\",\n                \"registration_type\": \"MEMBER\",\n                \"created_at\": \"2026-02-18T10:00:00Z\"\n            }\n        ],\n        \"pagination\": {\n            \"total\": 1,\n            \"page\": 1,\n            \"limit\": 10,\n            \"total_pages\": 1\n        }\n    }\n}"
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"members\": [\n            {\n                \"id\": \"019500g1-...\",\n                \"user_id\": \"019500a2-...\",\n                \"first_name\": \"Budi\",\n                \"last_name\": \"Santoso\",\n                \"email\": \"user@example.com\",\n                \"status\": \"PENDING_APPROVAL\",\n                \"registration_type\": \"MEMBER\",\n                \"role_code\": \"MEMBER\",\n                \"role_name\": \"Member\",\n                \"participant_number\": \"ABC12345\",\n                \"identity_number\": \"3201011234560001\",\n                \"organization_code\": \"TENANT_001\",\n                \"created_at\": \"2026-02-18T10:00:00Z\"\n            }\n        ],\n        \"pagination\": {\n            \"total\": 1,\n            \"page\": 1,\n            \"limit\": 10,\n            \"total_pages\": 1\n        }\n    }\n}"
             }
           ]
         },
@@ -3721,9 +4245,9 @@
               { "key": "X-Tenant-ID", "value": "{{tenant_id}}" }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/members/{{member_id}}",
+              "raw": "{{base_url}}/api/v1/saving/members/{{member_id}}",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "members", "{{member_id}}"]
+              "path": ["api", "v1", "saving", "members", "{{member_id}}"]
             },
             "description": "Get member details. Requires TENANT_PRODUCT_ADMIN role."
           },
@@ -3734,7 +4258,7 @@
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"user_id\": \"019500a2-...\",\n        \"first_name\": \"Budi\",\n        \"last_name\": \"Santoso\",\n        \"email\": \"user@example.com\",\n        \"status\": \"PENDING_APPROVAL\",\n        \"registration_type\": \"MEMBER\",\n        \"version\": 1,\n        \"created_at\": \"2026-02-18T10:00:00Z\",\n        \"updated_at\": \"2026-02-18T10:00:00Z\"\n    }\n}"
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"user_id\": \"019500a2-...\",\n        \"first_name\": \"Budi\",\n        \"last_name\": \"Santoso\",\n        \"email\": \"user@example.com\",\n        \"status\": \"PENDING_APPROVAL\",\n        \"registration_type\": \"MEMBER\",\n        \"role_code\": \"MEMBER\",\n        \"role_name\": \"Member\",\n        \"participant_number\": \"ABC12345\",\n        \"identity_number\": \"3201011234560001\",\n        \"organization_code\": \"TENANT_001\",\n        \"version\": 1,\n        \"created_at\": \"2026-02-18T10:00:00Z\",\n        \"updated_at\": \"2026-02-18T10:00:00Z\"\n    }\n}"
             },
             {
               "name": "404 - Member Not Found",
@@ -3778,9 +4302,9 @@
               "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/members/{{member_id}}/approve",
+              "raw": "{{base_url}}/api/v1/saving/members/{{member_id}}/approve",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "members", "{{member_id}}", "approve"]
+              "path": ["api", "v1", "saving", "members", "{{member_id}}", "approve"]
             },
             "description": "Approve a member registration and assign a role. Requires TENANT_PRODUCT_ADMIN role."
           },
@@ -3791,7 +4315,7 @@
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"status\": \"ACTIVE\",\n        \"role_code\": \"MEMBER\",\n        \"approved_by\": \"019500a2-...\",\n        \"approved_at\": \"2026-02-18T10:10:00Z\"\n    }\n}"
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"user_id\": \"019500a2-...\",\n        \"first_name\": \"Budi\",\n        \"last_name\": \"Santoso\",\n        \"email\": \"user@example.com\",\n        \"status\": \"ACTIVE\",\n        \"registration_type\": \"MEMBER\",\n        \"role_code\": \"MEMBER\",\n        \"role_name\": \"Member\",\n        \"participant_number\": \"ABC12345\",\n        \"identity_number\": \"3201011234560001\",\n        \"organization_code\": \"TENANT_001\",\n        \"approved_by\": \"019500a2-...\",\n        \"approved_at\": \"2026-02-18T10:10:00Z\",\n        \"version\": 2,\n        \"created_at\": \"2026-02-18T10:00:00Z\",\n        \"updated_at\": \"2026-02-18T10:10:00Z\"\n    }\n}"
             }
           ]
         },
@@ -3827,9 +4351,9 @@
               "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/members/{{member_id}}/reject",
+              "raw": "{{base_url}}/api/v1/saving/members/{{member_id}}/reject",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "members", "{{member_id}}", "reject"]
+              "path": ["api", "v1", "saving", "members", "{{member_id}}", "reject"]
             },
             "description": "Reject a member registration with reason. Requires TENANT_PRODUCT_ADMIN. Reason: min 10, max 500 chars."
           },
@@ -3840,7 +4364,7 @@
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"status\": \"REJECTED\"\n    }\n}"
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"user_id\": \"019500a2-...\",\n        \"first_name\": \"Budi\",\n        \"last_name\": \"Santoso\",\n        \"email\": \"user@example.com\",\n        \"status\": \"REJECTED\",\n        \"registration_type\": \"MEMBER\",\n        \"participant_number\": \"ABC12345\",\n        \"identity_number\": \"3201011234560001\",\n        \"organization_code\": \"TENANT_001\",\n        \"version\": 2,\n        \"created_at\": \"2026-02-18T10:00:00Z\",\n        \"updated_at\": \"2026-02-18T10:15:00Z\"\n    }\n}"
             }
           ]
         },
@@ -3876,9 +4400,9 @@
               "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/members/{{member_id}}/role",
+              "raw": "{{base_url}}/api/v1/saving/members/{{member_id}}/role",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "members", "{{member_id}}", "role"]
+              "path": ["api", "v1", "saving", "members", "{{member_id}}", "role"]
             },
             "description": "Change a member's role. Requires TENANT_PRODUCT_ADMIN role."
           },
@@ -3889,7 +4413,7 @@
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"role_code\": \"TENANT_PRODUCT_ADMIN\",\n        \"status\": \"ACTIVE\"\n    }\n}"
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"user_id\": \"019500a2-...\",\n        \"first_name\": \"Budi\",\n        \"last_name\": \"Santoso\",\n        \"email\": \"user@example.com\",\n        \"status\": \"ACTIVE\",\n        \"registration_type\": \"MEMBER\",\n        \"role_code\": \"TENANT_PRODUCT_ADMIN\",\n        \"role_name\": \"Tenant Product Admin\",\n        \"participant_number\": \"ABC12345\",\n        \"identity_number\": \"3201011234560001\",\n        \"organization_code\": \"TENANT_001\",\n        \"approved_by\": \"019500a2-...\",\n        \"approved_at\": \"2026-02-18T10:10:00Z\",\n        \"version\": 3,\n        \"created_at\": \"2026-02-18T10:00:00Z\",\n        \"updated_at\": \"2026-02-18T10:20:00Z\"\n    }\n}"
             }
           ]
         },
@@ -3925,9 +4449,9 @@
               "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/saving/products/{{product_id}}/members/{{member_id}}/deactivate",
+              "raw": "{{base_url}}/api/v1/saving/members/{{member_id}}/deactivate",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "saving", "products", "{{product_id}}", "members", "{{member_id}}", "deactivate"]
+              "path": ["api", "v1", "saving", "members", "{{member_id}}", "deactivate"]
             },
             "description": "Deactivate a member. Requires TENANT_PRODUCT_ADMIN role."
           },
@@ -3938,7 +4462,543 @@
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"status\": \"INACTIVE\"\n    }\n}"
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"id\": \"019500g1-...\",\n        \"user_id\": \"019500a2-...\",\n        \"first_name\": \"Budi\",\n        \"last_name\": \"Santoso\",\n        \"email\": \"user@example.com\",\n        \"status\": \"INACTIVE\",\n        \"registration_type\": \"MEMBER\",\n        \"role_code\": \"MEMBER\",\n        \"role_name\": \"Member\",\n        \"participant_number\": \"ABC12345\",\n        \"identity_number\": \"3201011234560001\",\n        \"organization_code\": \"TENANT_001\",\n        \"version\": 4,\n        \"created_at\": \"2026-02-18T10:00:00Z\",\n        \"updated_at\": \"2026-02-18T10:25:00Z\"\n    }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Pension",
+      "description": "Pension summary endpoints. JWT required. Base: /api/v1/pension",
+      "item": [
+        {
+          "name": "Get Pension Amount Summary",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/pension/amount-summary",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "pension", "amount-summary"]
+            },
+            "description": "Get the pension amount summary for the authenticated user. JWT required."
+          },
+          "response": [
+            {
+              "name": "200 - Amount Summary Retrieved",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"total_amount\": 0,\n        \"currency\": \"IDR\"\n    }\n}"
+            },
+            {
+              "name": "401 - Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"missing authorization header\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get CSI Amount Summary",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  pm.expect(json.data).to.have.property('total_saldo');",
+                  "  pm.expect(json.data).to.have.property('items');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/pension/csi-amount-summary",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "pension", "csi-amount-summary"]
+            },
+            "description": "Get the CSI pension amount summary for the authenticated user. Returns total saldo, growth percentage, and breakdown by CSI item. JWT required."
+          },
+          "response": [
+            {
+              "name": "200 - CSI Amount Summary Retrieved",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"tenant_id\": \"019500a1-0000-7000-8000-000000000001\",\n        \"tenant_name\": \"PT Contoh Perusahaan\",\n        \"user\": \"Budi Santoso\",\n        \"total_saldo\": 25000000,\n        \"growth_percentage\": 5.25,\n        \"latest_period\": \"2025-12\",\n        \"items\": [\n            {\n                \"csi_item_id\": 1,\n                \"name\": \"Iuran Peserta\",\n                \"amount\": 12500000,\n                \"percentage\": 50.0\n            },\n            {\n                \"csi_item_id\": 2,\n                \"name\": \"Iuran Pemberi Kerja\",\n                \"amount\": 12500000,\n                \"percentage\": 50.0\n            }\n        ]\n    }\n}"
+            },
+            {
+              "name": "401 - Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"unauthorized\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get CSI Ledger History",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag and pagination', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  pm.expect(json.data).to.have.property('periods');",
+                  "  pm.expect(json.data).to.have.property('pagination');",
+                  "  pm.expect(json.data.pagination).to.have.property('page');",
+                  "  pm.expect(json.data.pagination).to.have.property('per_page');",
+                  "  pm.expect(json.data.pagination).to.have.property('total_records');",
+                  "  pm.expect(json.data.pagination).to.have.property('total_pages');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/pension/csi-ledger-history?page=1&per_page=12",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "pension", "csi-ledger-history"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "per_page",
+                  "value": "12",
+                  "description": "Records per page (default: 12, max: 120)"
+                },
+                {
+                  "key": "year_from",
+                  "value": "",
+                  "description": "Filter from year (optional, 1900–2100)",
+                  "disabled": true
+                },
+                {
+                  "key": "year_to",
+                  "value": "",
+                  "description": "Filter to year (optional, 1900–2100)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get paginated monthly CSI ledger transaction history for the authenticated user. Results are grouped by period (year+month). Supports optional year range filter. JWT required.\n\n**Query Parameters:**\n- `page` (integer, default 1) — page number\n- `per_page` (integer, default 12, max 120) — records per page\n- `year_from` (integer, optional, 1900–2100) — filter start year\n- `year_to` (integer, optional, 1900–2100) — filter end year"
+          },
+          "response": [
+            {
+              "name": "200 - Ledger History Retrieved",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"tenant_id\": \"019500a1-0000-7000-8000-000000000001\",\n        \"tenant_name\": \"PT Contoh Perusahaan\",\n        \"user\": \"Budi Santoso\",\n        \"periods\": [\n            {\n                \"year_period\": 2025,\n                \"month_period\": 12,\n                \"period_label\": \"Desember 2025\",\n                \"items\": [\n                    {\n                        \"csi_item_id\": 1,\n                        \"name\": \"Iuran Peserta\",\n                        \"amount\": 500000\n                    },\n                    {\n                        \"csi_item_id\": 2,\n                        \"name\": \"Iuran Pemberi Kerja\",\n                        \"amount\": 500000\n                    }\n                ],\n                \"period_total\": 1000000,\n                \"cumulative_balance\": 25000000\n            },\n            {\n                \"year_period\": 2025,\n                \"month_period\": 11,\n                \"period_label\": \"November 2025\",\n                \"items\": [\n                    {\n                        \"csi_item_id\": 1,\n                        \"name\": \"Iuran Peserta\",\n                        \"amount\": 500000\n                    },\n                    {\n                        \"csi_item_id\": 2,\n                        \"name\": \"Iuran Pemberi Kerja\",\n                        \"amount\": 500000\n                    }\n                ],\n                \"period_total\": 1000000,\n                \"cumulative_balance\": 24000000\n            }\n        ],\n        \"pagination\": {\n            \"page\": 1,\n            \"per_page\": 12,\n            \"total_records\": 36,\n            \"total_pages\": 3\n        }\n    }\n}"
+            },
+            {
+              "name": "400 - Invalid year_from",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"invalid year_from parameter\"\n}"
+            },
+            {
+              "name": "400 - Invalid year_to",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"invalid year_to parameter\"\n}"
+            },
+            {
+              "name": "400 - year_from greater than year_to",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"year_from must be less than or equal to year_to\"\n}"
+            },
+            {
+              "name": "401 - Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"unauthorized\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Balance Over Time",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag and data_points', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  pm.expect(json.data).to.be.an('array');",
+                  "  if (json.data.length > 0) {",
+                  "    pm.expect(json.data[0]).to.have.property('granularity');",
+                  "    pm.expect(json.data[0]).to.have.property('data_points');",
+                  "    pm.expect(json.data[0].data_points).to.be.an('array');",
+                  "  }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/pension/balance-over-time?granularity=yearly",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "pension", "balance-over-time"],
+              "query": [
+                {
+                  "key": "granularity",
+                  "value": "yearly",
+                  "description": "Aggregation granularity: 'monthly', 'quarterly', or 'yearly' (default: yearly)"
+                },
+                {
+                  "key": "year_from",
+                  "value": "",
+                  "description": "Filter from year (optional, 1900–2100)",
+                  "disabled": true
+                },
+                {
+                  "key": "year_to",
+                  "value": "",
+                  "description": "Filter to year (optional, 1900–2100)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get the authenticated user's CSI pension balance over time, aggregated by yearly (default), monthly, or quarterly granularity. Supports optional year range filter. JWT required.\n\n**Query Parameters:**\n- `granularity` (string, default 'yearly') — 'monthly', 'quarterly', or 'yearly'\n- `year_from` (integer, optional, 1900–2100) — filter start year\n- `year_to` (integer, optional, 1900–2100) — filter end year"
+          },
+          "response": [
+            {
+              "name": "200 - Balance Over Time (Yearly)",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": [\n        {\n            \"tenant_id\": \"019500a1-0000-7000-8000-000000000001\",\n            \"tenant_name\": \"PT Contoh Perusahaan\",\n            \"user\": \"Budi Santoso\",\n            \"granularity\": \"yearly\",\n            \"data_points\": [\n                {\n                    \"period_label\": \"2023\",\n                    \"year\": 2023,\n                    \"balance\": 18000000\n                },\n                {\n                    \"period_label\": \"2024\",\n                    \"year\": 2024,\n                    \"balance\": 22000000\n                },\n                {\n                    \"period_label\": \"2025\",\n                    \"year\": 2025,\n                    \"balance\": 25000000\n                }\n            ]\n        }\n    ]\n}"
+            },
+            {
+              "name": "200 - Balance Over Time (Monthly)",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": [\n        {\n            \"tenant_id\": \"019500a1-0000-7000-8000-000000000001\",\n            \"tenant_name\": \"PT Contoh Perusahaan\",\n            \"user\": \"Budi Santoso\",\n            \"granularity\": \"monthly\",\n            \"data_points\": [\n                {\n                    \"period_label\": \"2025-11\",\n                    \"year\": 2025,\n                    \"month\": 11,\n                    \"balance\": 24000000\n                },\n                {\n                    \"period_label\": \"2025-12\",\n                    \"year\": 2025,\n                    \"month\": 12,\n                    \"balance\": 25000000\n                }\n            ]\n        }\n    ]\n}"
+            },
+            {
+              "name": "400 - Invalid granularity",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"granularity must be 'monthly', 'quarterly', or 'yearly'\"\n}"
+            },
+            {
+              "name": "400 - Invalid year_from",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"invalid year_from parameter\"\n}"
+            },
+            {
+              "name": "400 - Invalid year_to",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"invalid year_to parameter\"\n}"
+            },
+            {
+              "name": "400 - year_from greater than year_to",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"year_from must be less than or equal to year_to\"\n}"
+            },
+            {
+              "name": "401 - Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"unauthorized\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Balance Over Time (Quarterly)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag and quarterly data_points', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  pm.expect(json.data).to.be.an('array');",
+                  "  if (json.data.length > 0) {",
+                  "    pm.expect(json.data[0]).to.have.property('granularity');",
+                  "    pm.expect(json.data[0].granularity).to.equal('quarterly');",
+                  "    pm.expect(json.data[0]).to.have.property('data_points');",
+                  "    pm.expect(json.data[0].data_points).to.be.an('array');",
+                  "    if (json.data[0].data_points.length > 0) {",
+                  "      pm.expect(json.data[0].data_points[0]).to.have.property('period_label');",
+                  "      pm.expect(json.data[0].data_points[0]).to.have.property('balance');",
+                  "    }",
+                  "  }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/pension/balance-over-time?granularity=quarterly",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "pension", "balance-over-time"],
+              "query": [
+                {
+                  "key": "granularity",
+                  "value": "quarterly",
+                  "description": "Aggregation granularity: 'monthly', 'quarterly', or 'yearly' (default: yearly)"
+                },
+                {
+                  "key": "year_from",
+                  "value": "",
+                  "description": "Filter from year (optional, 1900–2100)",
+                  "disabled": true
+                },
+                {
+                  "key": "year_to",
+                  "value": "",
+                  "description": "Filter to year (optional, 1900–2100)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get the authenticated user's CSI pension balance over time, aggregated by quarterly granularity. Each data point represents a calendar quarter (Q1–Q4) using the last month's balance in that quarter. Supports optional year range filter. JWT required.\n\n**Query Parameters:**\n- `granularity` (string) — 'quarterly'\n- `year_from` (integer, optional, 1900–2100) — filter start year\n- `year_to` (integer, optional, 1900–2100) — filter end year"
+          },
+          "response": [
+            {
+              "name": "200 - Balance Over Time (Quarterly)",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": [\n        {\n            \"tenant_id\": \"019500a1-0000-7000-8000-000000000001\",\n            \"tenant_name\": \"PT Contoh Perusahaan\",\n            \"user\": \"Budi Santoso\",\n            \"granularity\": \"quarterly\",\n            \"data_points\": [\n                {\n                    \"period_label\": \"2024-Q1\",\n                    \"year\": 2024,\n                    \"quarter\": 1,\n                    \"balance\": 19500000\n                },\n                {\n                    \"period_label\": \"2024-Q2\",\n                    \"year\": 2024,\n                    \"quarter\": 2,\n                    \"balance\": 20500000\n                },\n                {\n                    \"period_label\": \"2024-Q3\",\n                    \"year\": 2024,\n                    \"quarter\": 3,\n                    \"balance\": 21500000\n                },\n                {\n                    \"period_label\": \"2024-Q4\",\n                    \"year\": 2024,\n                    \"quarter\": 4,\n                    \"balance\": 22000000\n                },\n                {\n                    \"period_label\": \"2025-Q1\",\n                    \"year\": 2025,\n                    \"quarter\": 1,\n                    \"balance\": 23000000\n                },\n                {\n                    \"period_label\": \"2025-Q2\",\n                    \"year\": 2025,\n                    \"quarter\": 2,\n                    \"balance\": 24000000\n                },\n                {\n                    \"period_label\": \"2025-Q3\",\n                    \"year\": 2025,\n                    \"quarter\": 3,\n                    \"balance\": 25000000\n                }\n            ]\n        }\n    ]\n}"
+            },
+            {
+              "name": "400 - Invalid granularity",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"granularity must be 'monthly', 'quarterly', or 'yearly'\"\n}"
+            },
+            {
+              "name": "400 - Invalid year_from",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"invalid year_from parameter\"\n}"
+            },
+            {
+              "name": "400 - Invalid year_to",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"invalid year_to parameter\"\n}"
+            },
+            {
+              "name": "401 - Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"unauthorized\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Dev",
+      "description": "Dev-only utility endpoints. Not registered in production (guarded by IsProduction check). No authentication required.",
+      "item": [
+        {
+          "name": "Assign Product Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has success flag', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  pm.expect(json.data).to.have.property('email');",
+                  "  pm.expect(json.data).to.have.property('tenant_code');",
+                  "  pm.expect(json.data).to.have.property('product_code');",
+                  "  pm.expect(json.data).to.have.property('already_assigned');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"tenant_code\": \"TENANT_001\",\n    \"product_code\": \"frendz-saving\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/dev/users/{{test_email}}/assign-product-admin",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "dev", "users", "{{test_email}}", "assign-product-admin"]
+            },
+            "description": "Assigns the product-admin role to a user identified by email, scoped to the given tenant and product. Dev-only — not available in production."
+          },
+          "response": [
+            {
+              "name": "200 - Role Assigned",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"email\": \"user@example.com\",\n        \"tenant_code\": \"TENANT_001\",\n        \"product_code\": \"frendz-saving\",\n        \"already_assigned\": false\n    }\n}"
+            },
+            {
+              "name": "200 - Already Assigned",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"email\": \"user@example.com\",\n        \"tenant_code\": \"TENANT_001\",\n        \"product_code\": \"frendz-saving\",\n        \"already_assigned\": true\n    }\n}"
+            },
+            {
+              "name": "400 - Missing Fields",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": {\n        \"code\": \"INVALID_BODY\",\n        \"message\": \"tenant_code and product_code are required\"\n    }\n}"
+            },
+            {
+              "name": "404 - User Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": {\n        \"code\": \"NOT_FOUND\",\n        \"message\": \"user not found\"\n    }\n}"
+            },
+            {
+              "name": "404 - Tenant Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": {\n        \"code\": \"NOT_FOUND\",\n        \"message\": \"tenant not found\"\n    }\n}"
+            },
+            {
+              "name": "404 - Product Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": {\n        \"code\": \"NOT_FOUND\",\n        \"message\": \"product not found\"\n    }\n}"
+            },
+            {
+              "name": "404 - Role Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": {\n        \"code\": \"NOT_FOUND\",\n        \"message\": \"product admin role not found\"\n    }\n}"
             }
           ]
         }

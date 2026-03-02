@@ -69,5 +69,10 @@ func (uc *usecase) ChangeRole(ctx context.Context, req *ChangeRoleRequest) (*Mem
 		return nil, emailErr
 	}
 
-	return mapToDetailResponse(reg, profile, email, &newRole.Code, &newRole.Name), nil
+	m, mErr := uc.memberRepo.GetByRegistrationID(ctx, reg.ID)
+	if mErr != nil && !errors.IsNotFound(mErr) {
+		return nil, mErr
+	}
+
+	return mapToDetailResponse(reg, profile, email, &newRole.Code, &newRole.Name, m), nil
 }

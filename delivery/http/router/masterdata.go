@@ -25,7 +25,7 @@ func SetupMasterdataRoutes(api fiber.Router, cfg *config.Config, mc *controller.
 		publicRoutes.Get("/items/default/:categoryCode", mc.GetDefaultItem)
 		publicRoutes.Get("/items/code/:categoryCode/:itemCode", mc.GetItemByCode)
 		publicRoutes.Get("/items/:id", mc.GetItemByID)
-		publicRoutes.Get("/items/:id/children", mc.GetItemChildren)
+		publicRoutes.Get("/items/:id/children", mc.GetItemChildrenByCode)
 
 		publicRoutes.Post("/validate", mc.ValidateCode)
 		publicRoutes.Post("/validate/batch", mc.ValidateCodes)

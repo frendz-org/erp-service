@@ -260,6 +260,31 @@ type DeleteChildEntityRequest struct {
 	ProductID     uuid.UUID `json:"-"`
 }
 
+type GetMyParticipantRequest struct {
+	UserID    uuid.UUID `json:"-"`
+	TenantID  uuid.UUID `json:"-"`
+	ProductID uuid.UUID `json:"-"`
+}
+
+type CsiAmountSummaryRequest struct {
+	UserID uuid.UUID `json:"-"`
+}
+
+type CsiLedgerHistoryRequest struct {
+	UserID   uuid.UUID `json:"-"`
+	Page     int       `json:"-"`
+	PerPage  int       `json:"-"`
+	YearFrom *int      `json:"-"`
+	YearTo   *int      `json:"-"`
+}
+
+type BalanceOverTimeRequest struct {
+	UserID      uuid.UUID `json:"-"`
+	Granularity string    `json:"-"`
+	YearFrom    *int      `json:"-"`
+	YearTo      *int      `json:"-"`
+}
+
 type SelfRegisterRequest struct {
 	UserID            uuid.UUID `json:"-"`
 	Organization      string    `json:"organization"       validate:"required,min=6,max=50"`

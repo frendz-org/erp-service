@@ -17,7 +17,7 @@ const (
 	RegistrationOTPMaxResends     = 3
 	RegistrationOTPResendCooldown = 60
 
-	RegistrationCompleteTokenExpiryMinutes = 15
+	RegistrationCompleteTokenExpiryMinutes = 5
 	RegistrationCompleteTokenPurpose       = "registration_complete"
 
 	RegistrationRateLimitPerHour = 3
@@ -32,4 +32,16 @@ const (
 	LoginOTPResendCooldown    = 60
 	LoginRateLimitPerHour     = 5
 	LoginRateLimitWindow      = 60
+)
+
+const (
+	BcryptTargetCost = 12
+)
+
+const (
+	TransferTokenTTLSeconds      = 30
+	TransferTokenCodeBytes       = 32
+	TransferTokenRateLimitPerMin = 5
+	TransferTokenRateLimitWindow = 1
+	TransferTokenMaxTreeDepth    = 20
 )

@@ -27,7 +27,9 @@ type usecase struct {
 	configRepo        ProductRegistrationConfigRepository
 	utrRepo           UserTenantRegistrationRepository
 	userProfileRepo   UserProfileRepository
-	masterdataUsecase MasterdataUsecase
+	masterdataUsecase  MasterdataUsecase
+	csiEmployeeRepo   CsiEmployeeRepository
+	csiLedgerRepo     CsiLedgerRepository
 }
 
 func NewUsecase(
@@ -51,6 +53,8 @@ func NewUsecase(
 	utrRepo UserTenantRegistrationRepository,
 	userProfileRepo UserProfileRepository,
 	masterdataUsecase MasterdataUsecase,
+	csiEmployeeRepo CsiEmployeeRepository,
+	csiLedgerRepo CsiLedgerRepository,
 ) Usecase {
 	return &usecase{
 		cfg:               cfg,
@@ -72,6 +76,8 @@ func NewUsecase(
 		configRepo:        configRepo,
 		utrRepo:           utrRepo,
 		userProfileRepo:   userProfileRepo,
-		masterdataUsecase: masterdataUsecase,
+		masterdataUsecase:  masterdataUsecase,
+		csiEmployeeRepo:   csiEmployeeRepo,
+		csiLedgerRepo:     csiLedgerRepo,
 	}
 }

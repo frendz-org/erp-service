@@ -52,5 +52,15 @@ func (uc *usecase) UpdateMe(ctx context.Context, userID uuid.UUID, req *UpdateMe
 		return nil, err
 	}
 
-	return mapUserToDetailResponse(user, profile, authMethod, securityState), nil
+	var gender *GenderResponse
+	if profile != nil && profile.Gender != nil {
+		item, err := uc.MasterdataUsecase.GetItemByCode(ctx, "GENDER", nil, string(*profile.Gender))
+		if err == nil {
+			gender = &GenderResponse{Code: item.Code, Name: item.Name}
+		} else {
+			gender = &GenderResponse{Code: string(*profile.Gender)}
+		}
+	}
+
+	return mapUserToDetailResponse(user, profile, authMethod, securityState, gender), nil
 }

@@ -76,9 +76,9 @@ func (m *Middleware) Setup(app *fiber.App) {
 		MaxAge:           300,
 	}))
 
-	if !m.config.IsDevelopment() {
+	if m.config.IsProduction() {
 		app.Use(limiter.New(limiter.Config{
-			Max:               60,
+			Max:               10,
 			Expiration:        1 * time.Minute,
 			LimiterMiddleware: limiter.SlidingWindow{},
 			KeyGenerator: func(c *fiber.Ctx) string {

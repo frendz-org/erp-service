@@ -18,6 +18,14 @@ func ToUserResponse(resp *user.UserDetailResponse) *response.UserResponse {
 		}
 	}
 
+	var gender *response.GenderResponse
+	if resp.Gender != nil {
+		gender = &response.GenderResponse{
+			Code: resp.Gender.Code,
+			Name: resp.Gender.Name,
+		}
+	}
+
 	return &response.UserResponse{
 		ID:          resp.ID,
 		Email:       resp.Email,
@@ -26,6 +34,7 @@ func ToUserResponse(resp *user.UserDetailResponse) *response.UserResponse {
 		FullName:    resp.FullName,
 		PhoneNumber: resp.PhoneNumber,
 		DateOfBirth: resp.DateOfBirth,
+		Gender:      gender,
 		Address:     resp.Address,
 		Status:      resp.Status,
 		IsActive:    resp.IsActive,
@@ -84,6 +93,14 @@ func ToUpdateUserResponse(resp *user.UpdateResponse) *response.UpdateUserRespons
 		}
 	}
 
+	var gender *response.GenderResponse
+	if resp.Gender != nil {
+		gender = &response.GenderResponse{
+			Code: resp.Gender.Code,
+			Name: resp.Gender.Name,
+		}
+	}
+
 	return &response.UpdateUserResponse{
 		UserResponse: response.UserResponse{
 			ID:          resp.ID,
@@ -93,6 +110,7 @@ func ToUpdateUserResponse(resp *user.UpdateResponse) *response.UpdateUserRespons
 			FullName:    resp.FullName,
 			PhoneNumber: resp.PhoneNumber,
 			DateOfBirth: resp.DateOfBirth,
+			Gender:      gender,
 			Address:     resp.Address,
 			Status:      resp.Status,
 			IsActive:    resp.IsActive,

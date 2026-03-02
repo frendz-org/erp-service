@@ -94,6 +94,22 @@ func (m *MockParticipantRepository) GetByEmployeeNumber(ctx context.Context, ten
 	return args.Get(0).(*entity.Participant), args.Error(1)
 }
 
+func (m *MockParticipantRepository) GetByUserAndTenantProduct(ctx context.Context, userID, tenantID, productID uuid.UUID) (*entity.Participant, error) {
+	args := m.Called(ctx, userID, tenantID, productID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*entity.Participant), args.Error(1)
+}
+
+func (m *MockParticipantRepository) ListByUserID(ctx context.Context, userID uuid.UUID) ([]*entity.Participant, error) {
+	args := m.Called(ctx, userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*entity.Participant), args.Error(1)
+}
+
 type MockParticipantIdentityRepository struct {
 	mock.Mock
 }
@@ -451,4 +467,28 @@ func (m *MockFileRepository) ClaimExpired(ctx context.Context, limit int) ([]*en
 func (m *MockFileRepository) ReleaseStaleClaimsOlderThan(ctx context.Context, age time.Duration) error {
 	args := m.Called(ctx, age)
 	return args.Error(0)
+}
+
+type MockEmployeeDataRepository struct {
+	mock.Mock
+}
+
+func (m *MockEmployeeDataRepository) GetByEmpNo(ctx context.Context, empNo string) (*entity.EmployeeData, error) {
+	args := m.Called(ctx, empNo)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*entity.EmployeeData), args.Error(1)
+}
+
+type MockCsiEmployeeRepository struct {
+	mock.Mock
+}
+
+func (m *MockCsiEmployeeRepository) GetByEmployeeNo(ctx context.Context, employeeNo string) (*entity.CsiEmployee, error) {
+	args := m.Called(ctx, employeeNo)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*entity.CsiEmployee), args.Error(1)
 }

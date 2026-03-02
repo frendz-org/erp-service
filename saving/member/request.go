@@ -3,9 +3,10 @@ package member
 import "github.com/google/uuid"
 
 type RegisterRequest struct {
-	TenantID  uuid.UUID `json:"-"`
-	ProductID uuid.UUID `json:"-"`
-	UserID    uuid.UUID `json:"-"`
+	UserID            uuid.UUID `json:"-"`
+	Organization      string    `json:"organization" validate:"required"`
+	ParticipantNumber string    `json:"participant_number" validate:"required"`
+	IdentityNumber    string    `json:"identity_number" validate:"required"`
 }
 
 type ListRequest struct {
