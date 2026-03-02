@@ -97,3 +97,20 @@ func (r *refreshTokenRepository) RevokeByFamily(ctx context.Context, tokenFamily
 	}
 	return nil
 }
+
+func (r *refreshTokenRepository) RevokeByIDs(ctx context.Context, ids []uuid.UUID, reason string) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	now := time.Now()
+	if err := r.getDB(ctx).
+		Model(&entity.RefreshToken{}).
+		Where("id IN ? AND revoked_at IS NULL", ids).
+		Updates(map[string]interface{}{
+			"revoked_at":     now,
+			"revoked_reason": reason,
+		}).Error; err != nil {
+		return translateError(err, "refresh token")
+	}
+	return nil
+}

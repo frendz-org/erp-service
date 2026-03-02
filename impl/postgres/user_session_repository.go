@@ -95,3 +95,37 @@ func (r *userSessionRepository) RevokeAllByUserID(ctx context.Context, userID uu
 	}
 	return nil
 }
+
+func (r *userSessionRepository) GetDescendantSessionIDs(ctx context.Context, rootSessionID uuid.UUID) ([]uuid.UUID, error) {
+	var ids []uuid.UUID
+	err := r.getDB(ctx).Raw(`
+		WITH RECURSIVE session_tree AS (
+			SELECT id FROM user_sessions WHERE id = ?
+			UNION ALL
+			SELECT us.id FROM user_sessions us
+			INNER JOIN session_tree st ON us.parent_session_id = st.id
+		)
+		SELECT id FROM session_tree
+	`, rootSessionID).Scan(&ids).Error
+	if err != nil {
+		return nil, translateError(err, "user session")
+	}
+	return ids, nil
+}
+
+func (r *userSessionRepository) RevokeByIDs(ctx context.Context, ids []uuid.UUID) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	now := time.Now()
+	if err := r.getDB(ctx).
+		Model(&entity.UserSession{}).
+		Where("id IN ? AND status = ?", ids, entity.UserSessionStatusActive).
+		Updates(map[string]interface{}{
+			"status":     entity.UserSessionStatusRevoked,
+			"revoked_at": now,
+		}).Error; err != nil {
+		return translateError(err, "user session")
+	}
+	return nil
+}
