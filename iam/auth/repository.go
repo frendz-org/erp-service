@@ -57,6 +57,7 @@ type RefreshTokenRepository interface {
 	Revoke(ctx context.Context, id uuid.UUID, reason string) error
 	RevokeAllByUserID(ctx context.Context, userID uuid.UUID, reason string) error
 	RevokeByFamily(ctx context.Context, tokenFamily uuid.UUID, reason string) error
+	RevokeByIDs(ctx context.Context, ids []uuid.UUID, reason string) error
 }
 type UserRoleRepository interface {
 	Create(ctx context.Context, userRole *entity.UserRole) error
@@ -98,6 +99,8 @@ type UserSessionRepository interface {
 	UpdateRefreshTokenID(ctx context.Context, sessionID uuid.UUID, refreshTokenID uuid.UUID) error
 	Revoke(ctx context.Context, id uuid.UUID) error
 	RevokeAllByUserID(ctx context.Context, userID uuid.UUID) error
+	GetDescendantSessionIDs(ctx context.Context, rootSessionID uuid.UUID) ([]uuid.UUID, error)
+	RevokeByIDs(ctx context.Context, ids []uuid.UUID) error
 }
 
 type UserTenantRegistrationRepository interface {
@@ -141,9 +144,16 @@ type OAuthStateStore interface {
 	GetAndDeleteOAuthState(ctx context.Context, state string) (bool, error)
 }
 
+type TransferTokenStore interface {
+	StoreTransferToken(ctx context.Context, code string, data []byte, ttl time.Duration) error
+	GetAndDeleteTransferToken(ctx context.Context, code string) ([]byte, error)
+	IncrementTransferTokenRateLimit(ctx context.Context, userID uuid.UUID, window time.Duration) (int64, error)
+}
+
 type InMemoryStore interface {
 	RegistrationSessionStore
 	LoginSessionStore
 	TokenBlacklistStore
 	OAuthStateStore
+	TransferTokenStore
 }

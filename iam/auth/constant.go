@@ -37,3 +37,11 @@ const (
 const (
 	BcryptTargetCost = 12
 )
+
+const (
+	TransferTokenTTLSeconds      = 30
+	TransferTokenCodeBytes       = 32
+	TransferTokenRateLimitPerMin = 5
+	TransferTokenRateLimitWindow = 1
+	TransferTokenMaxTreeDepth    = 20
+)

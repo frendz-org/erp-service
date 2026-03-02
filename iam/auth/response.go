@@ -131,3 +131,16 @@ type GoogleCallbackResponse struct {
 	IsNewUser    bool              `json:"is_new_user"`
 	User         LoginUserResponse `json:"user"`
 }
+
+type CreateTransferTokenResponse struct {
+	Code      string `json:"code"`
+	ExpiresIn int    `json:"expires_in"`
+}
+
+type ExchangeTransferTokenResponse struct {
+	AccessToken  string            `json:"access_token"`
+	RefreshToken string            `json:"refresh_token"`
+	ExpiresIn    int               `json:"expires_in"`
+	TokenType    string            `json:"token_type"`
+	User         LoginUserResponse `json:"user"`
+}

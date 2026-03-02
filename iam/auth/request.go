@@ -68,3 +68,27 @@ type GoogleCallbackRequest struct {
 	UserAgent string `json:"-"`
 }
 
+type CreateTransferTokenRequest struct {
+	ProductCode string    `json:"product_code" validate:"required,min=1,max=100"`
+	UserID      uuid.UUID `json:"-"`
+	SessionID   uuid.UUID `json:"-"`
+	IPAddress   string    `json:"-"`
+	UserAgent   string    `json:"-"`
+}
+
+type ExchangeTransferTokenRequest struct {
+	Code              string  `json:"code" validate:"required,len=64"`
+	DeviceFingerprint *string `json:"device_fingerprint,omitempty"`
+	IPAddress         string  `json:"-"`
+	UserAgent         string  `json:"-"`
+}
+
+type LogoutTreeRequest struct {
+	RefreshToken   string    `json:"refresh_token" validate:"required"`
+	UserID         uuid.UUID `json:"-"`
+	AccessTokenJTI string    `json:"-"`
+	AccessTokenExp time.Time `json:"-"`
+	IPAddress      string    `json:"-"`
+	UserAgent      string    `json:"-"`
+}
+

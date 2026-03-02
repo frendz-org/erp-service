@@ -33,9 +33,16 @@ type GoogleOAuthFlow interface {
 	HandleGoogleCallback(ctx context.Context, req *GoogleCallbackRequest) (*GoogleCallbackResponse, error)
 }
 
+type TransferTokenFlow interface {
+	CreateTransferToken(ctx context.Context, req *CreateTransferTokenRequest) (*CreateTransferTokenResponse, error)
+	ExchangeTransferToken(ctx context.Context, req *ExchangeTransferTokenRequest) (*ExchangeTransferTokenResponse, error)
+	LogoutTree(ctx context.Context, req *LogoutTreeRequest) error
+}
+
 type Usecase interface {
 	SessionManager
 	RegistrationFlow
 	LoginFlow
 	GoogleOAuthFlow
+	TransferTokenFlow
 }
