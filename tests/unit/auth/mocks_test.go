@@ -333,6 +333,11 @@ func (m *MockRefreshTokenRepository) RevokeByFamily(ctx context.Context, tokenFa
 	return args.Error(0)
 }
 
+func (m *MockRefreshTokenRepository) RevokeByIDs(ctx context.Context, ids []uuid.UUID, reason string) error {
+	args := m.Called(ctx, ids, reason)
+	return args.Error(0)
+}
+
 type MockUserRoleRepository struct {
 	mock.Mock
 }
@@ -431,6 +436,19 @@ func (m *MockUserSessionRepository) Revoke(ctx context.Context, id uuid.UUID) er
 
 func (m *MockUserSessionRepository) RevokeAllByUserID(ctx context.Context, userID uuid.UUID) error {
 	args := m.Called(ctx, userID)
+	return args.Error(0)
+}
+
+func (m *MockUserSessionRepository) GetDescendantSessionIDs(ctx context.Context, rootSessionID uuid.UUID) ([]uuid.UUID, error) {
+	args := m.Called(ctx, rootSessionID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]uuid.UUID), args.Error(1)
+}
+
+func (m *MockUserSessionRepository) RevokeByIDs(ctx context.Context, ids []uuid.UUID) error {
+	args := m.Called(ctx, ids)
 	return args.Error(0)
 }
 
@@ -590,6 +608,24 @@ func (m *MockInMemoryStore) StoreOAuthState(ctx context.Context, state string, t
 func (m *MockInMemoryStore) GetAndDeleteOAuthState(ctx context.Context, state string) (bool, error) {
 	args := m.Called(ctx, state)
 	return args.Bool(0), args.Error(1)
+}
+
+func (m *MockInMemoryStore) StoreTransferToken(ctx context.Context, code string, data []byte, ttl time.Duration) error {
+	args := m.Called(ctx, code, data, ttl)
+	return args.Error(0)
+}
+
+func (m *MockInMemoryStore) GetAndDeleteTransferToken(ctx context.Context, code string) ([]byte, error) {
+	args := m.Called(ctx, code)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]byte), args.Error(1)
+}
+
+func (m *MockInMemoryStore) IncrementTransferTokenRateLimit(ctx context.Context, userID uuid.UUID, window time.Duration) (int64, error) {
+	args := m.Called(ctx, userID, window)
+	return args.Get(0).(int64), args.Error(1)
 }
 
 type MockUserTenantRegistrationRepository struct {
