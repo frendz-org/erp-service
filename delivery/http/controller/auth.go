@@ -284,3 +284,95 @@ func (rc *AuthController) CompleteProfileRegistration(c *fiber.Ctx) error {
 	))
 }
 
+func (rc *AuthController) CreateTransferToken(c *fiber.Ctx) error {
+	var req auth.CreateTransferTokenRequest
+	if err := c.BodyParser(&req); err != nil {
+		return errors.ErrBadRequest("Invalid request body")
+	}
+
+	if err := rc.validate.Struct(&req); err != nil {
+		return errors.ErrValidationWithFields(convertValidationErrors(err.(validator.ValidationErrors)))
+	}
+
+	userID, jti, _, err := extractClaimsForLogout(c)
+	if err != nil {
+		return err
+	}
+	_ = jti
+
+	sessionID, err := getSessionID(c)
+	if err != nil {
+		return err
+	}
+
+	req.UserID = userID
+	req.SessionID = sessionID
+	req.IPAddress = getClientIP(c).String()
+	req.UserAgent = getUserAgent(c)
+
+	resp, err := rc.authUsecase.CreateTransferToken(c.Context(), &req)
+	if err != nil {
+		return err
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(response.SuccessResponse(
+		"Transfer token created",
+		resp,
+	))
+}
+
+func (rc *AuthController) ExchangeTransferToken(c *fiber.Ctx) error {
+	var req auth.ExchangeTransferTokenRequest
+	if err := c.BodyParser(&req); err != nil {
+		return errors.ErrBadRequest("Invalid request body")
+	}
+
+	if err := rc.validate.Struct(&req); err != nil {
+		return errors.ErrValidationWithFields(convertValidationErrors(err.(validator.ValidationErrors)))
+	}
+
+	req.IPAddress = getClientIP(c).String()
+	req.UserAgent = getUserAgent(c)
+
+	resp, err := rc.authUsecase.ExchangeTransferToken(c.Context(), &req)
+	if err != nil {
+		return err
+	}
+
+	return c.Status(fiber.StatusOK).JSON(response.SuccessResponse(
+		"Transfer token exchanged",
+		resp,
+	))
+}
+
+func (rc *AuthController) LogoutTree(c *fiber.Ctx) error {
+	var req auth.LogoutTreeRequest
+	if err := c.BodyParser(&req); err != nil {
+		return errors.ErrBadRequest("Invalid request body")
+	}
+
+	if err := rc.validate.Struct(&req); err != nil {
+		return errors.ErrValidationWithFields(convertValidationErrors(err.(validator.ValidationErrors)))
+	}
+
+	userID, jti, tokenExp, err := extractClaimsForLogout(c)
+	if err != nil {
+		return err
+	}
+
+	req.UserID = userID
+	req.AccessTokenJTI = jti
+	req.AccessTokenExp = tokenExp
+	req.IPAddress = getClientIP(c).String()
+	req.UserAgent = getUserAgent(c)
+
+	if err := rc.authUsecase.LogoutTree(c.Context(), &req); err != nil {
+		return err
+	}
+
+	return c.Status(fiber.StatusOK).JSON(response.SuccessResponse(
+		"Session tree logged out successfully",
+		nil,
+	))
+}
+
