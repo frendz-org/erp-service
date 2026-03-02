@@ -37,11 +37,14 @@ func (uc *usecase) InitiateLogin(
 
 	user, err := uc.UserRepo.GetByEmail(ctx, email)
 	if err != nil {
-		return dummyOTPResponse(email), nil
+		if errors.IsNotFound(err) {
+			return nil, errors.New("INVALID_CREDENTIALS", "Invalid email or password.", http.StatusUnauthorized)
+		}
+		return nil, errors.ErrInternal("failed to look up user").WithError(err)
 	}
 
 	if !user.IsActive() {
-		return dummyOTPResponse(email), nil
+		return nil, errors.New("INVALID_CREDENTIALS", "Invalid email or password.", http.StatusUnauthorized)
 	}
 
 	authMethod, err := uc.UserAuthMethodRepo.GetByUserID(ctx, user.ID)
