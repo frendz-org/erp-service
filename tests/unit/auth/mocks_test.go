@@ -628,6 +628,32 @@ func (m *MockInMemoryStore) IncrementTransferTokenRateLimit(ctx context.Context,
 	return args.Get(0).(int64), args.Error(1)
 }
 
+func (m *MockInMemoryStore) CreateGoogleRegistrationSession(ctx context.Context, session *entity.GoogleRegistrationSession, ttl time.Duration) error {
+	args := m.Called(ctx, session, ttl)
+	return args.Error(0)
+}
+
+func (m *MockInMemoryStore) GetGoogleRegistrationSession(ctx context.Context, sessionID uuid.UUID) (*entity.GoogleRegistrationSession, error) {
+	args := m.Called(ctx, sessionID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*entity.GoogleRegistrationSession), args.Error(1)
+}
+
+func (m *MockInMemoryStore) GetAndDeleteGoogleRegistrationSession(ctx context.Context, sessionID uuid.UUID) (*entity.GoogleRegistrationSession, error) {
+	args := m.Called(ctx, sessionID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*entity.GoogleRegistrationSession), args.Error(1)
+}
+
+func (m *MockInMemoryStore) DeleteGoogleRegistrationSession(ctx context.Context, sessionID uuid.UUID) error {
+	args := m.Called(ctx, sessionID)
+	return args.Error(0)
+}
+
 type MockUserTenantRegistrationRepository struct {
 	mock.Mock
 }

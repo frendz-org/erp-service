@@ -137,6 +137,14 @@ func (m *MockAuthUsecase) HandleGoogleCallback(ctx context.Context, req *auth.Go
 	return args.Get(0).(*auth.GoogleCallbackResponse), args.Error(1)
 }
 
+func (m *MockAuthUsecase) CompleteGoogleProfile(ctx context.Context, req *auth.CompleteGoogleProfileRequest) (*auth.CompleteGoogleProfileResponse, error) {
+	args := m.Called(ctx, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*auth.CompleteGoogleProfileResponse), args.Error(1)
+}
+
 func (m *MockAuthUsecase) CreateTransferToken(ctx context.Context, req *auth.CreateTransferTokenRequest) (*auth.CreateTransferTokenResponse, error) {
 	args := m.Called(ctx, req)
 	if args.Get(0) == nil {
