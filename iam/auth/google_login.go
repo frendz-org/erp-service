@@ -3,7 +3,9 @@ package auth
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -14,6 +16,7 @@ import (
 	"erp-service/pkg/errors"
 	jwtpkg "erp-service/pkg/jwt"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"golang.org/x/oauth2"
 	googleoauth2 "golang.org/x/oauth2/google"
@@ -172,64 +175,89 @@ func (uc *usecase) registerNewGoogleUser(
 ) (*GoogleCallbackResponse, error) {
 	email := strings.ToLower(googleUser.Email)
 	now := time.Now()
+	ttl := time.Duration(GoogleRegistrationSessionExpiryMinutes) * time.Minute
 
-	user := &entity.User{
-		Email:              email,
-		Status:             entity.UserStatusActive,
-		StatusChangedAt:    &now,
-		RegistrationSource: "GOOGLE",
-		Version:            1,
-		CreatedAt:          now,
-		UpdatedAt:          now,
+	session := &entity.GoogleRegistrationSession{
+		ID:                  uuid.New(),
+		Email:               email,
+		GoogleID:            googleUser.GoogleID,
+		Name:                googleUser.Name,
+		Picture:             googleUser.Picture,
+		GoogleEmailVerified: googleUser.EmailVerified,
+		Status:              entity.GoogleRegistrationSessionStatusPendingProfile,
+		IPAddress:           req.IPAddress,
+		UserAgent:           req.UserAgent,
+		CreatedAt:           now,
+		ExpiresAt:           now.Add(ttl),
 	}
 
-	var newUser *entity.User
-	if err := uc.TxManager.WithTransaction(ctx, func(txCtx context.Context) error {
-		if err := uc.UserRepo.Create(txCtx, user); err != nil {
-			return fmt.Errorf("create user: %w", err)
-		}
-		newUser = user
+	regToken, tokenHash, err := uc.generateGoogleRegistrationToken(session.ID, email)
+	if err != nil {
+		return nil, errors.ErrInternal("failed to generate google registration token").WithError(err)
+	}
+	session.RegistrationTokenHash = tokenHash
 
-		firstName, lastName := splitName(googleUser.Name)
-		profile := &entity.UserProfile{
-			UserID:            user.ID,
-			FirstName:         firstName,
-			LastName:          lastName,
-			ProfilePictureURL: nilIfEmpty(googleUser.Picture),
-			Metadata:          json.RawMessage("{}"),
-			UpdatedAt:         now,
-		}
-		if err := uc.UserProfileRepo.Create(txCtx, profile); err != nil {
-			return fmt.Errorf("create profile: %w", err)
-		}
-
-		googleAuth := entity.NewGoogleAuthMethod(user.ID, entity.GoogleCredentialData{
-			GoogleID:      googleUser.GoogleID,
-			Email:         googleUser.Email,
-			EmailVerified: googleUser.EmailVerified,
-			Name:          googleUser.Name,
-			Picture:       googleUser.Picture,
-		})
-		if err := uc.UserAuthMethodRepo.Create(txCtx, googleAuth); err != nil {
-			return fmt.Errorf("create auth method: %w", err)
-		}
-
-		secState := &entity.UserSecurityState{
-			UserID:        user.ID,
-			EmailVerified: true,
-			EmailVerifiedAt: &now,
-			UpdatedAt:     now,
-		}
-		if err := uc.UserSecurityStateRepo.Create(txCtx, secState); err != nil {
-			return fmt.Errorf("create security state: %w", err)
-		}
-
-		return nil
-	}); err != nil {
-		return nil, errors.ErrInternal("failed to register Google user").WithError(err)
+	if err := uc.InMemoryStore.CreateGoogleRegistrationSession(ctx, session, ttl); err != nil {
+		return nil, errors.ErrInternal("failed to store google registration session").WithError(err)
 	}
 
-	return uc.issueGoogleTokens(ctx, newUser, req, true)
+	return &GoogleCallbackResponse{
+		IsNewUser:         true,
+		RegistrationID:    session.ID.String(),
+		RegistrationToken: regToken,
+		NextStep:          GoogleNextStepCompleteProfile,
+	}, nil
+}
+
+func (uc *usecase) generateGoogleRegistrationToken(registrationID uuid.UUID, email string) (string, string, error) {
+	now := time.Now()
+	claims := jwt.MapClaims{
+		"registration_id": registrationID.String(),
+		"email":           email,
+		"purpose":         GoogleRegistrationCompleteTokenPurpose,
+		"exp":             now.Add(time.Duration(GoogleRegistrationCompleteTokenExpiryMinutes) * time.Minute).Unix(),
+		"iat":             now.Unix(),
+		"jti":             uuid.New().String(),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString([]byte(uc.registrationSigningSecret()))
+	if err != nil {
+		return "", "", err
+	}
+
+	hash := sha256.Sum256([]byte(tokenString))
+	tokenHash := hex.EncodeToString(hash[:])
+
+	return tokenString, tokenHash, nil
+}
+
+func (uc *usecase) validateGoogleRegistrationToken(tokenString string, expectedRegistrationID uuid.UUID) (jwt.MapClaims, error) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.ErrTokenInvalid()
+		}
+		return []byte(uc.registrationSigningSecret()), nil
+	})
+
+	if err != nil {
+		return nil, errors.ErrUnauthorized("Google registration token is invalid or expired")
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || !token.Valid {
+		return nil, errors.ErrUnauthorized("Google registration token is invalid")
+	}
+
+	if purpose, ok := claims["purpose"].(string); !ok || purpose != GoogleRegistrationCompleteTokenPurpose {
+		return nil, errors.ErrUnauthorized("Token is not a Google registration completion token")
+	}
+
+	if regID, ok := claims["registration_id"].(string); !ok || regID != expectedRegistrationID.String() {
+		return nil, errors.ErrUnauthorized("Token does not match this registration")
+	}
+
+	return claims, nil
 }
 
 func (uc *usecase) issueGoogleTokens(
@@ -330,7 +358,8 @@ func (uc *usecase) issueGoogleTokens(
 		ExpiresIn:    int(uc.Config.JWT.AccessExpiry.Seconds()),
 		TokenType:    "Bearer",
 		IsNewUser:    isNewUser,
-		User: LoginUserResponse{
+		NextStep:     GoogleNextStepLogin,
+		User: &LoginUserResponse{
 			ID:       user.ID,
 			Email:    user.Email,
 			FullName: fullName,
@@ -377,17 +406,6 @@ func generateOAuthState() (string, error) {
 		return "", err
 	}
 	return base64.URLEncoding.EncodeToString(b), nil
-}
-
-func splitName(fullName string) (firstName, lastName string) {
-	parts := strings.Fields(fullName)
-	if len(parts) == 0 {
-		return "User", ""
-	}
-	if len(parts) == 1 {
-		return parts[0], ""
-	}
-	return parts[0], strings.Join(parts[1:], " ")
 }
 
 func nilIfEmpty(s string) *string {
