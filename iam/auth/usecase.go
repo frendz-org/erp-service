@@ -31,6 +31,7 @@ type LoginFlow interface {
 type GoogleOAuthFlow interface {
 	GetGoogleAuthURL(ctx context.Context) (*GoogleAuthURLResponse, error)
 	HandleGoogleCallback(ctx context.Context, req *GoogleCallbackRequest) (*GoogleCallbackResponse, error)
+	CompleteGoogleProfile(ctx context.Context, req *CompleteGoogleProfileRequest) (*CompleteGoogleProfileResponse, error)
 }
 
 type TransferTokenFlow interface {

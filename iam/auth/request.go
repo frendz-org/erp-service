@@ -83,6 +83,16 @@ type ExchangeTransferTokenRequest struct {
 	UserAgent         string  `json:"-"`
 }
 
+type CompleteGoogleProfileRequest struct {
+	RegistrationID    uuid.UUID `json:"-"`
+	RegistrationToken string    `json:"-"`
+	IPAddress         string    `json:"-"`
+	UserAgent         string    `json:"-"`
+	FullName          string    `json:"full_name"     validate:"required,min=1,max=200"`
+	Gender            string    `json:"gender"        validate:"required,max=20"`
+	DateOfBirth       string    `json:"date_of_birth" validate:"required,datetime=2006-01-02"`
+}
+
 type LogoutTreeRequest struct {
 	RefreshToken   string    `json:"refresh_token" validate:"required"`
 	UserID         uuid.UUID `json:"-"`

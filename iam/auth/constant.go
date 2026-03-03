@@ -45,3 +45,9 @@ const (
 	TransferTokenRateLimitWindow = 1
 	TransferTokenMaxTreeDepth    = 20
 )
+
+const (
+	GoogleRegistrationSessionExpiryMinutes       = 15
+	GoogleRegistrationCompleteTokenPurpose       = "google_registration_complete"
+	GoogleRegistrationCompleteTokenExpiryMinutes = 15
+)

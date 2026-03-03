@@ -150,10 +150,18 @@ type TransferTokenStore interface {
 	IncrementTransferTokenRateLimit(ctx context.Context, userID uuid.UUID, window time.Duration) (int64, error)
 }
 
+type GoogleRegistrationSessionStore interface {
+	CreateGoogleRegistrationSession(ctx context.Context, session *entity.GoogleRegistrationSession, ttl time.Duration) error
+	GetGoogleRegistrationSession(ctx context.Context, sessionID uuid.UUID) (*entity.GoogleRegistrationSession, error)
+	GetAndDeleteGoogleRegistrationSession(ctx context.Context, sessionID uuid.UUID) (*entity.GoogleRegistrationSession, error)
+	DeleteGoogleRegistrationSession(ctx context.Context, sessionID uuid.UUID) error
+}
+
 type InMemoryStore interface {
 	RegistrationSessionStore
 	LoginSessionStore
 	TokenBlacklistStore
 	OAuthStateStore
 	TransferTokenStore
+	GoogleRegistrationSessionStore
 }
