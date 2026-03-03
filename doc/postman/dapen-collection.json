@@ -1003,13 +1003,17 @@
                   "pm.test('Status code is 200', function () {",
                   "  pm.response.to.have.status(200);",
                   "});",
-                  "pm.test('Response has success flag and extracts tokens + user_id', function () {",
+                  "pm.test('Response has success flag and extracts tokens or registration data', function () {",
                   "  var json = pm.response.json();",
                   "  pm.expect(json.success).to.be.true;",
                   "  if (json.data) {",
+                  "    // Returning user: extract JWT tokens and user_id",
                   "    if (json.data.access_token) { pm.collectionVariables.set('access_token', json.data.access_token); }",
                   "    if (json.data.refresh_token) { pm.collectionVariables.set('refresh_token', json.data.refresh_token); }",
                   "    if (json.data.user && json.data.user.id) { pm.collectionVariables.set('user_id', json.data.user.id); }",
+                  "    // New user: extract registration_id and registration_token for profile completion",
+                  "    if (json.data.registration_id) { pm.collectionVariables.set('registration_id', json.data.registration_id); }",
+                  "    if (json.data.registration_token) { pm.collectionVariables.set('registration_token', json.data.registration_token); }",
                   "  }",
                   "});"
                 ],
@@ -1032,16 +1036,24 @@
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "iam", "auth", "google", "callback"]
             },
-            "description": "Exchanges the Google OAuth2 authorization code for JWT access and refresh tokens. No authentication required. The `code` is obtained from the Google OAuth consent screen redirect. The `state` must match the CSRF state from the URL returned by GET /auth/google."
+            "description": "Exchanges the Google OAuth2 authorization code for JWT access and refresh tokens. No authentication required. The `code` is obtained from the Google OAuth consent screen redirect. The `state` must match the CSRF state from the URL returned by GET /auth/google.\n\nFor returning users: returns JWT tokens directly (`is_new_user: false`).\nFor new users: returns `registration_id`, `registration_token`, and `next_step: COMPLETE_PROFILE` — use the Complete Google Profile endpoint to finish onboarding."
           },
           "response": [
             {
-              "name": "200 - Login Successful",
+              "name": "200 - Login Successful (Returning User)",
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
               "body": "{\n    \"success\": true,\n    \"message\": \"Login successful\",\n    \"data\": {\n        \"access_token\": \"eyJ...\",\n        \"refresh_token\": \"eyJ...\",\n        \"expires_in\": 900,\n        \"token_type\": \"Bearer\",\n        \"is_new_user\": false,\n        \"user\": {\n            \"id\": \"019500a2-...\",\n            \"email\": \"user@example.com\",\n            \"full_name\": \"John Doe\",\n            \"tenants\": []\n        }\n    }\n}"
+            },
+            {
+              "name": "200 - New User (Profile Completion Required)",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Profile completion required\",\n    \"data\": {\n        \"is_new_user\": true,\n        \"registration_id\": \"019500a3-...\",\n        \"registration_token\": \"eyJ...\",\n        \"next_step\": \"COMPLETE_PROFILE\"\n    }\n}"
             },
             {
               "name": "400 - Validation Error",
@@ -1058,6 +1070,91 @@
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
               "body": "{\n    \"success\": false,\n    \"error\": \"ERR_UNAUTHORIZED\",\n    \"message\": \"Failed to exchange authorization code\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Complete Google Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Response has success flag and extracts tokens + user_id', function () {",
+                  "  var json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  if (json.data) {",
+                  "    if (json.data.user_id) { pm.collectionVariables.set('user_id', json.data.user_id); }",
+                  "    if (json.data.access_token) { pm.collectionVariables.set('access_token', json.data.access_token); }",
+                  "    if (json.data.refresh_token) { pm.collectionVariables.set('refresh_token', json.data.refresh_token); }",
+                  "  }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{registration_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"full_name\": \"John Doe\",\n    \"gender\": \"GENDER_001\",\n    \"date_of_birth\": \"1990-01-15\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/iam/auth/google/registrations/{{registration_id}}/complete-profile",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "iam", "auth", "google", "registrations", "{{registration_id}}", "complete-profile"]
+            },
+            "description": "Completes profile for a new Google OAuth user and finalizes account creation. Returns JWT access and refresh tokens.\n\nRequires the `registration_token` obtained from `POST /auth/google/callback` (new user path) in the Authorization header as `Bearer <token>`.\n\nNote: `gender` must be a valid GENDER_NNN masterdata code (e.g. GENDER_001 for Male, GENDER_002 for Female). `date_of_birth` must be in YYYY-MM-DD format."
+          },
+          "response": [
+            {
+              "name": "201 - Profile Completed",
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": true,\n    \"message\": \"Profile completed successfully\",\n    \"data\": {\n        \"user_id\": \"019500a3-...\",\n        \"email\": \"john.doe@gmail.com\",\n        \"status\": \"COMPLETED\",\n        \"message\": \"Profile completed successfully\",\n        \"profile\": {\n            \"first_name\": \"John\",\n            \"last_name\": \"Doe\"\n        },\n        \"access_token\": \"eyJ...\",\n        \"refresh_token\": \"eyJ...\",\n        \"token_type\": \"Bearer\",\n        \"expires_in\": 900\n    }\n}"
+            },
+            {
+              "name": "400 - Validation Error",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_VALIDATION\",\n    \"message\": \"Validation failed\",\n    \"errors\": [\n        { \"field\": \"FullName\", \"message\": \"full_name is required\" }\n    ]\n}"
+            },
+            {
+              "name": "400 - Invalid Registration ID",
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_BAD_REQUEST\",\n    \"message\": \"Invalid registration ID format\"\n}"
+            },
+            {
+              "name": "401 - Missing Authorization",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_UNAUTHORIZED\",\n    \"message\": \"Authorization header is required\"\n}"
+            },
+            {
+              "name": "401 - Invalid Registration Token",
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"success\": false,\n    \"error\": \"ERR_UNAUTHORIZED\",\n    \"message\": \"Invalid or expired registration token\"\n}"
             }
           ]
         },
