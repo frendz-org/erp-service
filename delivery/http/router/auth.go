@@ -16,6 +16,7 @@ func SetupAuthRoutes(api fiber.Router, cfg *config.Config, authController *contr
 	google := api.Group("/auth/google")
 	google.Get("", authController.GoogleLogin)
 	google.Post("/callback", authController.GoogleCallback)
+	google.Post("/registrations/:id/complete-profile", authController.CompleteGoogleProfile)
 
 	auth := api.Group("/auth")
 	auth.Use(middleware.JWTAuth(cfg, blacklistStore))

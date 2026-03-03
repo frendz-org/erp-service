@@ -83,10 +83,26 @@ type GoogleAuthURLResponse struct {
 }
 
 type GoogleCallbackResponse struct {
-	AccessToken  string            `json:"access_token"`
-	RefreshToken string            `json:"refresh_token"`
-	ExpiresIn    int               `json:"expires_in"`
-	TokenType    string            `json:"token_type"`
-	IsNewUser    bool              `json:"is_new_user"`
-	User         LoginUserResponse `json:"user"`
+	AccessToken  string             `json:"access_token,omitempty"`
+	RefreshToken string             `json:"refresh_token,omitempty"`
+	ExpiresIn    int                `json:"expires_in,omitempty"`
+	TokenType    string             `json:"token_type,omitempty"`
+	IsNewUser    bool               `json:"is_new_user"`
+	User         *LoginUserResponse `json:"user,omitempty"`
+
+	RegistrationID    string `json:"registration_id,omitempty"`
+	RegistrationToken string `json:"registration_token,omitempty"`
+	NextStep          string `json:"next_step,omitempty"`
+}
+
+type CompleteGoogleProfileResponse struct {
+	UserID       uuid.UUID                          `json:"user_id"`
+	Email        string                             `json:"email"`
+	Status       string                             `json:"status"`
+	Message      string                             `json:"message"`
+	Profile      CompleteProfileRegistrationProfile `json:"profile"`
+	AccessToken  string                             `json:"access_token"`
+	RefreshToken string                             `json:"refresh_token"`
+	TokenType    string                             `json:"token_type"`
+	ExpiresIn    int                                `json:"expires_in"`
 }

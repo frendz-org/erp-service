@@ -99,13 +99,39 @@ func ToGoogleCallbackResponse(resp *auth.GoogleCallbackResponse) *response.Googl
 	if resp == nil {
 		return nil
 	}
-	return &response.GoogleCallbackResponse{
+	out := &response.GoogleCallbackResponse{
+		AccessToken:       resp.AccessToken,
+		RefreshToken:      resp.RefreshToken,
+		ExpiresIn:         resp.ExpiresIn,
+		TokenType:         resp.TokenType,
+		IsNewUser:         resp.IsNewUser,
+		RegistrationID:    resp.RegistrationID,
+		RegistrationToken: resp.RegistrationToken,
+		NextStep:          string(resp.NextStep),
+	}
+	if resp.User != nil {
+		out.User = toLoginUserResponse(resp.User)
+	}
+	return out
+}
+
+func ToCompleteGoogleProfileResponse(resp *auth.CompleteGoogleProfileResponse) *response.CompleteGoogleProfileResponse {
+	if resp == nil {
+		return nil
+	}
+	return &response.CompleteGoogleProfileResponse{
+		UserID:  resp.UserID,
+		Email:   resp.Email,
+		Status:  resp.Status,
+		Message: resp.Message,
+		Profile: response.CompleteProfileRegistrationProfile{
+			FirstName: resp.Profile.FirstName,
+			LastName:  resp.Profile.LastName,
+		},
 		AccessToken:  resp.AccessToken,
 		RefreshToken: resp.RefreshToken,
-		ExpiresIn:    resp.ExpiresIn,
 		TokenType:    resp.TokenType,
-		IsNewUser:    resp.IsNewUser,
-		User:         *toLoginUserResponse(&resp.User),
+		ExpiresIn:    resp.ExpiresIn,
 	}
 }
 
